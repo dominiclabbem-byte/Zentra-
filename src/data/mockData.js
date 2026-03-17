@@ -1,19 +1,19 @@
 export const suppliers = [
-  { id: 1, name: 'Valle Frío SpA', rut: '76.234.567-8', city: 'Santiago', categories: ['Berries IQF', 'Mix berries', 'Frutas tropicales IQF'] },
-  { id: 2, name: 'Best Food Chile SpA', rut: '77.891.234-5', city: 'Valparaíso', categories: ['Frutas tropicales IQF', 'Verduras IQF', 'Mix berries'] },
-  { id: 3, name: 'Surfrut Ltda.', rut: '76.456.789-1', city: 'Rancagua', categories: ['Berries IQF', 'Verduras IQF', 'Mix berries'] },
+  { id: 1, name: 'Valle Frio SpA', rut: '76.234.567-8', city: 'Santiago', categories: ['Berries IQF', 'Mix berries', 'Frutas tropicales IQF'], plan: 'pro' },
+  { id: 2, name: 'Best Food Chile SpA', rut: '77.891.234-5', city: 'Valparaiso', categories: ['Frutas tropicales IQF', 'Verduras IQF', 'Mix berries'], plan: 'starter' },
+  { id: 3, name: 'Surfrut Ltda.', rut: '76.456.789-1', city: 'Rancagua', categories: ['Berries IQF', 'Verduras IQF', 'Mix berries'], plan: 'enterprise' },
 ];
 
 export const buyers = [
-  { id: 1, name: 'Pastelería Mozart', rut: '72.345.678-9', city: 'Santiago', type: 'Pastelería' },
+  { id: 1, name: 'Pasteleria Mozart', rut: '72.345.678-9', city: 'Santiago', type: 'Pasteleria' },
   { id: 2, name: 'Hotel Ritz Santiago', rut: '96.789.012-3', city: 'Santiago', type: 'Hotel' },
-  { id: 3, name: 'Catering El Toldo Azul', rut: '76.111.222-3', city: 'Concepción', type: 'Catering' },
+  { id: 3, name: 'Catering El Toldo Azul', rut: '76.111.222-3', city: 'Concepcion', type: 'Catering' },
 ];
 
 export const quoteRequests = [
   {
     id: 1,
-    buyer: 'Pastelería Mozart',
+    buyer: 'Pasteleria Mozart',
     product: 'Frambuesa IQF',
     quantity: '500 kg',
     date: '2026-03-15',
@@ -44,15 +44,15 @@ export const priceAlerts = [
   {
     id: 1,
     product: 'Frambuesa IQF',
-    message: 'Frambuesa IQF bajó a $4.200/kg',
-    supplier: 'Valle Frío SpA',
+    message: 'Frambuesa IQF bajo a $4.200/kg',
+    supplier: 'Valle Frio SpA',
     change: 'down',
     date: '2026-03-16',
   },
   {
     id: 2,
-    product: 'Arándano IQF',
-    message: 'Arándano IQF subió a $6.800/kg',
+    product: 'Arandano IQF',
+    message: 'Arandano IQF subio a $6.800/kg',
     supplier: 'Surfrut Ltda.',
     change: 'up',
     date: '2026-03-15',
@@ -75,7 +75,7 @@ export const categories = [
 
 export const businessTypes = [
   'Restaurante',
-  'Pastelería',
+  'Pasteleria',
   'Hotel',
   'Catering',
   'Industria',
@@ -87,7 +87,7 @@ export const plans = [
     name: 'Starter',
     price: '$150.000',
     period: '/mes',
-    features: ['Email automatizado', 'Hasta 50 contactos/mes', 'Reportes básicos', 'Soporte por email'],
+    features: ['Email automatizado', 'Hasta 50 contactos/mes', 'Reportes basicos', 'Soporte por email'],
     highlight: false,
   },
   {
@@ -95,7 +95,7 @@ export const plans = [
     name: 'Pro',
     price: '$280.000',
     period: '/mes',
-    features: ['Email + WhatsApp', '200 llamadas IA incluidas', 'Hasta 200 contactos/mes', 'Reportes avanzados', 'Soporte prioritario'],
+    features: ['Email + WhatsApp', '200 llamadas IA incluidas', 'Hasta 200 contactos/mes', 'Agentes de venta IA', 'Reportes avanzados', 'Soporte prioritario'],
     highlight: true,
   },
   {
@@ -103,7 +103,55 @@ export const plans = [
     name: 'Enterprise',
     price: '$400.000',
     period: '/mes',
-    features: ['Agente IA con voz personalizada', 'Contactos ilimitados', 'CRM integrado', 'Gerente de cuenta dedicado', 'API access'],
+    features: ['Agente IA con voz personalizada', 'Agentes de venta IA ilimitados', 'Contactos ilimitados', 'CRM integrado', 'Gerente de cuenta dedicado', 'API access'],
     highlight: false,
+  },
+];
+
+export const salesAgents = [
+  {
+    id: 1,
+    name: 'Agente Sofia',
+    avatar: 'S',
+    status: 'active',
+    type: 'WhatsApp + Email',
+    conversationsToday: 12,
+    conversionsThisWeek: 8,
+    satisfaction: '96%',
+    lastActivity: 'Hace 3 min',
+    recentConversations: [
+      { id: 1, contact: 'Pasteleria Mozart', channel: 'WhatsApp', message: 'Buenos dias! Le envio cotizacion de Frambuesa IQF a $4.200/kg con despacho incluido.', time: '14:32', status: 'sent' },
+      { id: 2, contact: 'Hotel Ritz Santiago', channel: 'Email', message: 'Estimados, adjunto ficha tecnica de Mix Berries Premium. Quedo atenta a sus consultas.', time: '14:15', status: 'read' },
+      { id: 3, contact: 'Catering El Toldo Azul', channel: 'WhatsApp', message: 'Perfecto! Agendo despacho para el viernes 21. Confirmo direccion: Av. Los Leones 1520, Concepcion.', time: '13:50', status: 'replied' },
+    ],
+  },
+  {
+    id: 2,
+    name: 'Agente Carlos',
+    avatar: 'C',
+    status: 'active',
+    type: 'Llamadas IA',
+    conversationsToday: 8,
+    conversionsThisWeek: 5,
+    satisfaction: '93%',
+    lastActivity: 'Hace 12 min',
+    recentConversations: [
+      { id: 4, contact: 'Restaurante Don Pepe', channel: 'Llamada', message: 'Llamada de 4:32 min. Cliente interesado en Arandano IQF 200kg. Seguimiento agendado.', time: '13:20', status: 'completed' },
+      { id: 5, contact: 'Sushi Express', channel: 'Llamada', message: 'Llamada de 2:15 min. Solicito muestra de Mango en cubo. Envio programado.', time: '12:45', status: 'completed' },
+    ],
+  },
+  {
+    id: 3,
+    name: 'Agente Valentina',
+    avatar: 'V',
+    status: 'paused',
+    type: 'Email automatizado',
+    conversationsToday: 0,
+    conversionsThisWeek: 3,
+    satisfaction: '91%',
+    lastActivity: 'Hace 2 hrs',
+    recentConversations: [
+      { id: 6, contact: 'Panaderia San Jose', channel: 'Email', message: 'Campaña de re-engagement enviada a 15 prospectos inactivos.', time: '11:00', status: 'sent' },
+    ],
   },
 ];

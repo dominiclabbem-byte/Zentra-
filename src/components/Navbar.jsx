@@ -14,12 +14,14 @@ export default function Navbar() {
   ];
 
   return (
-    <nav className="bg-[#0D1F3C] text-white shadow-lg sticky top-0 z-50">
+    <nav className="bg-[#0a1628]/95 backdrop-blur-xl text-white shadow-[0_1px_0_rgba(46,202,213,0.1)] sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 flex-shrink-0">
-            <span className="text-2xl">🥗</span>
+          <Link to="/" className="flex items-center gap-2.5 flex-shrink-0 group">
+            <div className="w-8 h-8 bg-gradient-to-br from-[#2ECAD5] to-[#22a8b2] rounded-lg flex items-center justify-center shadow-lg shadow-[#2ECAD5]/20 group-hover:shadow-[#2ECAD5]/40 transition-shadow">
+              <span className="text-[#0D1F3C] font-black text-sm">PL</span>
+            </div>
             <span className="font-bold text-xl tracking-tight">
               Prospecto<span className="text-[#2ECAD5]">Legal</span>
             </span>
@@ -31,10 +33,10 @@ export default function Navbar() {
               <Link
                 key={link.to}
                 to={link.to}
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                   location.pathname === link.to
-                    ? 'bg-[#2ECAD5] text-[#0D1F3C]'
-                    : 'text-gray-300 hover:text-white hover:bg-[#1a3260]'
+                    ? 'bg-gradient-to-r from-[#2ECAD5] to-[#22a8b2] text-[#0D1F3C] shadow-lg shadow-[#2ECAD5]/20'
+                    : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`}
               >
                 {link.label}
@@ -44,32 +46,34 @@ export default function Navbar() {
 
           {/* Mobile menu button */}
           <button
-            className="md:hidden p-2 rounded-md text-gray-300 hover:text-white hover:bg-[#1a3260]"
+            className="md:hidden p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-all"
             onClick={() => setMenuOpen(!menuOpen)}
             aria-label="Toggle menu"
           >
-            {menuOpen ? '✕' : '☰'}
+            {menuOpen ? '\u2715' : '\u2630'}
           </button>
         </div>
       </div>
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div className="md:hidden bg-[#1a3260] border-t border-[#2ECAD5]/20">
-          {navLinks.map((link) => (
-            <Link
-              key={link.to}
-              to={link.to}
-              onClick={() => setMenuOpen(false)}
-              className={`block px-4 py-3 text-sm font-medium border-b border-[#0D1F3C] transition-colors ${
-                location.pathname === link.to
-                  ? 'text-[#2ECAD5] bg-[#0D1F3C]'
-                  : 'text-gray-300 hover:text-white hover:bg-[#0D1F3C]'
-              }`}
-            >
-              {link.label}
-            </Link>
-          ))}
+        <div className="md:hidden bg-[#0a1628]/98 backdrop-blur-xl border-t border-[#2ECAD5]/10 animate-fade-in">
+          <div className="py-2 px-3">
+            {navLinks.map((link) => (
+              <Link
+                key={link.to}
+                to={link.to}
+                onClick={() => setMenuOpen(false)}
+                className={`block px-4 py-3 rounded-lg text-sm font-medium my-0.5 transition-all ${
+                  location.pathname === link.to
+                    ? 'text-[#2ECAD5] bg-[#2ECAD5]/10'
+                    : 'text-gray-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
         </div>
       )}
     </nav>
