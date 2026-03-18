@@ -208,7 +208,7 @@ export default function BuyerRegistration() {
               <span className="text-sm text-gray-600 leading-relaxed">
                 Acepto recibir ofertas de proveedores segun mis categorias seleccionadas.
                 Entiendo que mis datos seran utilizados unicamente para conectarme con proveedores
-                relevantes en la plataforma ProspectoLegal.
+                relevantes en la plataforma Bodega Digital.
               </span>
             </label>
           </div>
