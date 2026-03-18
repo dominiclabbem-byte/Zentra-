@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Toast from '../components/Toast';
 import Modal from '../components/Modal';
-import { quoteRequests, supplierStats, salesAgents } from '../data/mockData';
+import { quoteRequests, supplierStats, salesAgents, supplierProducts } from '../data/mockData';
 
 const CURRENT_PLAN = 'pro'; // simulated current plan
 const PLANS_WITH_AGENTS = ['pro', 'enterprise'];
@@ -14,6 +14,7 @@ export default function SupplierDashboard() {
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [chatInput, setChatInput] = useState('');
   const [chatMessages, setChatMessages] = useState([]);
+  const [productDetail, setProductDetail] = useState(null);
 
   const hasAgentAccess = PLANS_WITH_AGENTS.includes(CURRENT_PLAN);
 
@@ -114,6 +115,93 @@ export default function SupplierDashboard() {
         </Modal>
       )}
 
+      {productDetail && (
+        <Modal title={productDetail.name} onClose={() => setProductDetail(null)}>
+          {/* Large AI product image */}
+          <div className={`relative h-56 rounded-xl bg-gradient-to-br ${productDetail.gradient} overflow-hidden mb-5`}>
+            <div className="absolute inset-0 opacity-20">
+              <div className="absolute top-6 left-6 w-32 h-32 bg-white/30 rounded-full blur-xl" />
+              <div className="absolute bottom-8 right-8 w-40 h-40 bg-white/20 rounded-full blur-2xl" />
+            </div>
+            <div className="absolute inset-0">
+              <svg className="w-full h-full opacity-10" viewBox="0 0 200 200">
+                <defs>
+                  <pattern id="ice-detail" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+                    <path d="M20 0 L20 40 M0 20 L40 20 M5 5 L35 35 M35 5 L5 35" stroke="white" strokeWidth="0.5" fill="none" />
+                    <circle cx="20" cy="20" r="3" fill="white" opacity="0.5" />
+                  </pattern>
+                </defs>
+                <rect width="200" height="200" fill="url(#ice-detail)" />
+              </svg>
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-8xl filter drop-shadow-lg">{productDetail.emoji}</div>
+            </div>
+            <div className="absolute bottom-3 left-3 bg-black/30 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5">
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+              </svg>
+              Imagen generada con Nano Banana Pro 2
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-[#f8fafc] rounded-xl p-3.5">
+                <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Precio</span>
+                <p className="text-lg font-extrabold text-[#0D1F3C] mt-0.5">{productDetail.price}</p>
+              </div>
+              <div className="bg-[#f8fafc] rounded-xl p-3.5">
+                <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Stock</span>
+                <p className="text-lg font-extrabold text-[#0D1F3C] mt-0.5">{productDetail.stock}</p>
+              </div>
+              <div className="bg-[#f8fafc] rounded-xl p-3.5">
+                <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Categoria</span>
+                <p className="text-sm font-semibold text-[#0D1F3C] mt-0.5">{productDetail.category}</p>
+              </div>
+              <div className="bg-[#f8fafc] rounded-xl p-3.5">
+                <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Estado</span>
+                <p className={`text-sm font-semibold mt-0.5 ${productDetail.status === 'active' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                  {productDetail.status === 'active' ? 'Disponible' : 'Stock bajo'}
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-[#f8fafc] rounded-xl p-3.5">
+              <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Descripcion</span>
+              <p className="text-sm text-gray-700 mt-1 leading-relaxed">{productDetail.description}</p>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => {
+                  setProductDetail(null);
+                  setToast({ message: 'Funcion de edicion proximamente disponible', type: 'info' });
+                }}
+                className="flex-1 border border-gray-200 text-gray-600 font-medium py-3 rounded-xl hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                </svg>
+                Editar
+              </button>
+              <button
+                onClick={() => {
+                  setProductDetail(null);
+                  setToast({ message: 'Imagen regenerada con IA exitosamente', type: 'success' });
+                }}
+                className="flex-1 bg-gradient-to-r from-[#2ECAD5] to-[#22a8b2] text-[#0D1F3C] font-bold py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-[#2ECAD5]/20 flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                </svg>
+                Regenerar imagen IA
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
       {/* Header */}
       <div className="relative bg-[#0a1628] text-white py-8 px-4 overflow-hidden">
         <div className="absolute inset-0 bg-grid opacity-30" />
@@ -143,6 +231,19 @@ export default function SupplierDashboard() {
               }`}
             >
               Cotizaciones
+            </button>
+            <button
+              onClick={() => setActiveTab('products')}
+              className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${
+                activeTab === 'products'
+                  ? 'bg-white/10 text-white'
+                  : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
+              }`}
+            >
+              Mis Productos
+              <span className="text-[10px] font-bold bg-white/10 text-[#2ECAD5] px-2 py-0.5 rounded-full">
+                {supplierProducts.length}
+              </span>
             </button>
             <button
               onClick={() => setActiveTab('agents')}
@@ -304,6 +405,118 @@ export default function SupplierDashboard() {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== PRODUCTS TAB ===== */}
+        {activeTab === 'products' && (
+          <div className="space-y-8 animate-fade-in">
+            {/* Product stats */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {[
+                { label: 'Productos activos', value: supplierProducts.filter(p => p.status === 'active').length, color: 'text-emerald-500' },
+                { label: 'Stock bajo', value: supplierProducts.filter(p => p.status === 'low_stock').length, color: 'text-amber-500' },
+                { label: 'Categorias', value: [...new Set(supplierProducts.map(p => p.category))].length, color: 'text-[#2ECAD5]' },
+                { label: 'Total productos', value: supplierProducts.length, color: 'text-[#0D1F3C]' },
+              ].map((s) => (
+                <div key={s.label} className="bg-white rounded-2xl border border-gray-100 p-5 card-premium">
+                  <div className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-2">{s.label}</div>
+                  <div className={`text-2xl font-extrabold ${s.color}`}>{s.value}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Section header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-extrabold text-[#0D1F3C]">Catalogo de productos</h2>
+                <p className="text-sm text-gray-400 mt-1">Imagenes generadas con IA (Nano Banana Pro 2)</p>
+              </div>
+              <button
+                onClick={() => setToast({ message: 'Funcion de agregar producto proximamente disponible', type: 'info' })}
+                className="bg-gradient-to-r from-[#2ECAD5] to-[#22a8b2] text-[#0D1F3C] font-bold text-sm px-5 py-2.5 rounded-xl transition-all hover:shadow-lg hover:shadow-[#2ECAD5]/20 hover:scale-[1.02] flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Agregar producto
+              </button>
+            </div>
+
+            {/* Product grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {supplierProducts.map((product) => (
+                <div
+                  key={product.id}
+                  onClick={() => setProductDetail(product)}
+                  className="bg-white rounded-2xl border border-gray-100 overflow-hidden card-premium cursor-pointer group"
+                >
+                  {/* AI-generated product image */}
+                  <div className={`relative h-48 bg-gradient-to-br ${product.gradient} overflow-hidden`}>
+                    {/* Decorative shapes to simulate AI-generated imagery */}
+                    <div className="absolute inset-0 opacity-20">
+                      <div className="absolute top-4 left-4 w-24 h-24 bg-white/30 rounded-full blur-xl" />
+                      <div className="absolute bottom-6 right-6 w-32 h-32 bg-white/20 rounded-full blur-2xl" />
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-black/10 rounded-full blur-lg" />
+                    </div>
+                    {/* Frost/ice crystal pattern for IQF */}
+                    <div className="absolute inset-0">
+                      <svg className="w-full h-full opacity-10" viewBox="0 0 200 200">
+                        <defs>
+                          <pattern id={`ice-${product.id}`} x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+                            <path d="M20 0 L20 40 M0 20 L40 20 M5 5 L35 35 M35 5 L5 35" stroke="white" strokeWidth="0.5" fill="none" />
+                            <circle cx="20" cy="20" r="3" fill="white" opacity="0.5" />
+                          </pattern>
+                        </defs>
+                        <rect width="200" height="200" fill={`url(#ice-${product.id})`} />
+                      </svg>
+                    </div>
+                    {/* Central product emoji/icon */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="text-7xl filter drop-shadow-lg transform group-hover:scale-110 transition-transform duration-500">
+                        {product.emoji}
+                      </div>
+                    </div>
+                    {/* AI badge */}
+                    <div className="absolute top-3 left-3 bg-black/30 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5">
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                      </svg>
+                      IA Gen
+                    </div>
+                    {/* Status badge */}
+                    <div className={`absolute top-3 right-3 text-[10px] font-bold px-2.5 py-1 rounded-full ${
+                      product.status === 'active'
+                        ? 'bg-emerald-400/90 text-emerald-900'
+                        : 'bg-amber-400/90 text-amber-900'
+                    }`}>
+                      {product.status === 'active' ? 'Disponible' : 'Stock bajo'}
+                    </div>
+                  </div>
+
+                  {/* Product info */}
+                  <div className="p-5">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <h3 className="font-bold text-[#0D1F3C] text-sm group-hover:text-[#2ECAD5] transition-colors">{product.name}</h3>
+                        <span className="text-xs text-gray-400">{product.category}</span>
+                      </div>
+                      <span className="text-lg font-extrabold text-[#0D1F3C]">{product.price}</span>
+                    </div>
+                    <p className="text-xs text-gray-500 line-clamp-2 mb-3">{product.description}</p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                        </svg>
+                        Stock: {product.stock}
+                      </div>
+                      <span className="text-xs font-semibold text-[#2ECAD5] group-hover:underline">Ver detalle →</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
