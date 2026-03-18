@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import BodegaLogo from './BodegaLogo';
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -19,8 +20,8 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 flex-shrink-0 group">
-            <div className="w-8 h-8 bg-gradient-to-br from-[#2ECAD5] to-[#22a8b2] rounded-lg flex items-center justify-center shadow-lg shadow-[#2ECAD5]/20 group-hover:shadow-[#2ECAD5]/40 transition-shadow">
-              <span className="text-[#0D1F3C] font-black text-sm">BD</span>
+            <div className="drop-shadow-lg group-hover:drop-shadow-xl transition-all">
+              <BodegaLogo size={36} />
             </div>
             <span className="font-bold text-xl tracking-tight">
               Bodega<span className="text-[#2ECAD5]"> Digital</span>
