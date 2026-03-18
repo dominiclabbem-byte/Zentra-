@@ -12,10 +12,10 @@ export default function Footer() {
           <div>
             <div className="flex items-center gap-2.5 mb-4">
               <div className="w-8 h-8 bg-gradient-to-br from-[#2ECAD5] to-[#22a8b2] rounded-lg flex items-center justify-center">
-                <span className="text-[#0D1F3C] font-black text-sm">PL</span>
+                <span className="text-[#0D1F3C] font-black text-sm">BD</span>
               </div>
               <span className="font-bold text-xl text-white">
-                Prospecto<span className="text-[#2ECAD5]">Legal</span>
+                Bodega<span className="text-[#2ECAD5]"> Digital</span>
               </span>
             </div>
             <p className="text-sm leading-relaxed text-gray-500">
@@ -41,7 +41,7 @@ export default function Footer() {
             <ul className="space-y-3 text-sm">
               <li className="flex items-center gap-2">
                 <span className="w-5 h-5 bg-[#2ECAD5]/10 rounded flex items-center justify-center text-xs">@</span>
-                contacto@prospectolegal.cl
+                contacto@bodegadigital.cl
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-5 h-5 bg-[#2ECAD5]/10 rounded flex items-center justify-center text-xs">T</span>
@@ -56,7 +56,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-white/5 mt-10 pt-6 text-center text-sm text-gray-600">
-          &copy; 2026 ProspectoLegal. Todos los derechos reservados.
+          &copy; 2026 Bodega Digital. Todos los derechos reservados.
         </div>
       </div>
     </footer>

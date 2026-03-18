@@ -94,12 +94,221 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* B2B Connection Animation */}
+      <section className="py-20 px-4 bg-[#060e1a] text-white overflow-hidden relative">
+        <div className="absolute inset-0 bg-grid opacity-20" />
+        <div className="absolute left-1/4 top-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/5 rounded-full blur-[120px]" />
+        <div className="absolute right-1/4 top-1/2 -translate-y-1/2 w-96 h-96 bg-[#2ECAD5]/5 rounded-full blur-[120px]" />
+
+        <div className="max-w-6xl mx-auto relative z-10">
+          <div className="text-center mb-16">
+            <span className="inline-block text-[#2ECAD5] text-sm font-semibold uppercase tracking-widest mb-3">Plataforma B2B</span>
+            <h2 className="text-3xl md:text-4xl font-extrabold mb-4">
+              Conexion directa en{' '}
+              <span className="gradient-text">tiempo real</span>
+            </h2>
+            <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+              Un hub inteligente que conecta compradores gastronomicos con proveedores
+              verificados, eliminando intermediarios en cada transaccion
+            </p>
+          </div>
+
+          {/* Desktop diagram */}
+          <div className="hidden md:flex items-center gap-3">
+            {/* Buyers column */}
+            <div className="flex flex-col gap-3 w-48 flex-shrink-0">
+              {[
+                {
+                  label: 'Restaurantes', sub: '200+ activos',
+                  icon: (
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 8.25v-1.5m0 1.5c-1.355 0-2.697.056-4.024.166C6.845 8.51 6 9.473 6 10.608v2.513m6-4.87c1.355 0 2.697.056 4.024.166C17.155 8.51 18 9.473 18 10.608v2.513m-3 4.137V16.5m-3 0v-3.742m0 3.742v.375a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18.75V16.5m8.25-4.5h6.375c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125h-6.375" />
+                    </svg>
+                  ),
+                },
+                {
+                  label: 'Pastelerias', sub: '85+ activos',
+                  icon: (
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                    </svg>
+                  ),
+                },
+                {
+                  label: 'Hoteles', sub: '45+ activos',
+                  icon: (
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 7.5h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z" />
+                    </svg>
+                  ),
+                },
+              ].map((item) => (
+                <div key={item.label} className="glass rounded-xl p-3.5 flex items-center gap-3">
+                  <div className="w-9 h-9 bg-indigo-500/15 rounded-lg flex items-center justify-center text-indigo-400 flex-shrink-0">
+                    {item.icon}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-bold truncate">{item.label}</div>
+                    <div className="text-xs text-indigo-400">{item.sub}</div>
+                  </div>
+                </div>
+              ))}
+              <div className="text-center pt-1">
+                <span className="text-xs font-bold text-indigo-400 uppercase tracking-widest">Compradores</span>
+              </div>
+            </div>
+
+            {/* Left animated lines */}
+            <div className="flex-1 flex flex-col justify-around" style={{ height: '162px' }}>
+              {[0, 1, 2].map(i => (
+                <div key={i} className="relative h-px w-full overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 to-[#2ECAD5]/20" />
+                  <div
+                    className="animate-data-flow"
+                    style={{ animationDelay: `${i * 0.7}s` }}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {/* Central Hub */}
+            <div className="flex-shrink-0 flex flex-col items-center gap-3 px-2">
+              <div className="relative">
+                <div className="absolute -inset-5 rounded-3xl bg-[#2ECAD5]/10 animate-ping-slow" />
+                <div className="absolute -inset-2.5 rounded-2xl border border-[#2ECAD5]/20 animate-rotate-slow" />
+                <div className="relative w-24 h-24 bg-gradient-to-br from-[#2ECAD5] to-[#1BA8B2] rounded-2xl flex flex-col items-center justify-center shadow-2xl shadow-[#2ECAD5]/30 z-10 gap-1">
+                  <svg className="w-9 h-9 text-[#0D1F3C]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+                  </svg>
+                  <span className="text-[#0D1F3C] font-black text-[10px] leading-none">B2B HUB</span>
+                </div>
+              </div>
+              <div className="text-sm font-bold text-[#2ECAD5]">Bodega Digital</div>
+              <div className="flex items-center gap-1.5">
+                {[0, 1, 2].map(i => (
+                  <div
+                    key={i}
+                    className="w-1.5 h-1.5 bg-[#2ECAD5] rounded-full animate-bounce"
+                    style={{ animationDelay: `${i * 0.15}s` }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Right animated lines */}
+            <div className="flex-1 flex flex-col justify-around" style={{ height: '162px' }}>
+              {[0, 1, 2].map(i => (
+                <div key={i} className="relative h-px w-full overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#2ECAD5]/20 to-emerald-500/20" />
+                  <div
+                    className="animate-data-flow"
+                    style={{ animationDelay: `${i * 0.7 + 0.35}s` }}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {/* Suppliers column */}
+            <div className="flex flex-col gap-3 w-48 flex-shrink-0">
+              {[
+                {
+                  label: 'Berries IQF', sub: '42 proveedores',
+                  icon: (
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                    </svg>
+                  ),
+                },
+                {
+                  label: 'Frutas Tropicales', sub: '38 proveedores',
+                  icon: (
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+                    </svg>
+                  ),
+                },
+                {
+                  label: 'Verduras IQF', sub: '55 proveedores',
+                  icon: (
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15a4.5 4.5 0 004.5 4.5H18a3.75 3.75 0 001.332-7.257 3 3 0 00-3.758-3.848 5.25 5.25 0 00-10.233 2.33A4.502 4.502 0 002.25 15z" />
+                    </svg>
+                  ),
+                },
+              ].map((item) => (
+                <div key={item.label} className="glass rounded-xl p-3.5 flex items-center gap-3">
+                  <div className="w-9 h-9 bg-emerald-500/15 rounded-lg flex items-center justify-center text-emerald-400 flex-shrink-0">
+                    {item.icon}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-bold truncate">{item.label}</div>
+                    <div className="text-xs text-emerald-400">{item.sub}</div>
+                  </div>
+                </div>
+              ))}
+              <div className="text-center pt-1">
+                <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest">Proveedores</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile layout */}
+          <div className="md:hidden space-y-3">
+            <div className="glass rounded-2xl p-5 text-center">
+              <div className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-3">Compradores</div>
+              <div className="flex justify-center gap-2 flex-wrap">
+                {['Restaurantes', 'Pastelerias', 'Hoteles'].map(t => (
+                  <span key={t} className="bg-indigo-500/10 text-indigo-300 text-xs px-3 py-1 rounded-full border border-indigo-500/20">{t}</span>
+                ))}
+              </div>
+            </div>
+            <div className="flex justify-center">
+              <div className="w-px h-8 bg-gradient-to-b from-indigo-500/50 to-[#2ECAD5]/50" />
+            </div>
+            <div className="glass rounded-2xl p-5 flex flex-col items-center gap-2 border border-[#2ECAD5]/25">
+              <div className="w-14 h-14 bg-gradient-to-br from-[#2ECAD5] to-[#1BA8B2] rounded-2xl flex items-center justify-center shadow-lg shadow-[#2ECAD5]/30">
+                <svg className="w-7 h-7 text-[#0D1F3C]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+                </svg>
+              </div>
+              <div className="text-sm font-bold text-[#2ECAD5]">Bodega Digital</div>
+              <div className="text-xs text-gray-400">Hub B2B inteligente</div>
+            </div>
+            <div className="flex justify-center">
+              <div className="w-px h-8 bg-gradient-to-b from-[#2ECAD5]/50 to-emerald-500/50" />
+            </div>
+            <div className="glass rounded-2xl p-5 text-center">
+              <div className="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-3">Proveedores</div>
+              <div className="flex justify-center gap-2 flex-wrap">
+                {['Berries IQF', 'Frutas Tropicales', 'Verduras IQF'].map(t => (
+                  <span key={t} className="bg-emerald-500/10 text-emerald-300 text-xs px-3 py-1 rounded-full border border-emerald-500/20">{t}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Metrics */}
+          <div className="mt-12 grid grid-cols-3 gap-4">
+            {[
+              { value: '< 2s', label: 'Tiempo de match' },
+              { value: '99.9%', label: 'Uptime garantizado' },
+              { value: '24/7', label: 'Red activa' },
+            ].map(m => (
+              <div key={m.label} className="glass rounded-xl p-5 text-center">
+                <div className="text-2xl font-extrabold text-[#2ECAD5]">{m.value}</div>
+                <div className="text-xs text-gray-400 mt-1">{m.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Value propositions */}
       <section className="py-20 px-4 bg-white relative">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
             <span className="inline-block text-[#2ECAD5] text-sm font-semibold uppercase tracking-widest mb-3">Ventajas</span>
-            <h2 className="text-3xl md:text-4xl font-extrabold text-[#0D1F3C] mb-3">Por que ProspectoLegal?</h2>
+            <h2 className="text-3xl md:text-4xl font-extrabold text-[#0D1F3C] mb-3">Por que Bodega Digital?</h2>
             <p className="text-gray-500 text-lg max-w-xl mx-auto">Todo lo que necesitas para agilizar tus compras de insumos</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -223,7 +432,7 @@ export default function Landing() {
         <div className="max-w-3xl mx-auto text-center relative z-10">
           <h2 className="text-3xl md:text-4xl font-extrabold mb-4">Listo para empezar?</h2>
           <p className="text-gray-400 mb-10 text-lg leading-relaxed">
-            Unete a cientos de empresas gastronomicas chilenas que ya usan ProspectoLegal.
+            Unete a cientos de empresas gastronomicas chilenas que ya usan Bodega Digital.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link

@@ -110,6 +110,39 @@ body {
   background-size: 40px 40px;
 }
 
+/* B2B data flow animation */
+@keyframes dataFlowRight {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(250%); }
+}
+
+@keyframes pingSlow {
+  75%, 100% { transform: scale(2); opacity: 0; }
+}
+
+@keyframes rotateSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-data-flow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent 0%, rgba(46, 202, 213, 0.9) 50%, transparent 100%);
+  animation: dataFlowRight 2.5s linear infinite;
+}
+
+.animate-ping-slow {
+  animation: pingSlow 2.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.animate-rotate-slow {
+  animation: rotateSlow 12s linear infinite;
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;
