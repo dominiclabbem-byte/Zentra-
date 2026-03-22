@@ -20,9 +20,9 @@ const valueProps = [
 ];
 
 const featuredSuppliers = [
-  { name: 'Valle Frio SpA', emoji: '🫐', category: 'Berries IQF / Mix berries', city: 'Santiago', rating: '4.9' },
-  { name: 'Best Food Chile SpA', emoji: '🥭', category: 'Frutas tropicales / Verduras IQF', city: 'Valparaiso', rating: '4.7' },
-  { name: 'Surfrut Ltda.', emoji: '🍓', category: 'Berries IQF / Verduras IQF', city: 'Rancagua', rating: '4.8' },
+  { name: 'Valle Frio SpA', emoji: '🏭', category: 'Congelados / Lacteos / Carnes', city: 'Santiago', rating: '4.9' },
+  { name: 'Distribuidora El Roble', emoji: '🫒', category: 'Abarrotes / Aceites / Especias', city: 'Valparaiso', rating: '4.7' },
+  { name: 'Agroindustrial del Sur Ltda.', emoji: '🌾', category: 'Harinas / Cereales / Legumbres', city: 'Temuco', rating: '4.8' },
 ];
 
 const stats = [
@@ -64,7 +64,7 @@ export default function Landing() {
           </h1>
           <p className="text-lg md:text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
             La plataforma que une a restaurantes, pastelerias y hoteles de Chile con
-            proveedores verificados de frutas IQF 🍊, berries 🫐 y mas.
+            proveedores verificados de insumos alimentarios 🧀, carnes 🥩, harinas 🌾 y mas.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
             <Link
@@ -157,7 +157,7 @@ export default function Landing() {
                   <span className="text-[#0D1F3C] font-black text-[9px] leading-none uppercase tracking-wider">B2B Hub</span>
                 </div>
               </div>
-              <div className="text-sm font-bold text-[#2ECAD5]">Bodega Digital</div>
+              <div className="text-sm font-bold text-[#2ECAD5]">Zentra</div>
               <div className="flex items-center gap-1.5">
                 {[0, 1, 2].map(i => (
                   <div
@@ -185,9 +185,9 @@ export default function Landing() {
             {/* Suppliers column */}
             <div className="flex flex-col gap-3 w-52 flex-shrink-0">
               {[
-                { emoji: '🫐', label: 'Berries IQF', sub: '42 proveedores' },
-                { emoji: '🥭', label: 'Frutas Tropicales', sub: '38 proveedores' },
-                { emoji: '🥦', label: 'Verduras IQF', sub: '55 proveedores' },
+                { emoji: '🥩', label: 'Carnes y cecinas', sub: '42 proveedores' },
+                { emoji: '🌾', label: 'Harinas y cereales', sub: '38 proveedores' },
+                { emoji: '🧀', label: 'Lacteos', sub: '55 proveedores' },
               ].map((item) => (
                 <div key={item.label} className="glass rounded-xl p-3.5 flex items-center gap-3 hover:bg-white/5 transition-colors">
                   <span className="text-2xl flex-shrink-0">{item.emoji}</span>
@@ -218,7 +218,7 @@ export default function Landing() {
             </div>
             <div className="glass rounded-2xl p-5 flex flex-col items-center gap-2 border border-[#2ECAD5]/25">
               <BodegaLogo size={48} />
-              <div className="text-sm font-bold text-[#2ECAD5]">Bodega Digital</div>
+              <div className="text-sm font-bold text-[#2ECAD5]">Zentra</div>
               <div className="text-xs text-gray-400">Hub B2B inteligente 🔗</div>
             </div>
             <div className="flex justify-center">
@@ -227,7 +227,7 @@ export default function Landing() {
             <div className="glass rounded-2xl p-5 text-center">
               <div className="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-3">Proveedores</div>
               <div className="flex justify-center gap-2 flex-wrap">
-                {['🫐 Berries IQF', '🥭 Frutas Tropicales', '🥦 Verduras IQF'].map(t => (
+                {['🥩 Carnes', '🌾 Harinas', '🧀 Lacteos', '🫒 Aceites'].map(t => (
                   <span key={t} className="bg-emerald-500/10 text-emerald-300 text-xs px-3 py-1.5 rounded-full border border-emerald-500/20">{t}</span>
                 ))}
               </div>
@@ -255,7 +255,7 @@ export default function Landing() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
             <span className="inline-block text-[#2ECAD5] text-sm font-semibold uppercase tracking-widest mb-3">Ventajas</span>
-            <h2 className="text-3xl md:text-4xl font-extrabold text-[#0D1F3C] mb-3">Por que Bodega Digital? 🚀</h2>
+            <h2 className="text-3xl md:text-4xl font-extrabold text-[#0D1F3C] mb-3">Por que Zentra? 🚀</h2>
             <p className="text-gray-500 text-lg max-w-xl mx-auto">Todo lo que necesitas para agilizar tus compras de insumos</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -362,7 +362,7 @@ export default function Landing() {
         <div className="max-w-3xl mx-auto text-center relative z-10">
           <h2 className="text-3xl md:text-4xl font-extrabold mb-4">🚀 Listo para empezar?</h2>
           <p className="text-gray-400 mb-10 text-lg leading-relaxed">
-            Unete a cientos de empresas gastronomicas chilenas que ya usan Bodega Digital.
+            Unete a cientos de empresas gastronomicas chilenas que ya usan Zentra.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link

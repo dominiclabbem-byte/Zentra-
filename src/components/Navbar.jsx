@@ -24,7 +24,7 @@ export default function Navbar() {
               <BodegaLogo size={36} />
             </div>
             <span className="font-bold text-xl tracking-tight">
-              Bodega<span className="text-[#2ECAD5]"> Digital</span>
+              Zen<span className="text-[#2ECAD5]">tra</span>
             </span>
           </Link>
 

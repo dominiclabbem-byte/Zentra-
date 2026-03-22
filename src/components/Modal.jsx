@@ -16,8 +16,8 @@ export default function Modal({ title, children, onClose }) {
       className="fixed inset-0 z-50 flex items-center justify-center bg-[#0D1F3C]/60 backdrop-blur-md p-4 animate-fade-in"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="bg-white rounded-2xl shadow-2xl shadow-[#0D1F3C]/20 w-full max-w-md animate-fade-in-up">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+      <div className="bg-white rounded-2xl shadow-2xl shadow-[#0D1F3C]/20 w-full max-w-md max-h-[90vh] flex flex-col animate-fade-in-up">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
           <h3 className="text-lg font-bold text-[#0D1F3C]">{title}</h3>
           <button
             onClick={onClose}
@@ -28,7 +28,7 @@ export default function Modal({ title, children, onClose }) {
             </svg>
           </button>
         </div>
-        <div className="px-6 py-5">{children}</div>
+        <div className="px-6 py-5 overflow-y-auto">{children}</div>
       </div>
     </div>
   );

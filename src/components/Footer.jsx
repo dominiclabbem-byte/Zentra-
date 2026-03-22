@@ -14,7 +14,7 @@ export default function Footer() {
             <div className="flex items-center gap-2.5 mb-4">
               <BodegaLogo size={36} />
               <span className="font-bold text-xl text-white">
-                Bodega<span className="text-[#2ECAD5]"> Digital</span>
+                Zen<span className="text-[#2ECAD5]">tra</span>
               </span>
             </div>
             <p className="text-sm leading-relaxed text-gray-500">
@@ -40,7 +40,7 @@ export default function Footer() {
             <ul className="space-y-3 text-sm">
               <li className="flex items-center gap-2">
                 <span className="text-base">📧</span>
-                contacto@bodegadigital.cl
+                contacto@zentra.cl
               </li>
               <li className="flex items-center gap-2">
                 <span className="text-base">📱</span>
@@ -55,7 +55,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-white/5 mt-10 pt-6 text-center text-sm text-gray-600">
-          &copy; 2026 Bodega Digital. Todos los derechos reservados.
+          &copy; 2026 Zentra. Todos los derechos reservados.
         </div>
       </div>
     </footer>
