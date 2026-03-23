@@ -347,7 +347,7 @@ export default function SupplierDashboard() {
               </button>
               <button
                 type="submit"
-                className="flex-1 bg-gradient-to-r from-[#2ECAD5] to-[#22a8b2] text-[#0D1F3C] font-bold py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-[#2ECAD5]/20"
+                className="flex-1 bg-gradient-to-r from-emerald-400 to-blue-500 text-white font-bold py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-emerald-400/20"
               >
                 Enviar oferta
               </button>
@@ -448,7 +448,7 @@ export default function SupplierDashboard() {
                   setProductDetail(null);
                   setToast({ message: 'Imagen regenerada con IA exitosamente', type: 'success' });
                 }}
-                className="flex-1 bg-gradient-to-r from-[#2ECAD5] to-[#22a8b2] text-[#0D1F3C] font-bold py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-[#2ECAD5]/20 flex items-center justify-center gap-2"
+                className="flex-1 bg-gradient-to-r from-emerald-400 to-blue-500 text-white font-bold py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-emerald-400/20 flex items-center justify-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
@@ -622,7 +622,7 @@ export default function SupplierDashboard() {
               </button>
               <button
                 type="submit"
-                className="flex-1 bg-gradient-to-r from-[#2ECAD5] to-[#22a8b2] text-[#0D1F3C] font-bold py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-[#2ECAD5]/20"
+                className="flex-1 bg-gradient-to-r from-emerald-400 to-blue-500 text-white font-bold py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-emerald-400/20"
               >
                 Guardar cambios
               </button>
@@ -889,7 +889,7 @@ export default function SupplierDashboard() {
               </button>
               <button
                 type="submit"
-                className="flex-1 bg-gradient-to-r from-[#2ECAD5] to-[#22a8b2] text-[#0D1F3C] font-bold py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-[#2ECAD5]/20"
+                className="flex-1 bg-gradient-to-r from-emerald-400 to-blue-500 text-white font-bold py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-emerald-400/20"
               >
                 Agregar producto
               </button>
@@ -946,7 +946,7 @@ export default function SupplierDashboard() {
                     const matchingQuote = quoteRequests.find((q) => q.buyer === viewingBuyer.name);
                     if (matchingQuote) setQuoteModal(matchingQuote);
                   }}
-                  className="flex items-center gap-2 bg-gradient-to-r from-[#2ECAD5] to-[#22a8b2] text-[#0D1F3C] font-bold px-5 py-2.5 rounded-xl transition-all hover:shadow-lg hover:shadow-[#2ECAD5]/20 text-sm whitespace-nowrap"
+                  className="flex items-center gap-2 bg-gradient-to-r from-emerald-400 to-blue-500 text-white font-bold px-5 py-2.5 rounded-xl transition-all hover:shadow-lg hover:shadow-emerald-400/20 text-sm whitespace-nowrap"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
@@ -1079,7 +1079,7 @@ export default function SupplierDashboard() {
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-xs font-semibold uppercase tracking-widest text-[#2ECAD5]">Panel de proveedor</span>
-                <span className="text-[10px] font-bold bg-gradient-to-r from-[#2ECAD5] to-[#22a8b2] text-[#0D1F3C] px-2.5 py-0.5 rounded-full uppercase tracking-wide">
+                <span className="text-[10px] font-bold bg-gradient-to-r from-emerald-400 to-blue-500 text-white px-2.5 py-0.5 rounded-full uppercase tracking-wide">
                   Plan {CURRENT_PLAN}
                 </span>
               </div>
@@ -1089,7 +1089,7 @@ export default function SupplierDashboard() {
             {/* CTA: Switch to buyer mode */}
             <button
               onClick={() => navigate('/dashboard-comprador', { state: { supplierProfile: profile } })}
-              className="ml-auto flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#2ECAD5] to-[#22a8b2] text-[#0D1F3C] text-sm font-bold shadow-lg shadow-[#2ECAD5]/20 hover:shadow-[#2ECAD5]/40 hover:scale-105 transition-all whitespace-nowrap"
+              className="ml-auto flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 to-blue-500 text-white text-sm font-bold shadow-lg shadow-emerald-400/20 hover:shadow-emerald-400/40 hover:scale-105 transition-all whitespace-nowrap"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
@@ -1167,7 +1167,7 @@ export default function SupplierDashboard() {
               </div>
               <div className="px-6 pb-6 relative">
                 {/* Avatar */}
-                <div className="w-24 h-24 bg-gradient-to-br from-[#2ECAD5] to-[#22a8b2] rounded-2xl flex items-center justify-center text-white text-3xl font-extrabold border-4 border-white shadow-lg -mt-12 relative z-10">
+                <div className="w-24 h-24 bg-gradient-to-br from-emerald-400 to-blue-500 rounded-2xl flex items-center justify-center text-white text-3xl font-extrabold border-4 border-white shadow-lg -mt-12 relative z-10">
                   {profile.companyName.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()}
                 </div>
                 <div className="mt-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -1175,7 +1175,7 @@ export default function SupplierDashboard() {
                     <h2 className="text-2xl font-extrabold text-[#0D1F3C]">{profile.companyName}</h2>
                     <p className="text-gray-500 text-sm mt-1">{profile.description}</p>
                     <div className="flex items-center gap-3 mt-3 flex-wrap">
-                      <span className="text-xs font-bold bg-gradient-to-r from-[#2ECAD5] to-[#22a8b2] text-[#0D1F3C] px-3 py-1 rounded-full">Plan Pro</span>
+                      <span className="text-xs font-bold bg-gradient-to-r from-emerald-400 to-blue-500 text-white px-3 py-1 rounded-full">Plan Pro</span>
                       <span className="text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100 px-3 py-1 rounded-full flex items-center gap-1">
                         <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
                         Verificado
@@ -1450,7 +1450,7 @@ export default function SupplierDashboard() {
                         <td className="px-6 py-4">
                           <button
                             onClick={() => setQuoteModal(q)}
-                            className="bg-gradient-to-r from-[#2ECAD5] to-[#22a8b2] hover:shadow-lg hover:shadow-[#2ECAD5]/20 text-[#0D1F3C] font-bold text-sm px-4 py-2 rounded-lg transition-all"
+                            className="bg-gradient-to-r from-emerald-400 to-blue-500 hover:shadow-lg hover:shadow-emerald-400/20 text-[#0D1F3C] font-bold text-sm px-4 py-2 rounded-lg transition-all"
                           >
                             Cotizar
                           </button>
@@ -1481,7 +1481,7 @@ export default function SupplierDashboard() {
                       </div>
                       <button
                         onClick={() => setQuoteModal(q)}
-                        className="bg-gradient-to-r from-[#2ECAD5] to-[#22a8b2] text-[#0D1F3C] font-bold text-sm px-4 py-2 rounded-lg transition-all"
+                        className="bg-gradient-to-r from-emerald-400 to-blue-500 text-white font-bold text-sm px-4 py-2 rounded-lg transition-all"
                       >
                         Cotizar
                       </button>
@@ -1559,7 +1559,7 @@ export default function SupplierDashboard() {
               </div>
               <button
                 onClick={() => setAddProductOpen(true)}
-                className="bg-gradient-to-r from-[#2ECAD5] to-[#22a8b2] text-[#0D1F3C] font-bold text-sm px-5 py-2.5 rounded-xl transition-all hover:shadow-lg hover:shadow-[#2ECAD5]/20 hover:scale-[1.02] flex items-center gap-2"
+                className="bg-gradient-to-r from-emerald-400 to-blue-500 text-white font-bold text-sm px-5 py-2.5 rounded-xl transition-all hover:shadow-lg hover:shadow-emerald-400/20 hover:scale-[1.02] flex items-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -1694,7 +1694,7 @@ export default function SupplierDashboard() {
                   Automatiza tus ventas con agentes inteligentes que contactan prospectos por WhatsApp, email y llamadas.
                   Disponible en planes <strong className="text-[#0D1F3C]">Pro</strong> y <strong className="text-[#0D1F3C]">Enterprise</strong>.
                 </p>
-                <button className="bg-gradient-to-r from-[#2ECAD5] to-[#22a8b2] text-[#0D1F3C] font-bold px-8 py-3.5 rounded-xl transition-all hover:shadow-lg hover:shadow-[#2ECAD5]/20 hover:scale-[1.02]">
+                <button className="bg-gradient-to-r from-emerald-400 to-blue-500 text-white font-bold px-8 py-3.5 rounded-xl transition-all hover:shadow-lg hover:shadow-emerald-400/20 hover:scale-[1.02]">
                   Actualizar a Pro
                 </button>
               </div>
@@ -1726,14 +1726,14 @@ export default function SupplierDashboard() {
                         onClick={() => selectAgent(agent)}
                         className={`w-full text-left rounded-2xl border p-5 transition-all ${
                           selectedAgent?.id === agent.id
-                            ? 'border-[#2ECAD5] bg-[#2ECAD5]/5 shadow-lg shadow-[#2ECAD5]/10'
+                            ? 'border-[#2ECAD5] bg-[#2ECAD5]/5 shadow-lg shadow-emerald-400/10'
                             : 'border-gray-100 bg-white hover:border-gray-200 card-premium'
                         }`}
                       >
                         <div className="flex items-center gap-3 mb-3">
                           <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${
                             agent.status === 'active'
-                              ? 'bg-gradient-to-br from-[#2ECAD5] to-[#22a8b2] text-[#0D1F3C]'
+                              ? 'bg-gradient-to-br from-emerald-400 to-blue-500 text-white'
                               : 'bg-gray-200 text-gray-500'
                           }`}>
                             {agent.avatar}
@@ -1782,7 +1782,7 @@ export default function SupplierDashboard() {
                           <div className="flex items-center gap-3">
                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${
                               selectedAgent.status === 'active'
-                                ? 'bg-gradient-to-br from-[#2ECAD5] to-[#22a8b2] text-[#0D1F3C]'
+                                ? 'bg-gradient-to-br from-emerald-400 to-blue-500 text-white'
                                 : 'bg-gray-200 text-gray-500'
                             }`}>
                               {selectedAgent.avatar}
@@ -1929,7 +1929,7 @@ export default function SupplierDashboard() {
                           <button
                             type="submit"
                             disabled={agentLoading}
-                            className={`w-10 h-10 bg-gradient-to-r from-[#2ECAD5] to-[#22a8b2] rounded-xl flex items-center justify-center text-[#0D1F3C] transition-all flex-shrink-0 ${agentLoading ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg hover:shadow-[#2ECAD5]/20'}`}
+                            className={`w-10 h-10 bg-gradient-to-r from-emerald-400 to-blue-500 rounded-xl flex items-center justify-center text-[#0D1F3C] transition-all flex-shrink-0 ${agentLoading ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg hover:shadow-emerald-400/20'}`}
                           >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />

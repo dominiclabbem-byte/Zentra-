@@ -200,7 +200,7 @@ export default function VoiceCall({ agent, profile, onClose, onToast }) {
     starting: 'from-gray-400 to-gray-500',
     listening: 'from-emerald-400 to-emerald-500',
     thinking: 'from-amber-400 to-amber-500',
-    speaking: 'from-[#2ECAD5] to-[#22a8b2]',
+    speaking: 'from-emerald-400 to-blue-500',
   };
 
   const labels = {

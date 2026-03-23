@@ -75,7 +75,7 @@ export default function BuyerRegistration() {
           {/* Business info */}
           <div>
             <h2 className="text-lg font-bold text-[#0D1F3C] mb-5 flex items-center gap-3">
-              <span className="w-7 h-7 bg-gradient-to-r from-[#2ECAD5] to-[#22a8b2] text-[#0D1F3C] rounded-lg flex items-center justify-center text-sm font-bold shadow-sm">1</span>
+              <span className="w-7 h-7 bg-gradient-to-r from-emerald-400 to-blue-500 text-white rounded-lg flex items-center justify-center text-sm font-bold shadow-sm">1</span>
               Datos de la empresa
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -140,7 +140,7 @@ export default function BuyerRegistration() {
           {/* Categories */}
           <div>
             <h2 className="text-lg font-bold text-[#0D1F3C] mb-2 flex items-center gap-3">
-              <span className="w-7 h-7 bg-gradient-to-r from-[#2ECAD5] to-[#22a8b2] text-[#0D1F3C] rounded-lg flex items-center justify-center text-sm font-bold shadow-sm">2</span>
+              <span className="w-7 h-7 bg-gradient-to-r from-emerald-400 to-blue-500 text-white rounded-lg flex items-center justify-center text-sm font-bold shadow-sm">2</span>
               Categorias de interes
             </h2>
             <p className="text-sm text-gray-500 mb-4">Selecciona los productos que te interesan recibir ofertas</p>
@@ -154,7 +154,7 @@ export default function BuyerRegistration() {
                     onClick={() => handleCategory(cat)}
                     className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all text-left ${
                       selected
-                        ? 'border-[#2ECAD5] bg-[#2ECAD5]/5 text-[#0D1F3C] shadow-sm shadow-[#2ECAD5]/10'
+                        ? 'border-[#2ECAD5] bg-[#2ECAD5]/5 text-[#0D1F3C] shadow-sm shadow-emerald-400/10'
                         : 'border-gray-200 text-gray-600 hover:border-gray-300'
                     }`}
                   >
@@ -175,7 +175,7 @@ export default function BuyerRegistration() {
           {/* Contact method */}
           <div>
             <h2 className="text-lg font-bold text-[#0D1F3C] mb-4 flex items-center gap-3">
-              <span className="w-7 h-7 bg-gradient-to-r from-[#2ECAD5] to-[#22a8b2] text-[#0D1F3C] rounded-lg flex items-center justify-center text-sm font-bold shadow-sm">3</span>
+              <span className="w-7 h-7 bg-gradient-to-r from-emerald-400 to-blue-500 text-white rounded-lg flex items-center justify-center text-sm font-bold shadow-sm">3</span>
               Medio de contacto preferido
             </h2>
             <div className="flex flex-wrap gap-3">
@@ -186,7 +186,7 @@ export default function BuyerRegistration() {
                   onClick={() => setForm({ ...form, contactMethod: method })}
                   className={`flex items-center gap-2 px-5 py-3 rounded-xl border-2 text-sm font-medium transition-all ${
                     form.contactMethod === method
-                      ? 'border-[#2ECAD5] bg-[#2ECAD5]/5 text-[#0D1F3C] shadow-sm shadow-[#2ECAD5]/10'
+                      ? 'border-[#2ECAD5] bg-[#2ECAD5]/5 text-[#0D1F3C] shadow-sm shadow-emerald-400/10'
                       : 'border-gray-200 text-gray-600 hover:border-gray-300'
                   }`}
                 >

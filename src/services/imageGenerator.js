@@ -1,4 +1,4 @@
-const OPENROUTER_API_KEY = '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';
+const OPENROUTER_API_KEY = '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';
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 export async function generateProductImage(prompt) {
@@ -9,7 +9,7 @@ export async function generateProductImage(prompt) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'google/gemini-3-pro-image-preview',
+      model: 'google/gemini-3.1-flash-image-preview',
       messages: [
         {
           role: 'user',

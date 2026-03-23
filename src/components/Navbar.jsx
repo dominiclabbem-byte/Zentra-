@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import BodegaLogo from './BodegaLogo';
+import mainLogo from '../assets/zentra_main_logo.png';
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -19,13 +19,24 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 flex-shrink-0 group">
-            <div className="drop-shadow-lg group-hover:drop-shadow-xl transition-all">
-              <BodegaLogo size={36} />
+          <Link to="/" className="flex items-center gap-1 flex-shrink-0 group">
+            <div className="transition-all hover:scale-105">
+              <img 
+                src={mainLogo} 
+                alt="Zentra AI" 
+                style={{ 
+                  width: '120px', 
+                  height: 'auto',
+                  objectFit: 'contain', 
+                  filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.2))' 
+                }} 
+              />
             </div>
-            <span className="font-bold text-xl tracking-tight">
-              Zen<span className="text-[#2ECAD5]">tra</span>
-            </span>
+            <div className="flex flex-col justify-center -ml-4">
+              <span className="text-3xl font-extrabold tracking-tight">
+                zentra<span className="text-emerald-400">.</span><span className="text-transparent bg-clip-text bg-gradient-to-r from-[#2ECAD5] to-blue-500">ai</span>
+              </span>
+            </div>
           </Link>
 
           {/* Desktop nav */}
@@ -36,7 +47,7 @@ export default function Navbar() {
                 to={link.to}
                 className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                   location.pathname === link.to
-                    ? 'bg-gradient-to-r from-[#2ECAD5] to-[#22a8b2] text-[#0D1F3C] shadow-lg shadow-[#2ECAD5]/20'
+                    ? 'bg-gradient-to-r from-emerald-400 to-blue-500 text-white shadow-lg shadow-emerald-400/20'
                     : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`}
               >

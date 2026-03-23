@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import BodegaLogo from '../components/BodegaLogo';
+import mainLogo from '../assets/zentra_main_logo.png';
 
 const valueProps = [
   {
@@ -55,21 +56,21 @@ export default function Landing() {
         <div className="max-w-5xl mx-auto text-center relative z-10">
           <div className="inline-flex items-center gap-2 glass rounded-full px-5 py-2.5 mb-8 text-sm text-[#2ECAD5] font-medium animate-fade-in-up">
             <span className="w-2 h-2 bg-[#2ECAD5] rounded-full animate-pulse" />
-            🇨🇱 Marketplace gastronomico para Chile
+            🇨🇱 La infrastructura de abastecimiento para el food service
           </div>
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-[1.1] mb-6 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-            Conecta con los mejores{' '}
-            <span className="gradient-text">proveedores de insumos</span>{' '}
-            gastronomicos 🍽️
+            GESTIONA, CONECTA Y OPTIMIZA{' '}
+            <span className="gradient-text">PROVEEDORES</span>{' '}
+            EN UN SOLO LUGAR
           </h1>
           <p className="text-lg md:text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
             La plataforma que une a restaurantes, pastelerias y hoteles de Chile con
-            proveedores verificados de insumos alimentarios 🧀, carnes 🥩, harinas 🌾 y mas.
+            proveedores verificados de insumos alimentarios, carnes, harinas y mas.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
             <Link
               to="/registro-proveedor"
-              className="bg-gradient-to-r from-[#2ECAD5] to-[#22a8b2] hover:from-[#22a8b2] hover:to-[#1a9aa3] text-[#0D1F3C] font-bold px-8 py-4 rounded-xl text-lg transition-all hover:scale-[1.02] shadow-xl shadow-[#2ECAD5]/20 hover:shadow-[#2ECAD5]/30"
+              className="bg-gradient-to-r from-emerald-400 to-blue-500 hover:from-emerald-500 hover:to-blue-600 text-[#0D1F3C] font-bold px-8 py-4 rounded-xl text-lg transition-all hover:scale-[1.02] shadow-xl shadow-emerald-400/20 hover:shadow-emerald-400/30"
             >
               🏪 Soy Proveedor
             </Link>
@@ -152,8 +153,8 @@ export default function Landing() {
               <div className="relative">
                 <div className="absolute -inset-6 rounded-3xl bg-[#2ECAD5]/10 animate-ping-slow" />
                 <div className="absolute -inset-3 rounded-2xl border border-[#2ECAD5]/20 animate-rotate-slow" />
-                <div className="relative w-28 h-28 bg-gradient-to-br from-[#2ECAD5] to-[#1BA8B2] rounded-2xl flex flex-col items-center justify-center shadow-2xl shadow-[#2ECAD5]/30 z-10 gap-1 p-2">
-                  <BodegaLogo size={48} />
+                <div className="relative w-28 h-28 bg-gradient-to-br from-[#2ECAD5] to-[#1BA8B2] rounded-2xl flex flex-col items-center justify-center shadow-2xl shadow-emerald-400/30 z-10 gap-1 p-2">
+                  <img src={mainLogo} alt="Zentra B2B Hub" className="w-16 h-auto drop-shadow-md" />
                   <span className="text-[#0D1F3C] font-black text-[9px] leading-none uppercase tracking-wider">B2B Hub</span>
                 </div>
               </div>
@@ -217,7 +218,7 @@ export default function Landing() {
               <div className="w-px h-8 bg-gradient-to-b from-indigo-500/50 to-[#2ECAD5]/50" />
             </div>
             <div className="glass rounded-2xl p-5 flex flex-col items-center gap-2 border border-[#2ECAD5]/25">
-              <BodegaLogo size={48} />
+              <img src={mainLogo} alt="Zentra B2B Hub" className="w-16 h-auto drop-shadow-md" />
               <div className="text-sm font-bold text-[#2ECAD5]">Zentra</div>
               <div className="text-xs text-gray-400">Hub B2B inteligente 🔗</div>
             </div>
@@ -297,7 +298,7 @@ export default function Landing() {
                   <div className="relative w-20 h-20 bg-[#0D1F3C] rounded-2xl flex items-center justify-center text-3xl">
                     {item.emoji}
                   </div>
-                  <div className="absolute -top-2 -right-2 w-7 h-7 bg-gradient-to-r from-[#2ECAD5] to-[#22a8b2] rounded-lg flex items-center justify-center text-[#0D1F3C] font-bold text-xs shadow-lg">
+                  <div className="absolute -top-2 -right-2 w-7 h-7 bg-gradient-to-r from-emerald-400 to-blue-500 rounded-lg flex items-center justify-center text-[#0D1F3C] font-bold text-xs shadow-lg">
                     {item.step}
                   </div>
                 </div>
@@ -367,7 +368,7 @@ export default function Landing() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               to="/registro-proveedor"
-              className="bg-gradient-to-r from-[#2ECAD5] to-[#22a8b2] text-[#0D1F3C] font-bold px-8 py-4 rounded-xl text-lg transition-all hover:scale-[1.02] shadow-xl shadow-[#2ECAD5]/20"
+              className="bg-gradient-to-r from-emerald-400 to-blue-500 text-white font-bold px-8 py-4 rounded-xl text-lg transition-all hover:scale-[1.02] shadow-xl shadow-emerald-400/20"
             >
               🏪 Registrar mi empresa
             </Link>

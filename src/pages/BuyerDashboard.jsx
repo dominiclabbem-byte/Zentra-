@@ -11,6 +11,23 @@ const statusColors = {
   '3 ofertas recibidas': 'bg-emerald-50 text-emerald-600 border border-emerald-100',
 };
 
+const initialBuyerProfile = {
+  companyName: 'Pasteleria Mozart Ltda.',
+  initials: 'PM',
+  description: 'Pasteleria y reposteria gourmet',
+  rut: '72.345.678-9',
+  city: 'Santiago, Chile',
+  address: 'Av. Italia 1580, Nunoa',
+  businessType: 'Pasteleria y reposteria',
+  monthlyVolume: 'Aprox. 2.000 kg/mes',
+  email: 'compras@pasteleriamozart.cl',
+  phone: '+56 2 2987 6543',
+  whatsapp: '+56 9 1234 5678',
+  instagram: '@pasteleriamozart',
+  categories: ['Pasteleria'],
+  frequentProducts: ['Harina extra fina', 'Chocolate cobertura', 'Crema vegetal', 'Mantequilla', 'Azucar flor', 'Frambuesa IQF', 'Levadura fresca'],
+};
+
 export default function BuyerDashboard() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -23,6 +40,11 @@ export default function BuyerDashboard() {
   const [catalogFilter, setCatalogFilter] = useState('Todos');
   const [catalogSearch, setCatalogSearch] = useState('');
   const [viewingSupplier, setViewingSupplier] = useState(null);
+  const [buyerProfile, setBuyerProfile] = useState(initialBuyerProfile);
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
+  const [profileForm, setProfileForm] = useState(initialBuyerProfile);
+  const [newCategory, setNewCategory] = useState('');
+  const [newProduct, setNewProduct] = useState('');
   const [quoteForm, setQuoteForm] = useState({
     product: '',
     quantity: '',
@@ -35,6 +57,42 @@ export default function BuyerDashboard() {
     setShowModal(false);
     setToast({ message: 'Cotizacion enviada! Recibiras ofertas en menos de 24hrs.', type: 'success' });
     setQuoteForm({ product: '', quantity: '', unit: 'kg', deliveryDate: '' });
+  };
+
+  const openEditProfile = () => {
+    setProfileForm({ ...buyerProfile });
+    setEditProfileOpen(true);
+  };
+
+  const handleProfileSave = (e) => {
+    e.preventDefault();
+    setBuyerProfile({ ...profileForm });
+    setEditProfileOpen(false);
+    setToast({ message: 'Perfil actualizado exitosamente', type: 'success' });
+  };
+
+  const handleAddCategory = () => {
+    const cat = newCategory.trim();
+    if (cat && !profileForm.categories.includes(cat)) {
+      setProfileForm({ ...profileForm, categories: [...profileForm.categories, cat] });
+      setNewCategory('');
+    }
+  };
+
+  const handleRemoveCategory = (cat) => {
+    setProfileForm({ ...profileForm, categories: profileForm.categories.filter((c) => c !== cat) });
+  };
+
+  const handleAddProduct = () => {
+    const prod = newProduct.trim();
+    if (prod && !profileForm.frequentProducts.includes(prod)) {
+      setProfileForm({ ...profileForm, frequentProducts: [...profileForm.frequentProducts, prod] });
+      setNewProduct('');
+    }
+  };
+
+  const handleRemoveProduct = (prod) => {
+    setProfileForm({ ...profileForm, frequentProducts: profileForm.frequentProducts.filter((p) => p !== prod) });
   };
 
   return (
@@ -114,6 +172,226 @@ export default function BuyerDashboard() {
         </Modal>
       )}
 
+      {editProfileOpen && (
+        <Modal title="Editar perfil" onClose={() => setEditProfileOpen(false)}>
+          <form onSubmit={handleProfileSave} className="space-y-5 max-h-[70vh] overflow-y-auto pr-1">
+            {/* Company info */}
+            <div>
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Informacion del negocio</h4>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Razon social</label>
+                  <input
+                    type="text"
+                    required
+                    value={profileForm.companyName}
+                    onChange={(e) => setProfileForm({ ...profileForm, companyName: e.target.value })}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Descripcion</label>
+                  <input
+                    type="text"
+                    value={profileForm.description}
+                    onChange={(e) => setProfileForm({ ...profileForm, description: e.target.value })}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">RUT</label>
+                    <input
+                      type="text"
+                      value={profileForm.rut}
+                      onChange={(e) => setProfileForm({ ...profileForm, rut: e.target.value })}
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Ciudad</label>
+                    <input
+                      type="text"
+                      value={profileForm.city}
+                      onChange={(e) => setProfileForm({ ...profileForm, city: e.target.value })}
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Direccion</label>
+                  <input
+                    type="text"
+                    value={profileForm.address}
+                    onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de negocio</label>
+                    <input
+                      type="text"
+                      value={profileForm.businessType}
+                      onChange={(e) => setProfileForm({ ...profileForm, businessType: e.target.value })}
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Volumen mensual</label>
+                    <input
+                      type="text"
+                      value={profileForm.monthlyVolume}
+                      onChange={(e) => setProfileForm({ ...profileForm, monthlyVolume: e.target.value })}
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Contact */}
+            <div>
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Contacto</h4>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <input
+                    type="email"
+                    required
+                    value={profileForm.email}
+                    onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Telefono</label>
+                    <input
+                      type="tel"
+                      value={profileForm.phone}
+                      onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp</label>
+                    <input
+                      type="tel"
+                      value={profileForm.whatsapp}
+                      onChange={(e) => setProfileForm({ ...profileForm, whatsapp: e.target.value })}
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Instagram</label>
+                  <input
+                    type="text"
+                    value={profileForm.instagram}
+                    onChange={(e) => setProfileForm({ ...profileForm, instagram: e.target.value })}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Categories */}
+            <div>
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Categorias</h4>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {profileForm.categories.map((cat) => (
+                  <span key={cat} className="text-sm font-medium bg-[#f0fdfa] text-[#0D1F3C] border border-[#2ECAD5]/20 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                    {cat}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveCategory(cat)}
+                      className="text-gray-400 hover:text-red-500 transition-colors"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </span>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Nueva categoria..."
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCategory(); } }}
+                  className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddCategory}
+                  className="border border-[#2ECAD5] text-[#2ECAD5] font-semibold px-4 py-2.5 rounded-xl hover:bg-[#2ECAD5]/5 transition-all text-sm"
+                >
+                  Agregar
+                </button>
+              </div>
+            </div>
+
+            {/* Frequent products */}
+            <div>
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Productos frecuentes</h4>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {profileForm.frequentProducts.map((prod) => (
+                  <span key={prod} className="text-sm font-medium bg-[#f0fdfa] text-[#0D1F3C] border border-[#2ECAD5]/20 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                    {prod}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveProduct(prod)}
+                      className="text-gray-400 hover:text-red-500 transition-colors"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </span>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Nuevo producto..."
+                  value={newProduct}
+                  onChange={(e) => setNewProduct(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddProduct(); } }}
+                  className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddProduct}
+                  className="border border-[#2ECAD5] text-[#2ECAD5] font-semibold px-4 py-2.5 rounded-xl hover:bg-[#2ECAD5]/5 transition-all text-sm"
+                >
+                  Agregar
+                </button>
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setEditProfileOpen(false)}
+                className="flex-1 border border-gray-200 text-gray-600 font-medium py-3 rounded-xl hover:bg-gray-50 transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="flex-1 bg-gradient-to-r from-emerald-400 to-blue-500 text-white font-bold py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-emerald-400/20"
+              >
+                Guardar cambios
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
       {/* Supplier profile modal */}
       {viewingSupplier && (
         <div
@@ -136,7 +414,7 @@ export default function BuyerDashboard() {
 
             {/* Profile info */}
             <div className="px-6 pb-6 relative">
-              <div className="w-20 h-20 bg-gradient-to-br from-[#2ECAD5] to-[#22a8b2] rounded-2xl flex items-center justify-center text-white text-2xl font-extrabold border-4 border-white shadow-lg -mt-10 relative z-10">
+              <div className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-blue-500 rounded-2xl flex items-center justify-center text-white text-2xl font-extrabold border-4 border-white shadow-lg -mt-10 relative z-10">
                 {viewingSupplier.initials}
               </div>
               <div className="mt-3 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
@@ -144,7 +422,7 @@ export default function BuyerDashboard() {
                   <h2 className="text-xl font-extrabold text-[#0D1F3C]">{viewingSupplier.name}</h2>
                   <p className="text-gray-500 text-sm">{viewingSupplier.description}</p>
                   <div className="flex items-center gap-2 mt-2 flex-wrap">
-                    <span className="text-[10px] font-bold bg-gradient-to-r from-[#2ECAD5] to-[#22a8b2] text-[#0D1F3C] px-2.5 py-0.5 rounded-full uppercase">
+                    <span className="text-[10px] font-bold bg-gradient-to-r from-emerald-400 to-blue-500 text-white px-2.5 py-0.5 rounded-full uppercase">
                       Plan {viewingSupplier.plan}
                     </span>
                     {viewingSupplier.verified && (
@@ -161,7 +439,7 @@ export default function BuyerDashboard() {
                     setViewingSupplier(null);
                     setShowModal(true);
                   }}
-                  className="flex items-center gap-2 bg-gradient-to-r from-[#2ECAD5] to-[#22a8b2] text-[#0D1F3C] font-bold px-5 py-2.5 rounded-xl transition-all hover:shadow-lg hover:shadow-[#2ECAD5]/20 text-sm whitespace-nowrap"
+                  className="flex items-center gap-2 bg-gradient-to-r from-emerald-400 to-blue-500 text-white font-bold px-5 py-2.5 rounded-xl transition-all hover:shadow-lg hover:shadow-emerald-400/20 text-sm whitespace-nowrap"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -355,7 +633,7 @@ export default function BuyerDashboard() {
             )}
             <button
               onClick={() => setShowModal(true)}
-              className="flex items-center gap-2 bg-gradient-to-r from-[#2ECAD5] to-[#22a8b2] hover:shadow-lg hover:shadow-[#2ECAD5]/20 text-[#0D1F3C] font-bold px-6 py-3 rounded-xl transition-all whitespace-nowrap hover:scale-[1.02]"
+              className="flex items-center gap-2 bg-gradient-to-r from-emerald-400 to-blue-500 hover:shadow-lg hover:shadow-emerald-400/20 text-[#0D1F3C] font-bold px-6 py-3 rounded-xl transition-all whitespace-nowrap hover:scale-[1.02]"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -443,7 +721,7 @@ export default function BuyerDashboard() {
                   onClick={() => setCatalogFilter(cat)}
                   className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${
                     catalogFilter === cat
-                      ? 'bg-gradient-to-r from-[#2ECAD5] to-[#22a8b2] text-[#0D1F3C] shadow-md shadow-[#2ECAD5]/20'
+                      ? 'bg-gradient-to-r from-emerald-400 to-blue-500 text-white shadow-md shadow-emerald-400/20'
                       : 'bg-white border border-gray-100 text-gray-500 hover:border-[#2ECAD5]/30 hover:text-[#0D1F3C]'
                   }`}
                 >
@@ -560,15 +838,15 @@ export default function BuyerDashboard() {
                 <div className="w-24 h-24 bg-gradient-to-br from-[#0D1F3C] to-[#1a3260] rounded-2xl flex items-center justify-center text-[#2ECAD5] text-3xl font-extrabold border-4 border-white shadow-lg -mt-12 relative z-10">
                   {isSupplierBuying
                     ? supplierProfile.companyName.split(' ').map(w => w[0]).join('').slice(0, 2)
-                    : 'PM'}
+                    : buyerProfile.initials}
                 </div>
                 <div className="mt-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                   <div>
                     <h2 className="text-2xl font-extrabold text-[#0D1F3C]">
-                      {isSupplierBuying ? supplierProfile.companyName : 'Pasteleria Mozart'}
+                      {isSupplierBuying ? supplierProfile.companyName : buyerProfile.companyName}
                     </h2>
                     <p className="text-gray-500 text-sm mt-1">
-                      {isSupplierBuying ? supplierProfile.description : 'Pasteleria y reposteria gourmet'}
+                      {isSupplierBuying ? supplierProfile.description : buyerProfile.description}
                     </p>
                     <div className="flex items-center gap-3 mt-3 flex-wrap">
                       {isSupplierBuying ? (
@@ -583,7 +861,9 @@ export default function BuyerDashboard() {
                         </>
                       ) : (
                         <>
-                          <span className="text-xs font-semibold bg-indigo-50 text-indigo-600 border border-indigo-100 px-3 py-1 rounded-full">Pasteleria</span>
+                          {buyerProfile.categories.map((cat) => (
+                            <span key={cat} className="text-xs font-semibold bg-indigo-50 text-indigo-600 border border-indigo-100 px-3 py-1 rounded-full">{cat}</span>
+                          ))}
                           <span className="text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100 px-3 py-1 rounded-full flex items-center gap-1">
                             <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
                             Verificado
@@ -594,7 +874,7 @@ export default function BuyerDashboard() {
                     </div>
                   </div>
                   <button
-                    onClick={() => setToast({ message: 'Funcion de edicion de perfil proximamente disponible', type: 'info' })}
+                    onClick={openEditProfile}
                     className="flex items-center gap-2 border border-gray-200 text-gray-600 font-semibold px-5 py-2.5 rounded-xl hover:bg-gray-50 transition-all text-sm"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -660,12 +940,12 @@ export default function BuyerDashboard() {
                     { label: 'Direccion', value: supplierProfile.address },
                     { label: 'Giro', value: supplierProfile.giro },
                   ] : [
-                    { label: 'Razon social', value: 'Pasteleria Mozart Ltda.' },
-                    { label: 'RUT', value: '72.345.678-9' },
-                    { label: 'Ciudad', value: 'Santiago, Chile' },
-                    { label: 'Direccion', value: 'Av. Italia 1580, Nunoa' },
-                    { label: 'Tipo de negocio', value: 'Pasteleria y reposteria' },
-                    { label: 'Volumen mensual', value: 'Aprox. 2.000 kg/mes' },
+                    { label: 'Razon social', value: buyerProfile.companyName },
+                    { label: 'RUT', value: buyerProfile.rut },
+                    { label: 'Ciudad', value: buyerProfile.city },
+                    { label: 'Direccion', value: buyerProfile.address },
+                    { label: 'Tipo de negocio', value: buyerProfile.businessType },
+                    { label: 'Volumen mensual', value: buyerProfile.monthlyVolume },
                   ]).map((item) => (
                     <div key={item.label} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
                       <span className="text-sm text-gray-400">{item.label}</span>
@@ -706,22 +986,22 @@ export default function BuyerDashboard() {
                       </svg>
                     )},
                   ] : [
-                    { label: 'Email', value: 'compras@pasteleriamozart.cl', icon: (
+                    { label: 'Email', value: buyerProfile.email, icon: (
                       <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
                       </svg>
                     )},
-                    { label: 'Telefono', value: '+56 2 2987 6543', icon: (
+                    { label: 'Telefono', value: buyerProfile.phone, icon: (
                       <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
                       </svg>
                     )},
-                    { label: 'WhatsApp', value: '+56 9 1234 5678', icon: (
+                    { label: 'WhatsApp', value: buyerProfile.whatsapp, icon: (
                       <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
                       </svg>
                     )},
-                    { label: 'Instagram', value: '@pasteleriamozart', icon: (
+                    { label: 'Instagram', value: buyerProfile.instagram, icon: (
                       <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
                         <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
@@ -750,7 +1030,7 @@ export default function BuyerDashboard() {
                 Productos que compro frecuentemente
               </h3>
               <div className="flex flex-wrap gap-2">
-                {['Harina extra fina', 'Chocolate cobertura', 'Crema vegetal', 'Mantequilla', 'Azucar flor', 'Frambuesa IQF', 'Levadura fresca'].map((prod) => (
+                {buyerProfile.frequentProducts.map((prod) => (
                   <span key={prod} className="text-sm font-medium bg-[#f0fdfa] text-[#0D1F3C] border border-[#2ECAD5]/20 px-4 py-2 rounded-xl">
                     {prod}
                   </span>
