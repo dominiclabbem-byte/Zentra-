@@ -1,15 +1,29 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import mainLogo from '../assets/zentra_main_logo.png';
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const session = (() => { try { return JSON.parse(localStorage.getItem('zentra_session')); } catch { return null; } })();
+  const isLoggedIn = session?.loggedIn;
+
+  const handleLogout = () => {
+    localStorage.removeItem('zentra_session');
+    setMenuOpen(false);
+    navigate('/');
+  };
+
+  const handleChat = () => {
+    setMenuOpen(false);
+    const path = session?.role === 'proveedor' ? '/dashboard-proveedor' : '/dashboard-comprador';
+    navigate(path, { state: { activeTab: 'zchat' } });
+  };
 
   const navLinks = [
     { to: '/', label: 'Inicio' },
-    { to: '/registro-comprador', label: 'Soy Comprador' },
-    { to: '/registro-proveedor', label: 'Soy Proveedor' },
     { to: '/dashboard-comprador', label: 'Dashboard Comprador' },
     { to: '/dashboard-proveedor', label: 'Dashboard Proveedor' },
   ];
@@ -21,15 +35,10 @@ export default function Navbar() {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-1 flex-shrink-0 group">
             <div className="transition-all hover:scale-105">
-              <img 
-                src={mainLogo} 
-                alt="Zentra AI" 
-                style={{ 
-                  width: '120px', 
-                  height: 'auto',
-                  objectFit: 'contain', 
-                  filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.2))' 
-                }} 
+              <img
+                src={mainLogo}
+                alt="Zentra AI"
+                style={{ width: '120px', height: 'auto', objectFit: 'contain', filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.2))' }}
               />
             </div>
             <div className="flex flex-col justify-center -ml-4">
@@ -54,6 +63,24 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
+
+            {/* ZChat button */}
+            <button
+              onClick={handleChat}
+              title="ZChat"
+              className="w-9 h-9 flex items-center justify-center rounded-lg text-xl text-gray-400 hover:text-white hover:bg-white/5 transition-all duration-200"
+            >
+              💬
+            </button>
+
+            {isLoggedIn && (
+              <button
+                onClick={handleLogout}
+                className="px-3.5 py-2 rounded-lg text-sm font-medium text-red-400 hover:text-white hover:bg-red-500/10 transition-all duration-200"
+              >
+                Cerrar sesión
+              </button>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -62,7 +89,7 @@ export default function Navbar() {
             onClick={() => setMenuOpen(!menuOpen)}
             aria-label="Toggle menu"
           >
-            {menuOpen ? '\u2715' : '\u2630'}
+            {menuOpen ? '✕' : '☰'}
           </button>
         </div>
       </div>
@@ -85,6 +112,20 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
+            <button
+              onClick={handleChat}
+              className="block w-full text-left px-4 py-3 rounded-lg text-sm font-medium my-0.5 text-gray-400 hover:text-white hover:bg-white/5 transition-all"
+            >
+              💬 ZChat
+            </button>
+            {isLoggedIn && (
+              <button
+                onClick={handleLogout}
+                className="block w-full text-left px-4 py-3 rounded-lg text-sm font-medium my-0.5 text-red-400 hover:text-white hover:bg-red-500/10 transition-all"
+              >
+                Cerrar sesión
+              </button>
+            )}
           </div>
         </div>
       )}

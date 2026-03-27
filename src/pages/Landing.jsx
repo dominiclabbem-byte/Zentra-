@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import BodegaLogo from '../components/BodegaLogo';
 import mainLogo from '../assets/zentra_main_logo.png';
+import AuthChoiceModal from '../components/AuthChoiceModal';
 
 const valueProps = [
   {
@@ -34,24 +36,26 @@ const stats = [
 ];
 
 export default function Landing() {
+  const [authRole, setAuthRole] = useState(null);
+
   return (
     <div className="min-h-screen">
       {/* Hero */}
-      <section className="relative bg-[#0a1628] text-white py-24 px-4 overflow-hidden">
+      <section className="relative bg-[#0d2a4a] text-white py-24 px-4 overflow-hidden">
         {/* Background effects */}
         <div className="absolute inset-0 bg-grid opacity-50" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[#2ECAD5]/5 rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-indigo-500/5 rounded-full blur-[100px]" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[#2ECAD5]/8 rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-indigo-500/8 rounded-full blur-[100px]" />
 
         {/* Floating food emojis */}
-        <div className="absolute top-16 left-[8%] text-5xl animate-float opacity-20 select-none pointer-events-none" style={{ animationDelay: '0s' }}>🍓</div>
-        <div className="absolute top-36 right-[6%] text-4xl animate-float opacity-15 select-none pointer-events-none" style={{ animationDelay: '0.8s' }}>🥑</div>
-        <div className="absolute bottom-28 left-[12%] text-4xl animate-float opacity-15 select-none pointer-events-none" style={{ animationDelay: '1.5s' }}>🍊</div>
-        <div className="absolute bottom-16 right-[10%] text-5xl animate-float opacity-20 select-none pointer-events-none" style={{ animationDelay: '0.3s' }}>🫐</div>
-        <div className="absolute top-28 left-[22%] text-3xl animate-float opacity-10 select-none pointer-events-none" style={{ animationDelay: '1.2s' }}>🥦</div>
-        <div className="absolute bottom-36 right-[22%] text-3xl animate-float opacity-10 select-none pointer-events-none" style={{ animationDelay: '0.6s' }}>🍋</div>
-        <div className="absolute top-44 right-[18%] text-3xl animate-float opacity-10 select-none pointer-events-none" style={{ animationDelay: '2s' }}>🥝</div>
-        <div className="absolute bottom-44 left-[5%] text-3xl animate-float opacity-10 select-none pointer-events-none" style={{ animationDelay: '1.8s' }}>🍇</div>
+        <div className="absolute top-16 left-[8%] text-5xl animate-float opacity-20 select-none pointer-events-none" style={{ animationDelay: '0s' }}>🌾</div>
+        <div className="absolute top-36 right-[6%] text-4xl animate-float opacity-15 select-none pointer-events-none" style={{ animationDelay: '0.8s' }}>🧀</div>
+        <div className="absolute bottom-28 left-[12%] text-4xl animate-float opacity-15 select-none pointer-events-none" style={{ animationDelay: '1.5s' }}>🫒</div>
+        <div className="absolute bottom-16 right-[10%] text-5xl animate-float opacity-20 select-none pointer-events-none" style={{ animationDelay: '0.3s' }}>🍗</div>
+        <div className="absolute top-28 left-[22%] text-3xl animate-float opacity-10 select-none pointer-events-none" style={{ animationDelay: '1.2s' }}>🌽</div>
+        <div className="absolute bottom-36 right-[22%] text-3xl animate-float opacity-10 select-none pointer-events-none" style={{ animationDelay: '0.6s' }}>🍫</div>
+        <div className="absolute top-44 right-[18%] text-3xl animate-float opacity-10 select-none pointer-events-none" style={{ animationDelay: '2s' }}>🧈</div>
+        <div className="absolute bottom-44 left-[5%] text-3xl animate-float opacity-10 select-none pointer-events-none" style={{ animationDelay: '1.8s' }}>🌿</div>
 
         <div className="max-w-5xl mx-auto text-center relative z-10">
           <div className="inline-flex items-center gap-2 glass rounded-full px-5 py-2.5 mb-8 text-sm text-[#2ECAD5] font-medium animate-fade-in-up">
@@ -68,19 +72,20 @@ export default function Landing() {
             proveedores verificados de insumos alimentarios, carnes, harinas y mas.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-            <Link
-              to="/registro-proveedor"
+            <button
+              onClick={() => setAuthRole('proveedor')}
               className="bg-gradient-to-r from-emerald-400 to-blue-500 hover:from-emerald-500 hover:to-blue-600 text-[#0D1F3C] font-bold px-8 py-4 rounded-xl text-lg transition-all hover:scale-[1.02] shadow-xl shadow-emerald-400/20 hover:shadow-emerald-400/30"
             >
               🏪 Soy Proveedor
-            </Link>
-            <Link
-              to="/registro-comprador"
+            </button>
+            <button
+              onClick={() => setAuthRole('comprador')}
               className="glass hover:bg-white/10 text-white font-bold px-8 py-4 rounded-xl text-lg transition-all hover:scale-[1.02]"
             >
               🛒 Soy Comprador
-            </Link>
+            </button>
           </div>
+          {authRole && <AuthChoiceModal role={authRole} onClose={() => setAuthRole(null)} />}
 
           {/* Stats bar */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-16 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
@@ -95,10 +100,10 @@ export default function Landing() {
       </section>
 
       {/* B2B Connection Animation */}
-      <section className="py-20 px-4 bg-[#060e1a] text-white overflow-hidden relative">
+      <section className="py-20 px-4 bg-[#0d2a4a] text-white overflow-hidden relative">
         <div className="absolute inset-0 bg-grid opacity-20" />
-        <div className="absolute left-1/4 top-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/5 rounded-full blur-[120px]" />
-        <div className="absolute right-1/4 top-1/2 -translate-y-1/2 w-96 h-96 bg-[#2ECAD5]/5 rounded-full blur-[120px]" />
+        <div className="absolute left-1/4 top-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/10 rounded-full blur-[120px]" />
+        <div className="absolute right-1/4 top-1/2 -translate-y-1/2 w-96 h-96 bg-[#2ECAD5]/10 rounded-full blur-[120px]" />
 
         <div className="max-w-6xl mx-auto relative z-10">
           <div className="text-center mb-16">
@@ -252,7 +257,7 @@ export default function Landing() {
       </section>
 
       {/* Value propositions */}
-      <section className="py-20 px-4 bg-white relative">
+      <section className="py-20 px-4 bg-[#f0f6ff] relative">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
             <span className="inline-block text-[#2ECAD5] text-sm font-semibold uppercase tracking-widest mb-3">Ventajas</span>
@@ -263,7 +268,7 @@ export default function Landing() {
             {valueProps.map((vp) => (
               <div
                 key={vp.title}
-                className="bg-white border border-gray-100 rounded-2xl p-8 card-premium group"
+                className="bg-white/80 border border-blue-100 rounded-2xl p-8 card-premium group"
               >
                 <div className="w-14 h-14 bg-gradient-to-br from-[#2ECAD5]/10 to-[#2ECAD5]/5 rounded-2xl flex items-center justify-center text-3xl mb-5 group-hover:from-[#2ECAD5] group-hover:to-[#22a8b2] group-hover:scale-110 transition-all duration-300">
                   {vp.emoji}
@@ -279,7 +284,7 @@ export default function Landing() {
       </section>
 
       {/* How it works */}
-      <section className="py-20 px-4 bg-[#f8fafc] bg-grid">
+      <section className="py-20 px-4 bg-[#e8f0fb] bg-grid">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
             <span className="inline-block text-[#2ECAD5] text-sm font-semibold uppercase tracking-widest mb-3">Proceso</span>
@@ -311,7 +316,7 @@ export default function Landing() {
       </section>
 
       {/* Featured suppliers */}
-      <section className="py-20 px-4 bg-white">
+      <section className="py-20 px-4 bg-[#f5f9ff]">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
             <span className="inline-block text-[#2ECAD5] text-sm font-semibold uppercase tracking-widest mb-3">Partners</span>
@@ -322,7 +327,7 @@ export default function Landing() {
             {featuredSuppliers.map((s) => (
               <div
                 key={s.name}
-                className="border border-gray-100 rounded-2xl p-6 card-premium group"
+                className="bg-white border border-blue-100 rounded-2xl p-6 card-premium group"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="w-12 h-12 bg-gradient-to-br from-[#0D1F3C] to-[#1a3260] rounded-xl flex items-center justify-center text-2xl">
@@ -352,13 +357,13 @@ export default function Landing() {
       </section>
 
       {/* CTA bottom */}
-      <section className="relative bg-[#0a1628] text-white py-20 px-4 overflow-hidden">
+      <section className="relative bg-[#0d2a4a] text-white py-20 px-4 overflow-hidden">
         <div className="absolute inset-0 bg-grid opacity-30" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#2ECAD5]/5 rounded-full blur-[100px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#2ECAD5]/10 rounded-full blur-[100px]" />
 
         {/* Floating emojis in CTA */}
-        <div className="absolute top-8 left-[15%] text-3xl animate-float opacity-15 select-none pointer-events-none" style={{ animationDelay: '0.5s' }}>🍊</div>
-        <div className="absolute bottom-8 right-[15%] text-3xl animate-float opacity-15 select-none pointer-events-none" style={{ animationDelay: '1s' }}>🫐</div>
+        <div className="absolute top-8 left-[15%] text-3xl animate-float opacity-15 select-none pointer-events-none" style={{ animationDelay: '0.5s' }}>🌾</div>
+        <div className="absolute bottom-8 right-[15%] text-3xl animate-float opacity-15 select-none pointer-events-none" style={{ animationDelay: '1s' }}>🧀</div>
 
         <div className="max-w-3xl mx-auto text-center relative z-10">
           <h2 className="text-3xl md:text-4xl font-extrabold mb-4">🚀 Listo para empezar?</h2>
