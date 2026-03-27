@@ -4,7 +4,6 @@ const ELEVENLABS_API_KEY = import.meta.env.VITE_ELEVENLABS_API_KEY;
 const VOICE_ID = 'onwK4e9ZLuTAKqWW03F9';
 
 let currentAudio = null;
-let audioContext = null;
 let currentSource = null;
 
 export async function speakText(text, { onStart, onEnd } = {}) {
@@ -16,7 +15,9 @@ export async function speakText(text, { onStart, onEnd } = {}) {
 
 export function stopSpeaking() {
   if (currentSource) {
-    try { currentSource.stop(); } catch {}
+    try { currentSource.stop(); } catch {
+      // Ignore repeated stop attempts from browsers with partial WebAudio support.
+    }
     currentSource = null;
   }
   if (currentAudio) {

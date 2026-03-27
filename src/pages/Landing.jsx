@@ -69,6 +69,12 @@ export default function Landing() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
             <Link
+              to="/marketplace"
+              className="glass hover:bg-white/10 text-white font-bold px-8 py-4 rounded-xl text-lg transition-all hover:scale-[1.02]"
+            >
+              🔎 Explorar Marketplace
+            </Link>
+            <Link
               to="/registro-proveedor"
               className="bg-gradient-to-r from-emerald-400 to-blue-500 hover:from-emerald-500 hover:to-blue-600 text-[#0D1F3C] font-bold px-8 py-4 rounded-xl text-lg transition-all hover:scale-[1.02] shadow-xl shadow-emerald-400/20 hover:shadow-emerald-400/30"
             >
@@ -373,7 +379,7 @@ export default function Landing() {
               🏪 Registrar mi empresa
             </Link>
             <Link
-              to="/registro-comprador"
+              to="/marketplace"
               className="glass hover:bg-white/10 font-bold px-8 py-4 rounded-xl text-lg transition-all hover:scale-[1.02]"
             >
               🔍 Buscar proveedores

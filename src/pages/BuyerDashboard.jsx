@@ -1,14 +1,47 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Toast from '../components/Toast';
 import Modal from '../components/Modal';
-import { quoteRequests, priceAlerts, supplierProfiles, supplierProducts, categories as allCategories } from '../data/mockData';
+import { useAuth } from '../context/AuthContext';
+import {
+  BUSINESS_TYPE_OPTIONS,
+  CONTACT_METHOD_OPTIONS,
+  buildBuyerProfileView,
+  buildSupplierProfileView,
+  formatCLP,
+  formatMemberSince,
+  formatPlanName,
+  getPlanKey,
+  normalizeUserRecord,
+} from '../lib/profileAdapters';
+import {
+  acceptOffer,
+  cancelQuoteRequest,
+  createQuoteRequest,
+  getBuyerStats,
+  getFavorites,
+  getProducts,
+  getPriceAlerts,
+  getPriceAlertSubscriptions,
+  getQuoteRequestsForBuyer,
+  getReviewsForUser,
+  getSupplierStats,
+  getSupplierProfile,
+  removePriceAlertSubscription,
+  subscribeToPriceAlert,
+  toggleFavorite,
+} from '../services/database';
+import { mapProductRecordToCard } from '../lib/productAdapters';
+import { formatQuoteDateTime, mapQuoteRequestRecord, sortQuoteOffersForBuyer } from '../lib/quoteAdapters';
 
 const units = ['kg', 'unidades', 'cajas'];
-
-const statusColors = {
-  'Recibiendo ofertas': 'bg-blue-50 text-blue-600 border border-blue-100',
-  '3 ofertas recibidas': 'bg-emerald-50 text-emerald-600 border border-emerald-100',
+const initialQuoteForm = {
+  product: '',
+  categoryId: '',
+  quantity: '',
+  unit: 'kg',
+  deliveryDate: '',
+  notes: '',
 };
 
 const initialBuyerProfile = {
@@ -18,64 +51,328 @@ const initialBuyerProfile = {
   rut: '72.345.678-9',
   city: 'Santiago, Chile',
   address: 'Av. Italia 1580, Nunoa',
-  businessType: 'Pasteleria y reposteria',
+  businessType: 'Pasteleria',
+  businessTypeValue: 'pasteleria',
   monthlyVolume: 'Aprox. 2.000 kg/mes',
+  contactMethod: 'Email',
+  contactMethodValue: 'email',
   email: 'compras@pasteleriamozart.cl',
   phone: '+56 2 2987 6543',
   whatsapp: '+56 9 1234 5678',
-  instagram: '@pasteleriamozart',
   categories: ['Pasteleria'],
   frequentProducts: ['Harina extra fina', 'Chocolate cobertura', 'Crema vegetal', 'Mantequilla', 'Azucar flor', 'Frambuesa IQF', 'Levadura fresca'],
 };
 
+function takeSingle(value) {
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value ?? null;
+}
+
+function mapReviewRecord(review) {
+  const reviewer = takeSingle(review.users);
+
+  return {
+    id: review.id,
+    buyer: reviewer?.company_name ?? 'Comprador verificado',
+    city: reviewer?.city ?? '',
+    rating: Number(review.rating) || 0,
+    comment: review.comment ?? '',
+    date: formatQuoteDateTime(review.created_at),
+  };
+}
+
+function mapFavoriteSupplier(favoriteRow) {
+  const supplierRecord = normalizeUserRecord(takeSingle(favoriteRow.users));
+  const supplierView = buildSupplierProfileView(supplierRecord);
+  const activeProducts = (supplierRecord?.products ?? []).filter((product) => product.status !== 'inactive');
+
+  return {
+    id: supplierRecord?.id,
+    initials: supplierView.initials,
+    name: supplierView.companyName,
+    description: supplierView.description,
+    city: supplierView.city,
+    categories: supplierView.categories,
+    verified: Boolean(supplierRecord?.verified),
+    plan: formatPlanName(getPlanKey(supplierRecord)),
+    responseRate: supplierView.responseRate ?? 0,
+    productCount: activeProducts.length,
+    savedAtLabel: formatQuoteDateTime(favoriteRow.created_at),
+  };
+}
+
+function mapPriceAlertRecord(alert) {
+  const product = takeSingle(alert.products);
+  const supplier = takeSingle(product?.users);
+  const category = takeSingle(product?.categories);
+  const isDown = alert.direction === 'down';
+
+  return {
+    id: alert.id,
+    productName: product?.name ?? 'Producto',
+    supplierName: supplier?.company_name ?? 'Proveedor',
+    categoryName: category?.name ?? 'Sin categoria',
+    previousPrice: formatCLP(alert.old_price),
+    currentPrice: formatCLP(alert.new_price),
+    change: alert.direction ?? 'down',
+    changeLabel: isDown ? 'Bajo' : 'Subio',
+    impactLabel: isDown ? 'Mejor oportunidad' : 'Precio al alza',
+    dateLabel: formatQuoteDateTime(alert.created_at),
+  };
+}
+
 export default function BuyerDashboard() {
   const location = useLocation();
   const navigate = useNavigate();
-  const supplierProfile = location.state?.supplierProfile || null;
-  const isSupplierBuying = !!supplierProfile;
+  const { currentUser, categories: categoryOptions, saveBuyerProfile } = useAuth();
+  const liveBuyerProfile = currentUser ? buildBuyerProfileView(currentUser) : initialBuyerProfile;
+  const buyerProfile = liveBuyerProfile;
+  const memberSinceLabel = formatMemberSince(currentUser?.created_at);
 
   const [toast, setToast] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [activeTab, setActiveTab] = useState('catalog');
   const [catalogFilter, setCatalogFilter] = useState('Todos');
   const [catalogSearch, setCatalogSearch] = useState('');
+  const [catalogLoading, setCatalogLoading] = useState(false);
+  const [catalogProducts, setCatalogProducts] = useState([]);
   const [viewingSupplier, setViewingSupplier] = useState(null);
-  const [buyerProfile, setBuyerProfile] = useState(initialBuyerProfile);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [profileForm, setProfileForm] = useState(initialBuyerProfile);
-  const [newCategory, setNewCategory] = useState('');
-  const [newProduct, setNewProduct] = useState('');
-  const [quoteForm, setQuoteForm] = useState({
-    product: '',
-    quantity: '',
-    unit: 'kg',
-    deliveryDate: '',
+  const [selectedCategoryId, setSelectedCategoryId] = useState('');
+  const [quoteForm, setQuoteForm] = useState(initialQuoteForm);
+  const [quotesLoading, setQuotesLoading] = useState(false);
+  const [buyerQuotes, setBuyerQuotes] = useState([]);
+  const [selectedQuote, setSelectedQuote] = useState(null);
+  const [isSubmittingQuote, setIsSubmittingQuote] = useState(false);
+  const [quoteActionId, setQuoteActionId] = useState('');
+  const [buyerStats, setBuyerStats] = useState({ totalOrders: 0, rating: 0, favoriteSuppliers: 0 });
+  const [favoriteSuppliers, setFavoriteSuppliers] = useState([]);
+  const [favoritesLoading, setFavoritesLoading] = useState(false);
+  const [alertSubscriptions, setAlertSubscriptions] = useState([]);
+  const [buyerAlerts, setBuyerAlerts] = useState([]);
+  const [alertsLoading, setAlertsLoading] = useState(false);
+  const [favoriteActionId, setFavoriteActionId] = useState('');
+  const [subscriptionActionId, setSubscriptionActionId] = useState('');
+  const [isSavingAlertSubscription, setIsSavingAlertSubscription] = useState(false);
+  const [alertForm, setAlertForm] = useState({
+    mode: 'category',
+    categoryId: '',
+    productId: '',
   });
 
-  const handleQuoteSubmit = (e) => {
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadCatalog() {
+      setCatalogLoading(true);
+
+      try {
+        const data = await getProducts();
+        if (!cancelled) {
+          setCatalogProducts(data.map((product) => mapProductRecordToCard(product)));
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setToast({ message: error.message || 'No se pudo cargar el catalogo.', type: 'error' });
+        }
+      } finally {
+        if (!cancelled) {
+          setCatalogLoading(false);
+        }
+      }
+    }
+
+    loadCatalog();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const loadBuyerQuotes = useCallback(async () => {
+    if (!currentUser?.id) {
+      setBuyerQuotes([]);
+      return [];
+    }
+
+    setQuotesLoading(true);
+
+    try {
+      const data = await getQuoteRequestsForBuyer(currentUser.id);
+      const mappedQuotes = data.map((quote) => mapQuoteRequestRecord(quote));
+      setBuyerQuotes(mappedQuotes);
+      return mappedQuotes;
+    } catch (error) {
+      setToast({ message: error.message || 'No se pudieron cargar tus cotizaciones.', type: 'error' });
+      return [];
+    } finally {
+      setQuotesLoading(false);
+    }
+  }, [currentUser?.id]);
+
+  useEffect(() => {
+    loadBuyerQuotes();
+  }, [loadBuyerQuotes]);
+
+  const loadBuyerWorkspace = useCallback(async () => {
+    if (!currentUser?.id) {
+      setBuyerStats({ totalOrders: 0, rating: 0, favoriteSuppliers: 0 });
+      setFavoriteSuppliers([]);
+      setAlertSubscriptions([]);
+      setBuyerAlerts([]);
+      setFavoritesLoading(false);
+      setAlertsLoading(false);
+      return;
+    }
+
+    setFavoritesLoading(true);
+    setAlertsLoading(true);
+
+    try {
+      const [statsData, favoritesData, subscriptionsData, alertsData] = await Promise.all([
+        getBuyerStats(currentUser.id),
+        getFavorites(currentUser.id),
+        getPriceAlertSubscriptions(currentUser.id),
+        getPriceAlerts(currentUser.id),
+      ]);
+
+      setBuyerStats(statsData);
+      setFavoriteSuppliers((favoritesData ?? []).map((favorite) => mapFavoriteSupplier(favorite)).filter((favorite) => favorite.id));
+      setAlertSubscriptions(subscriptionsData ?? []);
+      setBuyerAlerts((alertsData ?? []).map((alert) => mapPriceAlertRecord(alert)));
+    } catch (error) {
+      setToast({ message: error.message || 'No se pudo cargar tu workspace buyer.', type: 'error' });
+    } finally {
+      setFavoritesLoading(false);
+      setAlertsLoading(false);
+    }
+  }, [currentUser?.id]);
+
+  useEffect(() => {
+    loadBuyerWorkspace();
+  }, [loadBuyerWorkspace]);
+
+  useEffect(() => {
+    if (!location.state?.openQuoteModal) {
+      return;
+    }
+
+    setShowModal(true);
+    setQuoteForm(initialQuoteForm);
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, location.state, navigate]);
+
+  const openQuoteModal = useCallback((prefill = {}) => {
+    setQuoteForm({ ...initialQuoteForm, ...prefill });
+    setShowModal(true);
+  }, []);
+
+  const enrichQuoteForBuyer = useCallback(async (quote) => {
+    if (!quote) return null;
+
+    const supplierIds = [...new Set(quote.offers.map((offer) => offer.supplierId).filter(Boolean))];
+    const statsEntries = await Promise.all(
+      supplierIds.map(async (supplierId) => {
+        try {
+          const stats = await getSupplierStats(supplierId);
+          return [supplierId, stats];
+        } catch {
+          return [supplierId, null];
+        }
+      }),
+    );
+
+    const statsMap = new Map(statsEntries);
+    const offers = sortQuoteOffersForBuyer(
+      quote.offers.map((offer) => ({
+        ...offer,
+        supplierRating: Number(statsMap.get(offer.supplierId)?.rating ?? 0),
+      })),
+    );
+
+    return {
+      ...quote,
+      offers,
+    };
+  }, []);
+
+  const handleQuoteSubmit = async (e) => {
     e.preventDefault();
-    setShowModal(false);
-    setToast({ message: 'Cotizacion enviada! Recibiras ofertas en menos de 24hrs.', type: 'success' });
-    setQuoteForm({ product: '', quantity: '', unit: 'kg', deliveryDate: '' });
+
+    if (!currentUser?.id) {
+      setToast({ message: 'Necesitas iniciar sesion para crear una cotizacion.', type: 'error' });
+      return;
+    }
+
+    setIsSubmittingQuote(true);
+
+    try {
+      const savedQuote = mapQuoteRequestRecord(await createQuoteRequest({
+        buyer_id: currentUser.id,
+        requester_id: currentUser.id,
+        product_name: quoteForm.product,
+        category_id: quoteForm.categoryId || null,
+        quantity: Number(quoteForm.quantity),
+        unit: quoteForm.unit,
+        delivery_date: quoteForm.deliveryDate,
+        notes: quoteForm.notes || null,
+      }));
+
+      setBuyerQuotes((currentQuotes) => [savedQuote, ...currentQuotes]);
+      setShowModal(false);
+      setActiveTab('dashboard');
+      setQuoteForm(initialQuoteForm);
+      setToast({ message: 'Cotizacion creada. Ahora los proveedores pueden ofertar.', type: 'success' });
+    } catch (error) {
+      setToast({ message: error.message || 'No se pudo crear la cotizacion.', type: 'error' });
+    } finally {
+      setIsSubmittingQuote(false);
+    }
   };
 
   const openEditProfile = () => {
     setProfileForm({ ...buyerProfile });
+    setSelectedCategoryId('');
     setEditProfileOpen(true);
   };
 
-  const handleProfileSave = (e) => {
+  const handleProfileSave = async (e) => {
     e.preventDefault();
-    setBuyerProfile({ ...profileForm });
-    setEditProfileOpen(false);
-    setToast({ message: 'Perfil actualizado exitosamente', type: 'success' });
+
+    try {
+      const categoryIds = categoryOptions
+        .filter((category) => profileForm.categories.includes(category.name))
+        .map((category) => category.id);
+
+      const updatedUser = await saveBuyerProfile({
+        companyName: profileForm.companyName,
+        rut: profileForm.rut,
+        city: profileForm.city,
+        address: profileForm.address,
+        description: profileForm.description,
+        businessType: profileForm.businessTypeValue || profileForm.businessType,
+        monthlyVolume: profileForm.monthlyVolume,
+        contactMethod: profileForm.contactMethodValue || 'email',
+        categoryIds,
+        phone: profileForm.phone,
+        whatsapp: profileForm.whatsapp,
+      });
+
+      const nextProfile = buildBuyerProfileView(updatedUser);
+      setProfileForm(nextProfile);
+      setEditProfileOpen(false);
+      setToast({ message: 'Perfil actualizado exitosamente', type: 'success' });
+    } catch (error) {
+      setToast({ message: error.message || 'No se pudo actualizar el perfil.', type: 'error' });
+    }
   };
 
   const handleAddCategory = () => {
-    const cat = newCategory.trim();
-    if (cat && !profileForm.categories.includes(cat)) {
-      setProfileForm({ ...profileForm, categories: [...profileForm.categories, cat] });
-      setNewCategory('');
+    const fallbackCategoryId = categoryOptions.find((category) => !profileForm.categories.includes(category.name))?.id;
+    const categoryName = categoryOptions.find((category) => category.id === (selectedCategoryId || fallbackCategoryId))?.name;
+    if (categoryName && !profileForm.categories.includes(categoryName)) {
+      setProfileForm({ ...profileForm, categories: [...profileForm.categories, categoryName] });
     }
   };
 
@@ -83,17 +380,380 @@ export default function BuyerDashboard() {
     setProfileForm({ ...profileForm, categories: profileForm.categories.filter((c) => c !== cat) });
   };
 
-  const handleAddProduct = () => {
-    const prod = newProduct.trim();
-    if (prod && !profileForm.frequentProducts.includes(prod)) {
-      setProfileForm({ ...profileForm, frequentProducts: [...profileForm.frequentProducts, prod] });
-      setNewProduct('');
+  const openSupplierProfile = async (supplierId, options = {}) => {
+    try {
+      const [supplierRaw, supplierStats, supplierReviews] = await Promise.all([
+        getSupplierProfile(supplierId),
+        getSupplierStats(supplierId),
+        getReviewsForUser(supplierId),
+      ]);
+
+      const supplierRecord = normalizeUserRecord(supplierRaw);
+      const supplierView = buildSupplierProfileView(supplierRecord);
+
+      setViewingSupplier({
+        id: supplierRecord.id,
+        initials: supplierView.initials,
+        name: supplierView.companyName,
+        description: supplierView.description,
+        plan: formatPlanName(getPlanKey(supplierRecord)),
+        verified: supplierRecord?.verified,
+        memberSince: formatMemberSince(supplierRecord?.created_at),
+        rating: Number(supplierStats?.rating ?? 0),
+        totalSales: supplierStats?.totalSales ?? 0,
+        responseRate: `${supplierView.responseRate || 0}%`,
+        recurringClients: supplierStats?.recurringClients ?? 0,
+        rut: supplierView.rut,
+        city: supplierView.city,
+        address: supplierView.address,
+        giro: supplierView.giro,
+        email: supplierView.email,
+        phone: supplierView.phone,
+        whatsapp: supplierView.whatsapp,
+        website: supplierView.website,
+        categories: supplierView.categories,
+        categoryItems: supplierRecord?.supplierCategories ?? [],
+        requestProductName: options.requestProductName ?? '',
+        requestCategoryId: options.requestCategoryId ?? '',
+        products: (supplierRecord?.products ?? [])
+          .filter((item) => item.status !== 'inactive')
+          .map((item) => mapProductRecordToCard(item)),
+        reviews: (supplierReviews ?? []).map((review) => mapReviewRecord(review)),
+        isFavorite: favoriteSuppliers.some((supplier) => supplier.id === supplierRecord.id),
+      });
+    } catch (error) {
+      setToast({ message: error.message || 'No se pudo cargar el proveedor.', type: 'error' });
     }
   };
 
-  const handleRemoveProduct = (prod) => {
-    setProfileForm({ ...profileForm, frequentProducts: profileForm.frequentProducts.filter((p) => p !== prod) });
+  const openSupplierFromProduct = async (product) => {
+    await openSupplierProfile(product.supplierId, {
+      requestProductName: product.name,
+      requestCategoryId: product.categoryId ?? '',
+    });
   };
+
+  const handleOpenQuoteOffers = useCallback(async (quote) => {
+    setSelectedQuote(quote);
+    const refreshedQuotes = await loadBuyerQuotes();
+    const nextQuote = refreshedQuotes.find((item) => item.id === quote.id) ?? quote;
+    setSelectedQuote(await enrichQuoteForBuyer(nextQuote));
+  }, [enrichQuoteForBuyer, loadBuyerQuotes]);
+
+  const handleAcceptQuoteOffer = async (offerId) => {
+    if (!selectedQuote) return;
+
+    setQuoteActionId(offerId);
+
+    try {
+      await acceptOffer(offerId);
+      const refreshedQuotes = await loadBuyerQuotes();
+      const nextQuote = refreshedQuotes.find((quote) => quote.id === selectedQuote.id) ?? null;
+      setSelectedQuote(await enrichQuoteForBuyer(nextQuote));
+      await loadBuyerWorkspace();
+      setToast({ message: 'Oferta aceptada. La cotizacion quedo cerrada.', type: 'success' });
+    } catch (error) {
+      setToast({ message: error.message || 'No se pudo aceptar la oferta.', type: 'error' });
+    } finally {
+      setQuoteActionId('');
+    }
+  };
+
+  const handleCancelBuyerQuote = useCallback(async (quoteId) => {
+    setQuoteActionId(quoteId);
+
+    try {
+      await cancelQuoteRequest(quoteId);
+      const refreshedQuotes = await loadBuyerQuotes();
+
+      if (selectedQuote?.id === quoteId) {
+        setSelectedQuote(await enrichQuoteForBuyer(refreshedQuotes.find((quote) => quote.id === quoteId) ?? null));
+      }
+
+      setToast({ message: 'Cotizacion cancelada.', type: 'success' });
+    } catch (error) {
+      setToast({ message: error.message || 'No se pudo cancelar la cotizacion.', type: 'error' });
+    } finally {
+      setQuoteActionId('');
+    }
+  }, [enrichQuoteForBuyer, loadBuyerQuotes, selectedQuote?.id]);
+
+  const handleToggleFavorite = async (supplierId) => {
+    if (!currentUser?.id) {
+      setToast({ message: 'Necesitas iniciar sesion para guardar favoritos.', type: 'error' });
+      return;
+    }
+
+    setFavoriteActionId(supplierId);
+
+    try {
+      const isFavorite = await toggleFavorite(currentUser.id, supplierId);
+      await loadBuyerWorkspace();
+
+      setViewingSupplier((currentSupplier) => (
+        currentSupplier?.id === supplierId
+          ? { ...currentSupplier, isFavorite }
+          : currentSupplier
+      ));
+
+      setToast({
+        message: isFavorite ? 'Proveedor agregado a favoritos.' : 'Proveedor removido de favoritos.',
+        type: 'success',
+      });
+    } catch (error) {
+      setToast({ message: error.message || 'No se pudo actualizar favoritos.', type: 'error' });
+    } finally {
+      setFavoriteActionId('');
+    }
+  };
+
+  const handleSubscribeToAlert = async (payload) => {
+    if (!currentUser?.id) {
+      setToast({ message: 'Necesitas iniciar sesion para seguir alertas.', type: 'error' });
+      return;
+    }
+
+    setIsSavingAlertSubscription(true);
+
+    try {
+      await subscribeToPriceAlert(currentUser.id, payload);
+      await loadBuyerWorkspace();
+      setAlertForm({ mode: 'category', categoryId: '', productId: '' });
+      setToast({ message: 'Alerta de precio activada.', type: 'success' });
+    } catch (error) {
+      setToast({ message: error.message || 'No se pudo activar la alerta.', type: 'error' });
+    } finally {
+      setIsSavingAlertSubscription(false);
+    }
+  };
+
+  const handleCreateAlertSubscription = async (event) => {
+    event.preventDefault();
+
+    const payload = alertForm.mode === 'product'
+      ? { productId: alertForm.productId || null, categoryId: null }
+      : { productId: null, categoryId: alertForm.categoryId || null };
+
+    await handleSubscribeToAlert(payload);
+  };
+
+  const handleRemoveAlertSubscription = async (subscriptionId) => {
+    if (!currentUser?.id) {
+      setToast({ message: 'Necesitas iniciar sesion para editar alertas.', type: 'error' });
+      return;
+    }
+
+    setSubscriptionActionId(subscriptionId);
+
+    try {
+      await removePriceAlertSubscription(subscriptionId, currentUser.id);
+      await loadBuyerWorkspace();
+      setToast({ message: 'Alerta removida.', type: 'success' });
+    } catch (error) {
+      setToast({ message: error.message || 'No se pudo remover la alerta.', type: 'error' });
+    } finally {
+      setSubscriptionActionId('');
+    }
+  };
+
+  const handleFollowCurrentSupplierCategory = async () => {
+    if (!viewingSupplier) return;
+
+    const categoryId = viewingSupplier.requestCategoryId || viewingSupplier.categoryItems?.[0]?.id || '';
+    if (!categoryId) {
+      setToast({ message: 'Este proveedor no tiene una categoria asociada para seguir alertas.', type: 'error' });
+      return;
+    }
+
+    await handleSubscribeToAlert({ categoryId, productId: null });
+  };
+
+  const quoteSummary = useMemo(() => {
+    const activeQuotes = buyerQuotes.filter((quote) => ['open', 'in_review'].includes(quote.status));
+    const totalOffersReceived = buyerQuotes.reduce((total, quote) => total + quote.offerCount, 0);
+    const activeSuppliers = new Set(
+      buyerQuotes
+        .flatMap((quote) => quote.offers)
+        .map((offer) => offer.supplierId)
+        .filter(Boolean),
+    ).size;
+    const closedQuotes = buyerQuotes.filter((quote) => quote.status === 'closed').length;
+    const acceptedOffers = buyerQuotes
+      .flatMap((quote) => quote.offers
+        .filter((offer) => offer.status === 'accepted')
+        .map((offer) => ({
+          ...offer,
+          quoteId: quote.id,
+          quoteProductName: quote.productName,
+          quoteQuantityLabel: quote.quantityLabel,
+          quoteDeliveryDateLabel: quote.deliveryDateLabel,
+        })))
+      .sort((left, right) => left.priceValue - right.priceValue);
+
+    return {
+      activeQuotes,
+      totalOffersReceived,
+      activeSuppliers,
+      closedQuotes,
+      acceptedOffers,
+    };
+  }, [buyerQuotes]);
+
+  const catalogFilterOptions = useMemo(
+    () => ['Todos', ...categoryOptions.map((category) => category.name)],
+    [categoryOptions],
+  );
+
+  const filteredCatalogProducts = useMemo(() => {
+    const normalizedSearch = catalogSearch.trim().toLowerCase();
+
+    return catalogProducts.filter((product) => {
+      const matchCategory = catalogFilter === 'Todos' || product.category === catalogFilter;
+      const matchSearch = !normalizedSearch
+        || product.name.toLowerCase().includes(normalizedSearch)
+        || product.category.toLowerCase().includes(normalizedSearch);
+
+      return matchCategory && matchSearch;
+    });
+  }, [catalogFilter, catalogProducts, catalogSearch]);
+
+  const alertProductOptions = useMemo(
+    () => [...catalogProducts].sort((left, right) => left.name.localeCompare(right.name, 'es')),
+    [catalogProducts],
+  );
+
+  const availableProfileCategories = useMemo(
+    () => categoryOptions.filter((category) => !profileForm.categories.includes(category.name)),
+    [categoryOptions, profileForm.categories],
+  );
+
+  const activeQuotes = quoteSummary.activeQuotes;
+  const totalOffersReceived = quoteSummary.totalOffersReceived;
+  const activeSuppliers = quoteSummary.activeSuppliers;
+  const closedQuotes = quoteSummary.closedQuotes;
+  const acceptedOffers = quoteSummary.acceptedOffers;
+
+  const dashboardTabContent = useMemo(() => (
+    <div className="space-y-8 animate-fade-in">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {[
+          { label: 'Cotizaciones activas', value: activeQuotes.length, icon: (
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+            </svg>
+          )},
+          { label: 'Ofertas recibidas', value: totalOffersReceived, icon: (
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+            </svg>
+          )},
+          { label: 'Proveedores ofertando', value: activeSuppliers, icon: (
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+            </svg>
+          )},
+          { label: 'Cotizaciones cerradas', value: closedQuotes, icon: (
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m6 2.25a9 9 0 11-18 0 9 9 0 0118 0Z" />
+            </svg>
+          )},
+        ].map((s) => (
+          <div key={s.label} className="bg-white rounded-2xl border border-gray-100 p-5 card-premium">
+            <div className="w-9 h-9 bg-[#f8fafc] rounded-xl flex items-center justify-center text-gray-400 mb-3">
+              {s.icon}
+            </div>
+            <div className="text-2xl font-extrabold text-[#0D1F3C]">{s.value}</div>
+            <div className="text-xs text-gray-400 mt-1">{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      <div>
+        <h2 className="text-xl font-extrabold text-[#0D1F3C] mb-4">Cotizaciones activas</h2>
+        {quotesLoading ? (
+          <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center text-sm text-gray-400">
+            Cargando cotizaciones...
+          </div>
+        ) : buyerQuotes.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {buyerQuotes.map((quote) => {
+              const acceptedOffer = quote.offers.find((offer) => offer.status === 'accepted');
+
+              return (
+                <div key={quote.id} className="bg-white rounded-2xl border border-gray-100 p-5 card-premium">
+                  <div className="flex items-start justify-between mb-3 gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-[#2ECAD5]/10 to-[#2ECAD5]/5 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <svg className="w-5 h-5 text-[#2ECAD5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                      </svg>
+                    </div>
+                    <span className={`text-[10px] font-semibold px-3 py-1 rounded-full ${quote.statusClass}`}>
+                      {quote.statusLabel}
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-[#0D1F3C] mb-1">{quote.productName}</h3>
+                  <p className="text-sm text-gray-500">{quote.quantityLabel}</p>
+                  <p className="text-xs text-gray-400 mt-1">{quote.categoryName} / Entrega {quote.deliveryDateLabel}</p>
+                  <p className="text-xs text-gray-400 mt-2">{quote.createdAtLabel}</p>
+                  {acceptedOffer && (
+                    <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 px-3.5 py-3">
+                      <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-600">Oferta aceptada</div>
+                      <div className="text-sm font-bold text-[#0D1F3C] mt-1">{acceptedOffer.supplierName}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {acceptedOffer.priceLabel} / Lead time {acceptedOffer.estimatedLeadTime}
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex gap-2 mt-4">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenQuoteOffers(quote)}
+                      className="flex-1 text-sm text-[#2ECAD5] border border-[#2ECAD5]/30 hover:bg-[#2ECAD5]/5 font-semibold py-2.5 rounded-xl transition-all"
+                    >
+                      Ver ofertas
+                    </button>
+                    {['open', 'in_review'].includes(quote.status) && (
+                      <button
+                        type="button"
+                        onClick={() => handleCancelBuyerQuote(quote.id)}
+                        disabled={quoteActionId === quote.id}
+                        className="px-4 text-sm text-rose-600 border border-rose-200 hover:bg-rose-50 font-semibold py-2.5 rounded-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        {quoteActionId === quote.id ? '...' : 'Cancelar'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
+            <h3 className="text-lg font-bold text-[#0D1F3C]">Aun no creas tu primera RFQ</h3>
+            <p className="text-sm text-gray-400 mt-2">Publica una necesidad de compra y empieza a comparar ofertas reales.</p>
+            <button
+              type="button"
+              onClick={() => openQuoteModal()}
+              className="mt-5 bg-gradient-to-r from-emerald-400 to-blue-500 text-white font-bold px-5 py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-emerald-400/20"
+            >
+              Crear cotizacion
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  ), [
+    activeQuotes.length,
+    activeSuppliers,
+    buyerQuotes,
+    closedQuotes,
+    handleCancelBuyerQuote,
+    handleOpenQuoteOffers,
+    openQuoteModal,
+    quoteActionId,
+    quotesLoading,
+    totalOffersReceived,
+  ]);
 
   return (
     <div className="min-h-screen bg-[#f8fafc] bg-grid">
@@ -114,6 +774,19 @@ export default function BuyerDashboard() {
                 onChange={(e) => setQuoteForm({ ...quoteForm, product: e.target.value })}
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Categoria</label>
+              <select
+                value={quoteForm.categoryId}
+                onChange={(e) => setQuoteForm({ ...quoteForm, categoryId: e.target.value })}
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] bg-white transition-all"
+              >
+                <option value="">Selecciona una categoria</option>
+                {categoryOptions.map((category) => (
+                  <option key={category.id} value={category.id}>{category.name}</option>
+                ))}
+              </select>
             </div>
             <div className="flex gap-3">
               <div className="flex-1">
@@ -153,6 +826,18 @@ export default function BuyerDashboard() {
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Notas para proveedores
+              </label>
+              <textarea
+                rows={3}
+                placeholder="Ej: Marca preferida, calibre, formato de entrega, horario de recepcion..."
+                value={quoteForm.notes}
+                onChange={(e) => setQuoteForm({ ...quoteForm, notes: e.target.value })}
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 resize-none transition-all"
+              />
+            </div>
             <div className="flex gap-3 pt-2">
               <button
                 type="button"
@@ -163,13 +848,146 @@ export default function BuyerDashboard() {
               </button>
               <button
                 type="submit"
-                className="flex-1 bg-gradient-to-r from-[#0D1F3C] to-[#1a3260] text-white font-bold py-3 rounded-xl hover:shadow-lg transition-all"
+                disabled={isSubmittingQuote}
+                className="flex-1 bg-gradient-to-r from-[#0D1F3C] to-[#1a3260] text-white font-bold py-3 rounded-xl hover:shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Enviar cotizacion
+                {isSubmittingQuote ? 'Creando...' : 'Enviar cotizacion'}
               </button>
             </div>
           </form>
         </Modal>
+      )}
+
+      {selectedQuote && (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center bg-[#0D1F3C]/50 backdrop-blur-sm p-4 animate-fade-in overflow-y-auto"
+          onClick={(event) => event.target === event.currentTarget && setSelectedQuote(null)}
+        >
+          <div className="transform-gpu bg-[#f8fafc] rounded-2xl shadow-2xl shadow-[#0D1F3C]/20 w-full max-w-4xl my-8 animate-fade-in-up overflow-hidden">
+            <div className="h-28 bg-gradient-to-r from-[#0D1F3C] via-[#1a3260] to-[#0D1F3C] relative">
+              <div className="absolute inset-0 bg-grid opacity-20" />
+              <button
+                onClick={() => setSelectedQuote(null)}
+                className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 text-white hover:bg-white/20 transition-all z-10"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="px-6 pb-6 relative">
+              <div className="w-20 h-20 bg-gradient-to-br from-[#0D1F3C] to-[#1a3260] rounded-2xl flex items-center justify-center text-[#2ECAD5] text-2xl font-extrabold border-4 border-white shadow-lg -mt-10 relative z-10">
+                RFQ
+              </div>
+              <div className="mt-4 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-extrabold text-[#0D1F3C]">{selectedQuote.productName}</h2>
+                  <p className="text-sm text-gray-500 mt-1">{selectedQuote.quantityLabel} / Entrega {selectedQuote.deliveryDateLabel}</p>
+                  <div className="flex items-center gap-2 mt-3 flex-wrap">
+                    <span className={`text-xs font-semibold px-3 py-1 rounded-full ${selectedQuote.statusClass}`}>
+                      {selectedQuote.statusLabel}
+                    </span>
+                    <span className="text-xs text-gray-400">{selectedQuote.offerCount} ofertas recibidas</span>
+                    <span className="text-xs text-gray-400">Creada {selectedQuote.createdAtLabel}</span>
+                  </div>
+                </div>
+                {['open', 'in_review'].includes(selectedQuote.status) && (
+                  <button
+                    type="button"
+                    onClick={() => handleCancelBuyerQuote(selectedQuote.id)}
+                    disabled={quoteActionId === selectedQuote.id}
+                    className="border border-rose-200 text-rose-600 font-semibold px-5 py-2.5 rounded-xl hover:bg-rose-50 transition-all text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {quoteActionId === selectedQuote.id ? 'Cancelando...' : 'Cancelar RFQ'}
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6">
+                <div className="bg-white rounded-xl border border-gray-100 p-4">
+                  <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Categoria</div>
+                  <div className="text-lg font-extrabold text-[#0D1F3C] mt-1">{selectedQuote.categoryName}</div>
+                </div>
+                <div className="bg-white rounded-xl border border-gray-100 p-4">
+                  <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Cantidad</div>
+                  <div className="text-lg font-extrabold text-[#0D1F3C] mt-1">{selectedQuote.quantityLabel}</div>
+                </div>
+                <div className="bg-white rounded-xl border border-gray-100 p-4">
+                  <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Entrega</div>
+                  <div className="text-lg font-extrabold text-[#0D1F3C] mt-1">{selectedQuote.deliveryDateLabel}</div>
+                </div>
+              </div>
+
+              <div className="mt-4 bg-white rounded-xl border border-gray-100 p-4">
+                <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Notas</div>
+                <p className="text-sm text-gray-600 mt-2">{selectedQuote.notes || 'Sin notas adicionales para esta cotizacion.'}</p>
+              </div>
+
+              <div className="mt-6">
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <h3 className="text-sm font-bold text-[#0D1F3C]">Comparar ofertas</h3>
+                  <span className="text-xs text-gray-400">{selectedQuote.offerCount} proveedores</span>
+                </div>
+
+                {selectedQuote.offers.length > 0 ? (
+                  <div className="space-y-3">
+                    {selectedQuote.offers.map((offer) => (
+                      <div key={offer.id} className="bg-white rounded-xl border border-gray-100 p-4">
+                        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="text-base font-bold text-[#0D1F3C]">{offer.supplierName}</h4>
+                              <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full ${offer.statusClass}`}>
+                                {offer.statusLabel}
+                              </span>
+                              {offer.supplierVerified && (
+                                <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100 px-2.5 py-0.5 rounded-full">
+                                  Verificado
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-400 mt-1">{offer.supplierCity || 'Ciudad no informada'} / {offer.createdAtLabel}</p>
+                            <p className="text-sm text-gray-600 mt-3">{offer.notes || 'Sin comentarios adicionales.'}</p>
+                          </div>
+
+                          <div className="lg:text-right lg:min-w-[220px]">
+                            <div className="text-2xl font-extrabold text-[#0D1F3C]">{offer.priceLabel}</div>
+                            <div className="text-sm text-gray-400 mt-1">Lead time: {offer.estimatedLeadTime}</div>
+                            <div className="flex items-center gap-2 lg:justify-end mt-2">
+                              <span className="text-[11px] font-semibold bg-[#f8fafc] text-[#0D1F3C] border border-gray-100 px-2.5 py-1 rounded-lg">
+                                Rating {Number(offer.supplierRating ?? 0).toFixed(1)}
+                              </span>
+                              {offer.supplierVerified && (
+                                <span className="text-[11px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100 px-2.5 py-1 rounded-lg">
+                                  Verificado
+                                </span>
+                              )}
+                            </div>
+                            {selectedQuote.status !== 'closed' && selectedQuote.status !== 'cancelled' && offer.status === 'pending' && (
+                              <button
+                                type="button"
+                                onClick={() => handleAcceptQuoteOffer(offer.id)}
+                                disabled={quoteActionId === offer.id}
+                                className="mt-4 bg-gradient-to-r from-emerald-400 to-blue-500 text-white font-bold px-5 py-2.5 rounded-xl transition-all hover:shadow-lg hover:shadow-emerald-400/20 disabled:opacity-60 disabled:cursor-not-allowed"
+                              >
+                                {quoteActionId === offer.id ? 'Aceptando...' : 'Aceptar oferta'}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-xl border border-gray-100 p-8 text-center text-sm text-gray-400">
+                    Todavia no llegan ofertas para esta cotizacion.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {editProfileOpen && (
@@ -230,12 +1048,22 @@ export default function BuyerDashboard() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de negocio</label>
-                    <input
-                      type="text"
-                      value={profileForm.businessType}
-                      onChange={(e) => setProfileForm({ ...profileForm, businessType: e.target.value })}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
-                    />
+                    <select
+                      value={profileForm.businessTypeValue}
+                      onChange={(e) => {
+                        const option = BUSINESS_TYPE_OPTIONS.find((item) => item.value === e.target.value);
+                        setProfileForm({
+                          ...profileForm,
+                          businessTypeValue: e.target.value,
+                          businessType: option?.label ?? '',
+                        });
+                      }}
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 bg-white transition-all"
+                    >
+                      {BUSINESS_TYPE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Volumen mensual</label>
@@ -258,10 +1086,9 @@ export default function BuyerDashboard() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                   <input
                     type="email"
-                    required
                     value={profileForm.email}
-                    onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                    readOnly
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-50 text-gray-500"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -285,13 +1112,23 @@ export default function BuyerDashboard() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Instagram</label>
-                  <input
-                    type="text"
-                    value={profileForm.instagram}
-                    onChange={(e) => setProfileForm({ ...profileForm, instagram: e.target.value })}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
-                  />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Medio preferido</label>
+                  <select
+                    value={profileForm.contactMethodValue}
+                    onChange={(e) => {
+                      const option = CONTACT_METHOD_OPTIONS.find((item) => item.value === e.target.value);
+                      setProfileForm({
+                        ...profileForm,
+                        contactMethodValue: e.target.value,
+                        contactMethod: option?.label ?? '',
+                      });
+                    }}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 bg-white transition-all"
+                  >
+                    {CONTACT_METHOD_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>
@@ -316,55 +1153,19 @@ export default function BuyerDashboard() {
                 ))}
               </div>
               <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Nueva categoria..."
-                  value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCategory(); } }}
-                  className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
-                />
+                <select
+                  value={selectedCategoryId || availableProfileCategories[0]?.id || ''}
+                  onChange={(e) => setSelectedCategoryId(e.target.value)}
+                  className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 bg-white transition-all"
+                >
+                  {availableProfileCategories.map((category) => (
+                    <option key={category.id} value={category.id}>{category.name}</option>
+                  ))}
+                </select>
                 <button
                   type="button"
                   onClick={handleAddCategory}
-                  className="border border-[#2ECAD5] text-[#2ECAD5] font-semibold px-4 py-2.5 rounded-xl hover:bg-[#2ECAD5]/5 transition-all text-sm"
-                >
-                  Agregar
-                </button>
-              </div>
-            </div>
-
-            {/* Frequent products */}
-            <div>
-              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Productos frecuentes</h4>
-              <div className="flex flex-wrap gap-2 mb-3">
-                {profileForm.frequentProducts.map((prod) => (
-                  <span key={prod} className="text-sm font-medium bg-[#f0fdfa] text-[#0D1F3C] border border-[#2ECAD5]/20 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
-                    {prod}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveProduct(prod)}
-                      className="text-gray-400 hover:text-red-500 transition-colors"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </span>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Nuevo producto..."
-                  value={newProduct}
-                  onChange={(e) => setNewProduct(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddProduct(); } }}
-                  className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddProduct}
+                  disabled={availableProfileCategories.length === 0}
                   className="border border-[#2ECAD5] text-[#2ECAD5] font-semibold px-4 py-2.5 rounded-xl hover:bg-[#2ECAD5]/5 transition-all text-sm"
                 >
                   Agregar
@@ -395,10 +1196,10 @@ export default function BuyerDashboard() {
       {/* Supplier profile modal */}
       {viewingSupplier && (
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-[#0D1F3C]/60 backdrop-blur-md p-4 animate-fade-in overflow-y-auto"
+          className="fixed inset-0 z-50 flex items-start justify-center bg-[#0D1F3C]/50 backdrop-blur-sm p-4 animate-fade-in overflow-y-auto"
           onClick={(e) => e.target === e.currentTarget && setViewingSupplier(null)}
         >
-          <div className="bg-[#f8fafc] rounded-2xl shadow-2xl shadow-[#0D1F3C]/20 w-full max-w-3xl my-8 animate-fade-in-up overflow-hidden">
+          <div className="transform-gpu bg-[#f8fafc] rounded-2xl shadow-2xl shadow-[#0D1F3C]/20 w-full max-w-3xl my-8 animate-fade-in-up overflow-hidden">
             {/* Header banner */}
             <div className="h-28 bg-gradient-to-r from-[#0D1F3C] via-[#1a3260] to-[#0D1F3C] relative">
               <div className="absolute inset-0 bg-grid opacity-20" />
@@ -434,18 +1235,54 @@ export default function BuyerDashboard() {
                     <span className="text-[10px] text-gray-400">Miembro desde {viewingSupplier.memberSince}</span>
                   </div>
                 </div>
-                <button
-                  onClick={() => {
-                    setViewingSupplier(null);
-                    setShowModal(true);
-                  }}
-                  className="flex items-center gap-2 bg-gradient-to-r from-emerald-400 to-blue-500 text-white font-bold px-5 py-2.5 rounded-xl transition-all hover:shadow-lg hover:shadow-emerald-400/20 text-sm whitespace-nowrap"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                  </svg>
-                  Pedir cotizacion
-                </button>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleToggleFavorite(viewingSupplier.id)}
+                    disabled={favoriteActionId === viewingSupplier.id}
+                    className={`flex items-center gap-2 font-semibold px-4 py-2.5 rounded-xl transition-all text-sm whitespace-nowrap border ${
+                      viewingSupplier.isFavorite
+                        ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                        : 'bg-white text-[#0D1F3C] border-gray-200 hover:bg-gray-50'
+                    } disabled:opacity-60 disabled:cursor-not-allowed`}
+                  >
+                    <svg className="w-4 h-4" fill={viewingSupplier.isFavorite ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+                    </svg>
+                    {favoriteActionId === viewingSupplier.id
+                      ? 'Guardando...'
+                      : viewingSupplier.isFavorite
+                        ? 'Favorito'
+                        : 'Guardar proveedor'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleFollowCurrentSupplierCategory}
+                    disabled={isSavingAlertSubscription}
+                    className="flex items-center gap-2 border border-[#2ECAD5]/30 text-[#0D1F3C] font-semibold px-4 py-2.5 rounded-xl hover:bg-[#2ECAD5]/5 transition-all text-sm whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    <svg className="w-4 h-4 text-[#2ECAD5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M10.34 3.94c.09-.542.56-.94 1.11-.94h1.1c.55 0 1.02.398 1.11.94l.149.897c.052.313.245.585.52.735.299.163.64.266 1.007.3l.92.085a1.125 1.125 0 01.844 1.79l-.566.777a1.125 1.125 0 00-.182.918c.065.303.098.616.098.934 0 .318-.033.631-.098.934a1.125 1.125 0 00.182.918l.566.777a1.125 1.125 0 01-.844 1.79l-.92.085a2.822 2.822 0 00-1.007.3 1.125 1.125 0 00-.52.735l-.149.897c-.09.542-.56.94-1.11.94h-1.1c-.55 0-1.02-.398-1.11-.94l-.149-.897a1.125 1.125 0 00-.52-.735 2.822 2.822 0 00-1.007-.3l-.92-.085a1.125 1.125 0 01-.844-1.79l.566-.777a1.125 1.125 0 00.182-.918 4.473 4.473 0 010-1.868 1.125 1.125 0 00-.182-.918l-.566-.777a1.125 1.125 0 01.844-1.79l.92-.085c.367-.034.708-.137 1.007-.3.275-.15.468-.422.52-.735l.149-.897z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    {isSavingAlertSubscription ? 'Activando...' : 'Seguir precios'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setViewingSupplier(null);
+                      openQuoteModal({
+                        product: viewingSupplier.requestProductName ?? '',
+                        categoryId: viewingSupplier.requestCategoryId ?? '',
+                      });
+                    }}
+                    className="flex items-center gap-2 bg-gradient-to-r from-emerald-400 to-blue-500 text-white font-bold px-5 py-2.5 rounded-xl transition-all hover:shadow-lg hover:shadow-emerald-400/20 text-sm whitespace-nowrap"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    Pedir cotizacion
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -536,15 +1373,18 @@ export default function BuyerDashboard() {
               {/* Products */}
               <div>
                 <h4 className="text-sm font-bold text-[#0D1F3C] mb-3">Productos disponibles</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {supplierProducts
-                    .filter((p) => viewingSupplier.products.includes(p.id))
-                    .map((product) => (
+                {viewingSupplier.products.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {viewingSupplier.products.map((product) => (
                       <div key={product.id} className="bg-white rounded-xl border border-gray-100 overflow-hidden card-premium">
-                        <div className={`h-28 bg-gradient-to-br ${product.gradient} relative`}>
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-4xl">{product.emoji}</span>
-                          </div>
+                        <div className={`h-28 ${product.customImage ? '' : `bg-gradient-to-br ${product.gradient}`} relative overflow-hidden`}>
+                          {product.customImage ? (
+                            <img src={product.customImage} alt={product.imageAlt} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <span className="text-4xl">{product.emoji}</span>
+                            </div>
+                          )}
                           {product.status === 'low_stock' && (
                             <span className="absolute top-2 right-2 text-[9px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
                               Stock bajo
@@ -561,35 +1401,46 @@ export default function BuyerDashboard() {
                         </div>
                       </div>
                     ))}
-                </div>
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-xl border border-gray-100 p-6 text-center text-sm text-gray-400">
+                    Este proveedor aun no tiene productos publicados.
+                  </div>
+                )}
               </div>
 
               {/* Reviews */}
               <div>
                 <h4 className="text-sm font-bold text-[#0D1F3C] mb-3">Resenas</h4>
-                <div className="space-y-3">
-                  {viewingSupplier.reviews.map((review, i) => (
-                    <div key={i} className="bg-white rounded-xl border border-gray-100 p-4">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 bg-gradient-to-br from-[#0D1F3C] to-[#1a3260] rounded-lg flex items-center justify-center text-white text-[10px] font-bold">
-                            {review.buyer.charAt(0)}
+                {(viewingSupplier.reviews ?? []).length > 0 ? (
+                  <div className="space-y-3">
+                    {viewingSupplier.reviews.map((review, i) => (
+                      <div key={i} className="bg-white rounded-xl border border-gray-100 p-4">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 bg-gradient-to-br from-[#0D1F3C] to-[#1a3260] rounded-lg flex items-center justify-center text-white text-[10px] font-bold">
+                              {review.buyer.charAt(0)}
+                            </div>
+                            <span className="text-xs font-bold text-[#0D1F3C]">{review.buyer}</span>
                           </div>
-                          <span className="text-xs font-bold text-[#0D1F3C]">{review.buyer}</span>
+                          <span className="text-[10px] text-gray-400">{review.date}</span>
                         </div>
-                        <span className="text-[10px] text-gray-400">{review.date}</span>
+                        <div className="flex items-center gap-0.5 mb-1.5 ml-9">
+                          {Array.from({ length: 5 }).map((_, j) => (
+                            <svg key={j} className={`w-3 h-3 ${j < review.rating ? 'text-amber-400' : 'text-gray-200'}`} fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                            </svg>
+                          ))}
+                        </div>
+                        <p className="text-xs text-gray-600 leading-relaxed ml-9">{review.comment}</p>
                       </div>
-                      <div className="flex items-center gap-0.5 mb-1.5 ml-9">
-                        {Array.from({ length: 5 }).map((_, j) => (
-                          <svg key={j} className={`w-3 h-3 ${j < review.rating ? 'text-amber-400' : 'text-gray-200'}`} fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                          </svg>
-                        ))}
-                      </div>
-                      <p className="text-xs text-gray-600 leading-relaxed ml-9">{review.comment}</p>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-xl border border-gray-100 p-6 text-center text-sm text-gray-400">
+                    Aun no hay resenas publicadas para este proveedor.
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -605,34 +1456,14 @@ export default function BuyerDashboard() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold uppercase tracking-widest text-[#2ECAD5]">Panel de comprador</span>
-                {isSupplierBuying && (
-                  <span className="text-[10px] font-bold bg-gradient-to-r from-amber-400 to-orange-500 text-[#0D1F3C] px-2.5 py-0.5 rounded-full uppercase tracking-wide">
-                    Modo distribuidor
-                  </span>
-                )}
               </div>
-              <h1 className="text-2xl font-extrabold mt-1">
-                {isSupplierBuying ? supplierProfile.companyName : 'Pasteleria Mozart'}
-              </h1>
+              <h1 className="text-2xl font-extrabold mt-1">{buyerProfile.companyName}</h1>
               <p className="text-gray-500 text-sm mt-0.5">
-                {isSupplierBuying
-                  ? `${supplierProfile.city} / RUT ${supplierProfile.rut}`
-                  : 'Santiago / Pasteleria / RUT 72.345.678-9'}
+                {buyerProfile.city} / {buyerProfile.businessType} / RUT {buyerProfile.rut}
               </p>
             </div>
-            {isSupplierBuying && (
-              <button
-                onClick={() => navigate('/dashboard-proveedor')}
-                className="flex items-center gap-2 border border-white/20 text-white font-semibold px-4 py-2 rounded-xl hover:bg-white/10 transition-all text-sm whitespace-nowrap"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
-                </svg>
-                Volver a proveedor
-              </button>
-            )}
             <button
-              onClick={() => setShowModal(true)}
+              onClick={() => openQuoteModal()}
               className="flex items-center gap-2 bg-gradient-to-r from-emerald-400 to-blue-500 hover:shadow-lg hover:shadow-emerald-400/20 text-[#0D1F3C] font-bold px-6 py-3 rounded-xl transition-all whitespace-nowrap hover:scale-[1.02]"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -655,7 +1486,47 @@ export default function BuyerDashboard() {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-4.72L4.318 3.44A1.5 1.5 0 015.378 3h13.243a1.5 1.5 0 011.06.44l1.19 1.189a3 3 0 01-.621 4.72m-13.5 8.65h3.75a.75.75 0 00.75-.75V13.5a.75.75 0 00-.75-.75H6.75a.75.75 0 00-.75.75v3.75c0 .415.336.75.75.75z" />
               </svg>
-              Para ti
+              Catalogo
+            </button>
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
+                activeTab === 'dashboard'
+                  ? 'bg-white/10 text-white'
+                  : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+              </svg>
+              Cotizaciones
+            </button>
+            <button
+              onClick={() => setActiveTab('alerts')}
+              className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
+                activeTab === 'alerts'
+                  ? 'bg-white/10 text-white'
+                  : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10.34 3.94c.09-.542.56-.94 1.11-.94h1.1c.55 0 1.02.398 1.11.94l.149.897c.052.313.245.585.52.735.299.163.64.266 1.007.3l.92.085a1.125 1.125 0 01.844 1.79l-.566.777a1.125 1.125 0 00-.182.918c.065.303.098.616.098.934 0 .318-.033.631-.098.934a1.125 1.125 0 00.182.918l.566.777a1.125 1.125 0 01-.844 1.79l-.92.085a2.822 2.822 0 00-1.007.3 1.125 1.125 0 00-.52.735l-.149.897c-.09.542-.56.94-1.11.94h-1.1c-.55 0-1.02-.398-1.11-.94l-.149-.897a1.125 1.125 0 00-.52-.735 2.822 2.822 0 00-1.007-.3l-.92-.085a1.125 1.125 0 01-.844-1.79l.566-.777a1.125 1.125 0 00.182-.918 4.473 4.473 0 010-1.868 1.125 1.125 0 00-.182-.918l-.566-.777a1.125 1.125 0 01.844-1.79l.92-.085c.367-.034.708-.137 1.007-.3.275-.15.468-.422.52-.735l.149-.897z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Alertas
+            </button>
+            <button
+              onClick={() => setActiveTab('favorites')}
+              className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
+                activeTab === 'favorites'
+                  ? 'bg-white/10 text-white'
+                  : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+              </svg>
+              Favoritos
             </button>
             <button
               onClick={() => setActiveTab('profile')}
@@ -669,26 +1540,6 @@ export default function BuyerDashboard() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
               </svg>
               Mi Perfil
-            </button>
-            <button
-              onClick={() => setActiveTab('dashboard')}
-              className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${
-                activeTab === 'dashboard'
-                  ? 'bg-white/10 text-white'
-                  : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
-              }`}
-            >
-              Cotizaciones
-            </button>
-            <button
-              onClick={() => setActiveTab('suppliers')}
-              className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${
-                activeTab === 'suppliers'
-                  ? 'bg-white/10 text-white'
-                  : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
-              }`}
-            >
-              Proveedores
             </button>
           </div>
         </div>
@@ -715,7 +1566,7 @@ export default function BuyerDashboard() {
 
             {/* Category filters */}
             <div className="flex gap-2 overflow-x-auto pb-1">
-              {['Todos', ...allCategories].map((cat) => (
+              {catalogFilterOptions.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setCatalogFilter(cat)}
@@ -732,28 +1583,22 @@ export default function BuyerDashboard() {
 
             {/* Product grid */}
             {(() => {
-              const filtered = supplierProducts.filter((p) => {
-                const matchCat = catalogFilter === 'Todos' || p.category === catalogFilter;
-                const matchSearch = !catalogSearch || p.name.toLowerCase().includes(catalogSearch.toLowerCase()) || p.category.toLowerCase().includes(catalogSearch.toLowerCase());
-                return matchCat && matchSearch;
-              });
+              if (catalogLoading) {
+                return (
+                  <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center text-sm text-gray-400">
+                    Cargando catalogo...
+                  </div>
+                );
+              }
 
-              // Map product IDs to their supplier
-              const getSupplierForProduct = (productId) => {
-                return supplierProfiles.find((s) => s.products.includes(productId));
-              };
-
-              return filtered.length > 0 ? (
+              return filteredCatalogProducts.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {filtered.map((product) => {
-                    const supplier = getSupplierForProduct(product.id);
+                  {filteredCatalogProducts.map((product) => {
                     return (
                       <div
                         key={product.id}
                         className="bg-white rounded-2xl border border-gray-100 overflow-hidden card-premium cursor-pointer group"
-                        onClick={() => {
-                          if (supplier) setViewingSupplier(supplier);
-                        }}
+                        onClick={() => openSupplierFromProduct(product)}
                       >
                         {/* Product image */}
                         <div className={`relative h-40 bg-gradient-to-br ${product.gradient} overflow-hidden`}>
@@ -787,19 +1632,14 @@ export default function BuyerDashboard() {
                           <div className="flex items-center justify-between mt-3">
                             <span className="text-base font-extrabold text-[#0D1F3C]">{product.price}</span>
                           </div>
-                          {supplier && (
+                          {product.supplierName && (
                             <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-50">
                               <div className="w-6 h-6 bg-gradient-to-br from-[#0D1F3C] to-[#1a3260] rounded-md flex items-center justify-center text-[#2ECAD5] text-[8px] font-bold flex-shrink-0">
-                                {supplier.initials}
+                                {product.supplierName.split(' ').map((word) => word[0]).join('').slice(0, 2).toUpperCase()}
                               </div>
                               <div className="min-w-0 flex-1">
-                                <p className="text-[11px] font-semibold text-gray-600 truncate">{supplier.name}</p>
-                                <div className="flex items-center gap-1">
-                                  <svg className="w-2.5 h-2.5 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                  </svg>
-                                  <span className="text-[10px] text-gray-400">{supplier.rating} / {supplier.city}</span>
-                                </div>
+                                <p className="text-[11px] font-semibold text-gray-600 truncate">{product.supplierName}</p>
+                                <span className="text-[10px] text-gray-400">Ver proveedor</span>
                               </div>
                             </div>
                           )}
@@ -836,41 +1676,21 @@ export default function BuyerDashboard() {
               <div className="px-6 pb-6 relative">
                 {/* Avatar */}
                 <div className="w-24 h-24 bg-gradient-to-br from-[#0D1F3C] to-[#1a3260] rounded-2xl flex items-center justify-center text-[#2ECAD5] text-3xl font-extrabold border-4 border-white shadow-lg -mt-12 relative z-10">
-                  {isSupplierBuying
-                    ? supplierProfile.companyName.split(' ').map(w => w[0]).join('').slice(0, 2)
-                    : buyerProfile.initials}
+                  {buyerProfile.initials}
                 </div>
                 <div className="mt-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                   <div>
-                    <h2 className="text-2xl font-extrabold text-[#0D1F3C]">
-                      {isSupplierBuying ? supplierProfile.companyName : buyerProfile.companyName}
-                    </h2>
-                    <p className="text-gray-500 text-sm mt-1">
-                      {isSupplierBuying ? supplierProfile.description : buyerProfile.description}
-                    </p>
+                    <h2 className="text-2xl font-extrabold text-[#0D1F3C]">{buyerProfile.companyName}</h2>
+                    <p className="text-gray-500 text-sm mt-1">{buyerProfile.description}</p>
                     <div className="flex items-center gap-3 mt-3 flex-wrap">
-                      {isSupplierBuying ? (
-                        <>
-                          {supplierProfile.categories.map((cat) => (
-                            <span key={cat} className="text-xs font-semibold bg-indigo-50 text-indigo-600 border border-indigo-100 px-3 py-1 rounded-full">{cat}</span>
-                          ))}
-                          <span className="text-xs font-semibold bg-amber-50 text-amber-600 border border-amber-100 px-3 py-1 rounded-full flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
-                            Distribuidor
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          {buyerProfile.categories.map((cat) => (
-                            <span key={cat} className="text-xs font-semibold bg-indigo-50 text-indigo-600 border border-indigo-100 px-3 py-1 rounded-full">{cat}</span>
-                          ))}
-                          <span className="text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100 px-3 py-1 rounded-full flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                            Verificado
-                          </span>
-                          <span className="text-xs text-gray-400">Miembro desde Febrero 2025</span>
-                        </>
-                      )}
+                      {buyerProfile.categories.map((cat) => (
+                        <span key={cat} className="text-xs font-semibold bg-indigo-50 text-indigo-600 border border-indigo-100 px-3 py-1 rounded-full">{cat}</span>
+                      ))}
+                      <span className={`text-xs font-semibold px-3 py-1 rounded-full flex items-center gap-1 ${currentUser?.verified ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border border-amber-100'}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${currentUser?.verified ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                        {currentUser?.verified ? 'Verificado' : 'En revision'}
+                      </span>
+                      {memberSinceLabel && <span className="text-xs text-gray-400">Miembro desde {memberSinceLabel}</span>}
                     </div>
                   </div>
                   <button
@@ -889,22 +1709,22 @@ export default function BuyerDashboard() {
             {/* Stats row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { label: 'Pedidos realizados', value: '47', sub: 'este ano', icon: (
+                { label: 'RFQs creadas', value: buyerStats.totalOrders || buyerQuotes.length, sub: 'totales', icon: (
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
                   </svg>
                 )},
-                { label: 'Proveedores favoritos', value: '8', sub: 'guardados', icon: (
+                { label: 'Proveedores favoritos', value: favoriteSuppliers.length, sub: 'guardados', icon: (
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
                   </svg>
                 )},
-                { label: 'Ahorro acumulado', value: '$2.1M', sub: 'CLP', icon: (
+                { label: 'Ofertas aceptadas', value: acceptedOffers.length, sub: 'cerradas', icon: (
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m6 2.25a9 9 0 11-18 0 9 9 0 0118 0Z" />
                   </svg>
                 )},
-                { label: 'Valoracion como comprador', value: '4.9', sub: '/ 5.0', icon: (
+                { label: 'Valoracion como comprador', value: Number(buyerStats.rating || 0).toFixed(1), sub: '/ 5.0', icon: (
                   <svg className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                   </svg>
@@ -933,20 +1753,14 @@ export default function BuyerDashboard() {
                   Informacion del negocio
                 </h3>
                 <div className="space-y-4">
-                  {(isSupplierBuying ? [
-                    { label: 'Razon social', value: supplierProfile.companyName },
-                    { label: 'RUT', value: supplierProfile.rut },
-                    { label: 'Ciudad', value: supplierProfile.city },
-                    { label: 'Direccion', value: supplierProfile.address },
-                    { label: 'Giro', value: supplierProfile.giro },
-                  ] : [
+                  {[
                     { label: 'Razon social', value: buyerProfile.companyName },
                     { label: 'RUT', value: buyerProfile.rut },
                     { label: 'Ciudad', value: buyerProfile.city },
                     { label: 'Direccion', value: buyerProfile.address },
                     { label: 'Tipo de negocio', value: buyerProfile.businessType },
                     { label: 'Volumen mensual', value: buyerProfile.monthlyVolume },
-                  ]).map((item) => (
+                  ].map((item) => (
                     <div key={item.label} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
                       <span className="text-sm text-gray-400">{item.label}</span>
                       <span className="text-sm font-semibold text-[#0D1F3C]">{item.value}</span>
@@ -964,28 +1778,7 @@ export default function BuyerDashboard() {
                   Contacto
                 </h3>
                 <div className="space-y-4">
-                  {(isSupplierBuying ? [
-                    { label: 'Email', value: supplierProfile.email, icon: (
-                      <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-                      </svg>
-                    )},
-                    { label: 'Telefono', value: supplierProfile.phone, icon: (
-                      <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
-                      </svg>
-                    )},
-                    { label: 'WhatsApp', value: supplierProfile.whatsapp, icon: (
-                      <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
-                      </svg>
-                    )},
-                    { label: 'Web', value: supplierProfile.website, icon: (
-                      <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
-                      </svg>
-                    )},
-                  ] : [
+                  {[
                     { label: 'Email', value: buyerProfile.email, icon: (
                       <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
@@ -1001,13 +1794,12 @@ export default function BuyerDashboard() {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
                       </svg>
                     )},
-                    { label: 'Instagram', value: buyerProfile.instagram, icon: (
+                    { label: 'Medio preferido', value: buyerProfile.contactMethod, icon: (
                       <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 9.75a3.375 3.375 0 116.75 0c0 1.5-.944 2.779-2.268 3.28-.525.199-.857.722-.857 1.284v.436M12 18.75h.008v.008H12v-.008z" />
                       </svg>
                     )},
-                  ]).map((item) => (
+                  ].map((item) => (
                     <div key={item.label} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
                       {item.icon}
                       <div className="flex-1">
@@ -1020,206 +1812,325 @@ export default function BuyerDashboard() {
               </div>
             </div>
 
-            {/* What I buy */}
-            <div className="bg-white rounded-2xl border border-gray-100 p-6 card-premium">
-              <h3 className="text-lg font-extrabold text-[#0D1F3C] mb-4 flex items-center gap-2">
-                <svg className="w-5 h-5 text-[#2ECAD5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" />
-                </svg>
-                Productos que compro frecuentemente
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {buyerProfile.frequentProducts.map((prod) => (
-                  <span key={prod} className="text-sm font-medium bg-[#f0fdfa] text-[#0D1F3C] border border-[#2ECAD5]/20 px-4 py-2 rounded-xl">
-                    {prod}
-                  </span>
-                ))}
+            {buyerProfile.frequentProducts.length > 0 && (
+              <div className="bg-white rounded-2xl border border-gray-100 p-6 card-premium">
+                <h3 className="text-lg font-extrabold text-[#0D1F3C] mb-4 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-[#2ECAD5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" />
+                  </svg>
+                  Productos que compro frecuentemente
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {buyerProfile.frequentProducts.map((prod) => (
+                    <span key={prod} className="text-sm font-medium bg-[#f0fdfa] text-[#0D1F3C] border border-[#2ECAD5]/20 px-4 py-2 rounded-xl">
+                      {prod}
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Purchase history summary */}
+            {/* Accepted offers summary */}
             <div className="bg-white rounded-2xl border border-gray-100 p-6 card-premium">
               <h3 className="text-lg font-extrabold text-[#0D1F3C] mb-4 flex items-center gap-2">
                 <svg className="w-5 h-5 text-[#2ECAD5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m6 2.25a9 9 0 11-18 0 9 9 0 0118 0Z" />
                 </svg>
-                Historial de compras reciente
+                Ofertas aceptadas recientemente
               </h3>
-              <div className="space-y-3">
-                {[
-                  { product: 'Harina de trigo extra fina', supplier: 'Agroindustrial del Sur Ltda.', amount: '800 kg', total: '$544.000', date: '2026-03-10', status: 'Entregado' },
-                  { product: 'Chocolate cobertura 70%', supplier: 'Distribuidora El Roble', amount: '120 kg', total: '$1.440.000', date: '2026-03-03', status: 'Entregado' },
-                  { product: 'Crema vegetal para batir', supplier: 'Valle Frio SpA', amount: '200 lt', total: '$580.000', date: '2026-02-25', status: 'Entregado' },
-                ].map((order, i) => (
-                  <div key={i} className="flex items-center gap-4 p-4 bg-[#f8fafc] rounded-xl">
-                    <div className="w-10 h-10 bg-gradient-to-br from-[#2ECAD5]/10 to-[#2ECAD5]/5 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <svg className="w-5 h-5 text-[#2ECAD5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
-                      </svg>
+              {acceptedOffers.length > 0 ? (
+                <div className="space-y-3">
+                  {acceptedOffers.slice(0, 5).map((offer) => (
+                    <div key={offer.id} className="flex items-center gap-4 p-4 bg-[#f8fafc] rounded-xl">
+                      <div className="w-10 h-10 bg-gradient-to-br from-emerald-400/15 to-blue-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-[#0D1F3C]">{offer.quoteProductName}</p>
+                        <p className="text-xs text-gray-400">
+                          {offer.supplierName} / {offer.quoteQuantityLabel} / Entrega {offer.quoteDeliveryDateLabel}
+                        </p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-sm font-bold text-[#0D1F3C]">{offer.priceLabel}</p>
+                        <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-0.5 rounded-full">
+                          Aceptada
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-[#0D1F3C]">{order.product}</p>
-                      <p className="text-xs text-gray-400">{order.supplier} / {order.amount} / {order.date}</p>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-sm font-bold text-[#0D1F3C]">{order.total}</p>
-                      <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-0.5 rounded-full">
-                        {order.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-[#f8fafc] rounded-xl p-6 text-center text-sm text-gray-400">
+                  Aun no aceptas ofertas. Cuando cierres tu primera RFQ, aparecerá aqui.
+                </div>
+              )}
             </div>
           </div>
         )}
 
         {/* ===== DASHBOARD TAB ===== */}
-        {activeTab === 'dashboard' && (
+        {activeTab === 'dashboard' && dashboardTabContent}
+
+        {/* ===== ALERTS TAB ===== */}
+        {activeTab === 'alerts' && (
           <div className="space-y-8 animate-fade-in">
-            {/* Stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {[
-                { label: 'Cotizaciones activas', value: '3', icon: (
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                  </svg>
-                )},
-                { label: 'Ofertas recibidas', value: '7', icon: (
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-                  </svg>
-                )},
-                { label: 'Proveedores contactados', value: '12', icon: (
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-                  </svg>
-                )},
-                { label: 'Ahorro estimado', value: '18%', icon: (
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
-                  </svg>
-                )},
-              ].map((s) => (
-                <div key={s.label} className="bg-white rounded-2xl border border-gray-100 p-5 card-premium">
-                  <div className="w-9 h-9 bg-[#f8fafc] rounded-xl flex items-center justify-center text-gray-400 mb-3">
-                    {s.icon}
-                  </div>
-                  <div className="text-2xl font-extrabold text-[#0D1F3C]">{s.value}</div>
-                  <div className="text-xs text-gray-400 mt-1">{s.label}</div>
+            <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-6">
+              <form onSubmit={handleCreateAlertSubscription} className="bg-white rounded-2xl border border-gray-100 p-6 card-premium space-y-5">
+                <div>
+                  <h2 className="text-xl font-extrabold text-[#0D1F3C]">Seguir alertas de precio</h2>
+                  <p className="text-sm text-gray-400 mt-1">Recibe cambios de precio por categoria o por producto especifico.</p>
                 </div>
-              ))}
+
+                <div className="flex gap-2">
+                  {[
+                    { id: 'category', label: 'Por categoria' },
+                    { id: 'product', label: 'Por producto' },
+                  ].map((option) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => setAlertForm({
+                        mode: option.id,
+                        categoryId: option.id === 'category' ? alertForm.categoryId : '',
+                        productId: option.id === 'product' ? alertForm.productId : '',
+                      })}
+                      className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                        alertForm.mode === option.id
+                          ? 'bg-gradient-to-r from-emerald-400 to-blue-500 text-white shadow-md shadow-emerald-400/20'
+                          : 'bg-[#f8fafc] text-gray-500 hover:text-[#0D1F3C]'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+
+                {alertForm.mode === 'category' ? (
+                  <div>
+                    <label htmlFor="buyer-alert-category" className="block text-sm font-medium text-gray-700 mb-1.5">Categoria</label>
+                    <select
+                      id="buyer-alert-category"
+                      value={alertForm.categoryId}
+                      onChange={(event) => setAlertForm({ ...alertForm, categoryId: event.target.value })}
+                      className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] bg-white transition-all"
+                    >
+                      <option value="">Selecciona una categoria</option>
+                      {categoryOptions.map((category) => (
+                        <option key={category.id} value={category.id}>{category.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <div>
+                    <label htmlFor="buyer-alert-product" className="block text-sm font-medium text-gray-700 mb-1.5">Producto</label>
+                    <select
+                      id="buyer-alert-product"
+                      value={alertForm.productId}
+                      onChange={(event) => setAlertForm({ ...alertForm, productId: event.target.value })}
+                      className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] bg-white transition-all"
+                    >
+                      <option value="">Selecciona un producto</option>
+                      {alertProductOptions.map((product) => (
+                        <option key={product.id} value={product.id}>
+                          {product.name} / {product.category} / {product.supplierName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isSavingAlertSubscription || (alertForm.mode === 'category' ? !alertForm.categoryId : !alertForm.productId)}
+                  className="bg-gradient-to-r from-emerald-400 to-blue-500 text-white font-bold px-5 py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-emerald-400/20 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isSavingAlertSubscription ? 'Guardando...' : 'Guardar alerta'}
+                </button>
+              </form>
+
+              <div className="bg-white rounded-2xl border border-gray-100 p-6 card-premium">
+                <h2 className="text-xl font-extrabold text-[#0D1F3C]">Suscripciones activas</h2>
+                <p className="text-sm text-gray-400 mt-1 mb-5">Controla que señales de precio quieres seguir.</p>
+                {alertSubscriptions.length > 0 ? (
+                  <div className="space-y-3">
+                    {alertSubscriptions.map((subscription) => {
+                      const category = takeSingle(subscription.categories);
+                      const product = takeSingle(subscription.products);
+                      const productCategory = takeSingle(product?.categories);
+                      const title = product?.name ?? category?.name ?? 'Alerta';
+                      const meta = product
+                        ? `Producto / ${productCategory?.name ?? 'Sin categoria'}`
+                        : 'Categoria';
+
+                      return (
+                        <div key={subscription.id} className="rounded-xl border border-gray-100 bg-[#f8fafc] px-4 py-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <div className="text-sm font-bold text-[#0D1F3C]">{title}</div>
+                              <div className="text-xs text-gray-400 mt-1">{meta}</div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveAlertSubscription(subscription.id)}
+                              disabled={subscriptionActionId === subscription.id}
+                              className="text-xs font-semibold text-rose-600 border border-rose-200 px-3 py-1.5 rounded-lg hover:bg-rose-50 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                              {subscriptionActionId === subscription.id ? 'Quitando...' : 'Quitar'}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="bg-[#f8fafc] rounded-xl p-6 text-center text-sm text-gray-400">
+                    Aun no sigues alertas. Crea tu primera suscripcion desde esta misma vista.
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Active quotes */}
             <div>
-              <h2 className="text-xl font-extrabold text-[#0D1F3C] mb-4">Cotizaciones activas</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {quoteRequests.map((q) => (
-                  <div key={q.id} className="bg-white rounded-2xl border border-gray-100 p-5 card-premium">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-[#2ECAD5]/10 to-[#2ECAD5]/5 rounded-xl flex items-center justify-center">
-                        <svg className="w-5 h-5 text-[#2ECAD5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
-                        </svg>
+              <h2 className="text-xl font-extrabold text-[#0D1F3C] mb-4">Cambios recientes de precio</h2>
+              {alertsLoading ? (
+                <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center text-sm text-gray-400">
+                  Cargando alertas...
+                </div>
+              ) : buyerAlerts.length > 0 ? (
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
+                  {buyerAlerts.map((alert) => (
+                    <div key={alert.id} className="flex items-center gap-4 p-5 hover:bg-[#f8fafc] transition-colors">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                        alert.change === 'down' ? 'bg-emerald-50' : 'bg-red-50'
+                      }`}>
+                        {alert.change === 'down' ? (
+                          <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6L9 12.75l4.286-4.286a11.948 11.948 0 014.306 6.43l.776 2.898m0 0l3.182-5.511m-3.182 5.51l-5.511-3.181" />
+                          </svg>
+                        ) : (
+                          <svg className="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
+                          </svg>
+                        )}
                       </div>
-                      <span className={`text-[10px] font-semibold px-3 py-1 rounded-full ${statusColors[q.status] || 'bg-gray-100 text-gray-600'}`}>
-                        {q.status}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-[#0D1F3C] text-sm">{alert.productName}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {alert.supplierName} / {alert.categoryName} / {alert.previousPrice} → {alert.currentPrice}
+                        </p>
+                        <p className="text-[11px] text-gray-400 mt-1">{alert.dateLabel}</p>
+                      </div>
+                      <span className={`text-xs font-bold px-3 py-1.5 rounded-lg flex-shrink-0 ${
+                        alert.change === 'down' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-red-50 text-red-600 border border-red-100'
+                      }`}>
+                        {alert.changeLabel}
                       </span>
                     </div>
-                    <h3 className="font-bold text-[#0D1F3C] mb-1">{q.product}</h3>
-                    <p className="text-sm text-gray-500">Cantidad: {q.quantity}</p>
-                    <p className="text-xs text-gray-400 mt-2">{q.date}</p>
-                    <button className="mt-4 w-full text-sm text-[#2ECAD5] border border-[#2ECAD5]/30 hover:bg-[#2ECAD5]/5 font-semibold py-2.5 rounded-xl transition-all">
-                      Ver ofertas
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Price alerts */}
-            <div>
-              <h2 className="text-xl font-extrabold text-[#0D1F3C] mb-4">Alertas de precio</h2>
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
-                {priceAlerts.map((alert) => (
-                  <div key={alert.id} className="flex items-center gap-4 p-5 hover:bg-[#f8fafc] transition-colors">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                      alert.change === 'down' ? 'bg-emerald-50' : 'bg-red-50'
-                    }`}>
-                      {alert.change === 'down' ? (
-                        <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6L9 12.75l4.286-4.286a11.948 11.948 0 014.306 6.43l.776 2.898m0 0l3.182-5.511m-3.182 5.51l-5.511-3.181" />
-                        </svg>
-                      ) : (
-                        <svg className="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
-                        </svg>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-[#0D1F3C] text-sm">{alert.message}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">Proveedor: {alert.supplier} / {alert.date}</p>
-                    </div>
-                    <span className={`text-xs font-bold px-3 py-1.5 rounded-lg flex-shrink-0 ${
-                      alert.change === 'down' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-red-50 text-red-600 border border-red-100'
-                    }`}>
-                      {alert.change === 'down' ? 'Bajo' : 'Subio'}
-                    </span>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
+                  <h3 className="text-lg font-bold text-[#0D1F3C]">Todavia no hay cambios de precio para tus alertas</h3>
+                  <p className="text-sm text-gray-400 mt-2">Las alertas apareceran cuando un proveedor actualice el precio de un producto o categoria que sigues.</p>
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* ===== SUPPLIERS TAB ===== */}
-        {activeTab === 'suppliers' && (
+        {/* ===== FAVORITES TAB ===== */}
+        {activeTab === 'favorites' && (
           <div className="space-y-8 animate-fade-in">
             <div>
-              <h2 className="text-xl font-extrabold text-[#0D1F3C] mb-4">Proveedores recomendados</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {supplierProfiles.map((supplier) => (
+              <h2 className="text-xl font-extrabold text-[#0D1F3C] mb-4">Proveedores favoritos</h2>
+              {favoritesLoading ? (
+                <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center text-sm text-gray-400">
+                  Cargando favoritos...
+                </div>
+              ) : favoriteSuppliers.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {favoriteSuppliers.map((supplier) => (
+                    <div
+                      key={supplier.id}
+                      className="bg-white rounded-2xl border border-gray-100 p-5 card-premium text-left transition-all hover:border-[#2ECAD5]/30 hover:shadow-md"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-[#0D1F3C] to-[#1a3260] rounded-xl flex items-center justify-center text-[#2ECAD5] flex-shrink-0 text-sm font-bold">
+                          {supplier.initials}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-bold text-[#0D1F3C] text-sm">{supplier.name}</p>
+                          <p className="text-xs text-gray-500 truncate">{supplier.description || 'Proveedor B2B'}</p>
+                          <p className="text-xs text-gray-400 mt-1">{supplier.city}</p>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2 mt-4">
+                        {supplier.categories.slice(0, 3).map((category) => (
+                          <span key={category} className="text-[10px] font-semibold bg-[#f0fdfa] text-[#0D1F3C] border border-[#2ECAD5]/20 px-2.5 py-1 rounded-full">
+                            {category}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-gray-50">
+                        <div>
+                          <div className="text-[10px] text-gray-400">Plan</div>
+                          <div className="text-xs font-bold text-[#0D1F3C] mt-1">{supplier.plan}</div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] text-gray-400">Productos</div>
+                          <div className="text-xs font-bold text-[#0D1F3C] mt-1">{supplier.productCount}</div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] text-gray-400">Respuesta</div>
+                          <div className="text-xs font-bold text-[#0D1F3C] mt-1">{supplier.responseRate}%</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-50">
+                        <span className="text-[10px] text-gray-400">Guardado {supplier.savedAtLabel}</span>
+                        {supplier.verified && (
+                          <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                            Verificado
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex gap-2 mt-4">
+                        <button
+                          type="button"
+                          onClick={() => openSupplierProfile(supplier.id)}
+                          className="flex-1 text-sm text-[#2ECAD5] border border-[#2ECAD5]/30 hover:bg-[#2ECAD5]/5 font-semibold py-2.5 rounded-xl transition-all"
+                        >
+                          Ver perfil
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleFavorite(supplier.id)}
+                          disabled={favoriteActionId === supplier.id}
+                          className="px-4 text-sm text-rose-600 border border-rose-200 hover:bg-rose-50 font-semibold py-2.5 rounded-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                          {favoriteActionId === supplier.id ? '...' : 'Quitar'}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
+                  <h3 className="text-lg font-bold text-[#0D1F3C]">Aun no guardas proveedores favoritos</h3>
+                  <p className="text-sm text-gray-400 mt-2">Explora el catalogo, abre perfiles y guarda los proveedores con los que quieres trabajar recurrentemente.</p>
                   <button
-                    key={supplier.id}
-                    onClick={() => setViewingSupplier(supplier)}
-                    className="bg-white rounded-2xl border border-gray-100 p-5 card-premium text-left transition-all hover:border-[#2ECAD5]/30 hover:shadow-md group"
+                    type="button"
+                    onClick={() => setActiveTab('catalog')}
+                    className="mt-5 bg-gradient-to-r from-emerald-400 to-blue-500 text-white font-bold px-5 py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-emerald-400/20"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-gradient-to-br from-[#0D1F3C] to-[#1a3260] rounded-xl flex items-center justify-center text-[#2ECAD5] flex-shrink-0 text-sm font-bold">
-                        {supplier.initials}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-bold text-[#0D1F3C] text-sm">{supplier.name}</p>
-                        <p className="text-xs text-[#2ECAD5] font-medium">{supplier.categories.slice(0, 2).join(' / ')}</p>
-                        <p className="text-xs text-gray-400">{supplier.city}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-50">
-                      <div className="flex items-center gap-1">
-                        <svg className="w-3.5 h-3.5 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                        </svg>
-                        <span className="text-xs font-bold text-[#0D1F3C]">{supplier.rating}</span>
-                        <span className="text-[10px] text-gray-400">({supplier.totalSales} ventas)</span>
-                      </div>
-                      {supplier.verified && (
-                        <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                          Verificado
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-3 flex items-center justify-center gap-1.5 text-xs text-[#2ECAD5] font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span>Ver perfil completo</span>
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                      </svg>
-                    </div>
+                    Ir al catalogo
                   </button>
-                ))}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         )}

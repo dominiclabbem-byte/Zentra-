@@ -1,5 +1,52 @@
 import { supabase } from './supabase';
 
+const USER_PROFILE_SELECT = `
+  *,
+  buyer_profiles(*),
+  supplier_profiles(*),
+  user_categories(scope, category_id, categories(id, name, emoji)),
+  subscriptions(*, plans(*))
+`;
+
+const SUPPLIER_CATEGORY_SCOPE = 'supplier_catalog';
+const SUPPLIER_RELEVANT_QUOTE_SELECT = `
+  *,
+  categories(id, name, emoji),
+  users!buyer_id(company_name, city, rut, verified),
+  quote_offers(
+    id,
+    quote_id,
+    supplier_id,
+    responder_id,
+    price,
+    notes,
+    estimated_lead_time,
+    status,
+    pipeline_status,
+    created_at,
+    users!supplier_id(company_name, city, verified)
+  )
+`;
+
+function takeSingle(value) {
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value ?? null;
+}
+
+async function getUserCategoryIds(userId, scope) {
+  const { data, error } = await supabase
+    .from('user_categories')
+    .select('category_id')
+    .eq('user_id', userId)
+    .eq('scope', scope);
+
+  if (error) throw error;
+
+  return (data ?? [])
+    .map((row) => row.category_id)
+    .filter(Boolean);
+}
+
 // ========================
 // AUTH
 // ========================
@@ -46,7 +93,7 @@ export async function getCurrentUser() {
 
   const { data, error } = await supabase
     .from('users')
-    .select('*, buyer_profiles(*), supplier_profiles(*)')
+    .select(USER_PROFILE_SELECT)
     .eq('auth_id', user.id)
     .single();
   if (error) throw error;
@@ -88,8 +135,8 @@ export async function getSupplierProfile(userId) {
     .select(`
       *,
       supplier_profiles(*),
-      user_categories(category_id, categories(id, name, emoji)),
-      products(*),
+      user_categories(scope, category_id, categories(id, name, emoji)),
+      products(*, categories(name, emoji)),
       subscriptions(*, plans(*))
     `)
     .eq('id', userId)
@@ -105,7 +152,7 @@ export async function getBuyerProfile(userId) {
     .select(`
       *,
       buyer_profiles(*),
-      user_categories(category_id, categories(id, name, emoji))
+      user_categories(scope, category_id, categories(id, name, emoji))
     `)
     .eq('id', userId)
     .eq('is_buyer', true)
@@ -121,8 +168,15 @@ export async function getBuyerProfile(userId) {
 export async function getProducts(filters = {}) {
   let query = supabase
     .from('products')
-    .select('*, categories(name, emoji), users!supplier_id(company_name)')
-    .eq('status', 'active');
+    .select('*, categories(name, emoji), users!supplier_id(company_name)');
+
+  if (filters.status) {
+    query = Array.isArray(filters.status)
+      ? query.in('status', filters.status)
+      : query.eq('status', filters.status);
+  } else if (!filters.includeAllStatuses) {
+    query = query.eq('status', 'active');
+  }
 
   if (filters.categoryId) query = query.eq('category_id', filters.categoryId);
   if (filters.supplierId) query = query.eq('supplier_id', filters.supplierId);
@@ -169,7 +223,14 @@ export async function createQuoteRequest(quote) {
   const { data, error } = await supabase
     .from('quote_requests')
     .insert(quote)
-    .select()
+    .select(`
+      *,
+      categories(id, name, emoji),
+      quote_offers(
+        *,
+        users!supplier_id(company_name, city, verified)
+      )
+    `)
     .single();
   if (error) throw error;
   return data;
@@ -178,7 +239,14 @@ export async function createQuoteRequest(quote) {
 export async function getQuoteRequestsForBuyer(buyerId) {
   const { data, error } = await supabase
     .from('quote_requests')
-    .select('*, quote_offers(count)')
+    .select(`
+      *,
+      categories(id, name, emoji),
+      quote_offers(
+        *,
+        users!supplier_id(company_name, city, verified)
+      )
+    `)
     .eq('buyer_id', buyerId)
     .order('created_at', { ascending: false });
   if (error) throw error;
@@ -188,32 +256,77 @@ export async function getQuoteRequestsForBuyer(buyerId) {
 export async function getOpenQuoteRequests() {
   const { data, error } = await supabase
     .from('quote_requests')
-    .select('*, users!buyer_id(company_name, city, rut), quote_offers(count)')
-    .eq('status', 'open')
+    .select(`
+      *,
+      categories(id, name, emoji),
+      users!buyer_id(company_name, city, rut, verified),
+      quote_offers(id, supplier_id, status, pipeline_status)
+    `)
+    .in('status', ['open', 'in_review'])
     .order('created_at', { ascending: false });
   if (error) throw error;
   return data;
 }
 
-export async function submitOffer({ quoteId, supplierId, price, notes }) {
+export async function getRelevantQuoteRequestsForSupplier(supplierId, filters = {}) {
+  const categoryIds = await getUserCategoryIds(supplierId, SUPPLIER_CATEGORY_SCOPE);
+  if (!categoryIds.length) return [];
+
+  const statuses = filters.statuses?.length
+    ? filters.statuses
+    : ['open', 'in_review'];
+
+  const { data, error } = await supabase
+    .from('quote_requests')
+    .select(SUPPLIER_RELEVANT_QUOTE_SELECT)
+    .in('category_id', categoryIds)
+    .in('status', statuses)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getOffersForSupplier(supplierId) {
+  const { data, error } = await supabase
+    .from('quote_offers')
+    .select(`
+      *,
+      quote_requests(
+        *,
+        categories(id, name, emoji),
+        users!buyer_id(company_name, city, rut, verified)
+      )
+    `)
+    .eq('supplier_id', supplierId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+export async function submitOffer({ quoteId, supplierId, responderId, price, notes, estimatedLeadTime }) {
   const { data, error } = await supabase
     .from('quote_offers')
     .insert({
       quote_id: quoteId,
       supplier_id: supplierId,
+      responder_id: responderId,
       price,
       notes,
+      estimated_lead_time: estimatedLeadTime,
     })
-    .select()
+    .select(`
+      *,
+      users!supplier_id(company_name, city, verified)
+    `)
     .single();
   if (error) throw error;
 
-  // Actualizar status de la cotizacion
   await supabase
     .from('quote_requests')
-    .update({ status: 'in_progress' })
+    .update({ status: 'in_review' })
     .eq('id', quoteId)
-    .eq('status', 'open');
+    .in('status', ['open', 'in_review']);
 
   return data;
 }
@@ -221,9 +334,33 @@ export async function submitOffer({ quoteId, supplierId, price, notes }) {
 export async function getOffersForQuote(quoteId) {
   const { data, error } = await supabase
     .from('quote_offers')
-    .select('*, users!supplier_id(company_name, city, verified)')
+    .select(`
+      *,
+      users!supplier_id(company_name, city, verified)
+    `)
     .eq('quote_id', quoteId)
     .order('price', { ascending: true });
+  if (error) throw error;
+  return data;
+}
+
+export async function updateOfferPipelineStatus({ offerId, supplierId, pipelineStatus }) {
+  const { data, error } = await supabase
+    .from('quote_offers')
+    .update({ pipeline_status: pipelineStatus })
+    .eq('id', offerId)
+    .eq('supplier_id', supplierId)
+    .select(`
+      *,
+      quote_requests(
+        *,
+        categories(id, name, emoji),
+        users!buyer_id(company_name, city, rut, verified)
+      ),
+      users!supplier_id(company_name, city, verified)
+    `)
+    .single();
+
   if (error) throw error;
   return data;
 }
@@ -237,7 +374,6 @@ export async function acceptOffer(offerId) {
     .single();
   if (error) throw error;
 
-  // Cerrar cotizacion y rechazar otras ofertas
   await supabase
     .from('quote_requests')
     .update({ status: 'closed' })
@@ -248,6 +384,24 @@ export async function acceptOffer(offerId) {
     .update({ status: 'rejected' })
     .eq('quote_id', data.quote_requests.id)
     .neq('id', offerId)
+    .eq('status', 'pending');
+
+  return data;
+}
+
+export async function cancelQuoteRequest(quoteId) {
+  const { data, error } = await supabase
+    .from('quote_requests')
+    .update({ status: 'cancelled' })
+    .eq('id', quoteId)
+    .select()
+    .single();
+  if (error) throw error;
+
+  await supabase
+    .from('quote_offers')
+    .update({ status: 'rejected' })
+    .eq('quote_id', quoteId)
     .eq('status', 'pending');
 
   return data;
@@ -276,7 +430,7 @@ export async function createReview({ reviewerId, reviewedId, quoteOfferId, ratin
 export async function getReviewsForUser(userId) {
   const { data, error } = await supabase
     .from('reviews')
-    .select('*, users!reviewer_id(company_name)')
+    .select('*, users!reviewer_id(company_name, city, verified)')
     .eq('reviewed_id', userId)
     .order('created_at', { ascending: false });
   if (error) throw error;
@@ -288,31 +442,49 @@ export async function getReviewsForUser(userId) {
 // ========================
 
 export async function toggleFavorite(buyerId, supplierId) {
-  const { data: existing } = await supabase
+  const { data: existing, error: existingError } = await supabase
     .from('favorites')
-    .select()
+    .select('buyer_id, supplier_id')
     .eq('buyer_id', buyerId)
     .eq('supplier_id', supplierId)
-    .single();
+    .maybeSingle();
+
+  if (existingError) throw existingError;
 
   if (existing) {
-    await supabase
+    const { error } = await supabase
       .from('favorites')
       .delete()
       .eq('buyer_id', buyerId)
       .eq('supplier_id', supplierId);
+    if (error) throw error;
     return false; // removed
   }
 
-  await supabase.from('favorites').insert({ buyer_id: buyerId, supplier_id: supplierId });
+  const { error } = await supabase
+    .from('favorites')
+    .insert({ buyer_id: buyerId, supplier_id: supplierId });
+  if (error) throw error;
+
   return true; // added
 }
 
 export async function getFavorites(buyerId) {
   const { data, error } = await supabase
     .from('favorites')
-    .select('*, users!supplier_id(id, company_name, city, verified)')
-    .eq('buyer_id', buyerId);
+    .select(`
+      created_at,
+      supplier_id,
+      users!supplier_id(
+        *,
+        supplier_profiles(*),
+        user_categories(scope, category_id, categories(id, name, emoji)),
+        products(*, categories(name, emoji)),
+        subscriptions(*, plans(*))
+      )
+    `)
+    .eq('buyer_id', buyerId)
+    .order('supplier_id', { ascending: false });
   if (error) throw error;
   return data;
 }
@@ -352,33 +524,80 @@ export async function getSuppliers(filters = {}) {
 // ========================
 
 export async function getPriceAlerts(buyerId) {
-  // Obtener alertas de categorias/productos que el buyer sigue
-  const { data: subs } = await supabase
-    .from('price_alert_subscriptions')
-    .select('category_id, product_id')
-    .eq('buyer_id', buyerId);
+  const subscriptions = await getPriceAlertSubscriptions(buyerId);
+  if (!subscriptions.length) return [];
 
-  if (!subs?.length) return [];
+  const productIds = subscriptions
+    .filter((subscription) => subscription.product_id)
+    .map((subscription) => subscription.product_id);
 
-  const categoryIds = subs.filter(s => s.category_id).map(s => s.category_id);
-  const productIds = subs.filter(s => s.product_id).map(s => s.product_id);
+  const categoryIds = subscriptions
+    .filter((subscription) => subscription.category_id)
+    .map((subscription) => subscription.category_id);
 
-  let query = supabase
+  const { data, error } = await supabase
     .from('price_alerts')
-    .select('*, products(name, category_id, users!supplier_id(company_name))')
+    .select(`
+      *,
+      products(
+        id,
+        name,
+        category_id,
+        price_unit,
+        users!supplier_id(company_name),
+        categories(name, emoji)
+      )
+    `)
     .order('created_at', { ascending: false })
-    .limit(20);
+    .limit(100);
 
-  if (productIds.length) {
-    query = query.in('product_id', productIds);
-  }
-
-  const { data, error } = await query;
   if (error) throw error;
-  return data;
+
+  return (data ?? [])
+    .filter((alert) => {
+      const product = takeSingle(alert.products);
+      return productIds.includes(alert.product_id) || categoryIds.includes(product?.category_id);
+    })
+    .slice(0, 20);
+}
+
+export async function getPriceAlertSubscriptions(buyerId) {
+  const { data, error } = await supabase
+    .from('price_alert_subscriptions')
+    .select(`
+      *,
+      categories(id, name, emoji),
+      products(id, name, price_unit, categories(name, emoji))
+    `)
+    .eq('buyer_id', buyerId)
+    .order('id', { ascending: false });
+
+  if (error) throw error;
+  return data ?? [];
 }
 
 export async function subscribeToPriceAlert(buyerId, { categoryId, productId }) {
+  if (!categoryId && !productId) {
+    throw new Error('Debes seleccionar una categoria o un producto para la alerta.');
+  }
+
+  let existingQuery = supabase
+    .from('price_alert_subscriptions')
+    .select(`
+      *,
+      categories(id, name, emoji),
+      products(id, name, price_unit, categories(name, emoji))
+    `)
+    .eq('buyer_id', buyerId);
+
+  existingQuery = productId
+    ? existingQuery.eq('product_id', productId).is('category_id', null)
+    : existingQuery.eq('category_id', categoryId).is('product_id', null);
+
+  const { data: existing, error: existingError } = await existingQuery.maybeSingle();
+  if (existingError) throw existingError;
+  if (existing) return existing;
+
   const { data, error } = await supabase
     .from('price_alert_subscriptions')
     .insert({
@@ -386,10 +605,24 @@ export async function subscribeToPriceAlert(buyerId, { categoryId, productId }) 
       category_id: categoryId || null,
       product_id: productId || null,
     })
-    .select()
+    .select(`
+      *,
+      categories(id, name, emoji),
+      products(id, name, price_unit, categories(name, emoji))
+    `)
     .single();
   if (error) throw error;
   return data;
+}
+
+export async function removePriceAlertSubscription(subscriptionId, buyerId) {
+  const { error } = await supabase
+    .from('price_alert_subscriptions')
+    .delete()
+    .eq('id', subscriptionId)
+    .eq('buyer_id', buyerId);
+
+  if (error) throw error;
 }
 
 // ========================
@@ -417,12 +650,18 @@ export async function getActiveSubscription(supplierId) {
 }
 
 export async function subscribeToPlan(supplierId, planId) {
+  const currentSubscription = await getActiveSubscription(supplierId);
+  if (currentSubscription?.plan_id === planId) {
+    return currentSubscription;
+  }
+
   // Cancelar suscripcion activa
-  await supabase
+  const { error: cancelError } = await supabase
     .from('subscriptions')
     .update({ status: 'cancelled' })
     .eq('supplier_id', supplierId)
     .eq('status', 'active');
+  if (cancelError) throw cancelError;
 
   const { data, error } = await supabase
     .from('subscriptions')
@@ -435,6 +674,67 @@ export async function subscribeToPlan(supplierId, planId) {
     .single();
   if (error) throw error;
   return data;
+}
+
+export async function getSupplierUsageSummary(supplierId) {
+  const startOfMonth = new Date();
+  startOfMonth.setUTCDate(1);
+  startOfMonth.setUTCHours(0, 0, 0, 0);
+  const monthStartIso = startOfMonth.toISOString();
+
+  const { data: agents, error: agentsError } = await supabase
+    .from('ai_agents')
+    .select('id')
+    .eq('supplier_id', supplierId);
+
+  if (agentsError) throw agentsError;
+
+  const agentIds = (agents ?? []).map((agent) => agent.id);
+
+  const [
+    productsRes,
+    quoteResponsesRes,
+    conversationsRes,
+    voiceCallsRes,
+  ] = await Promise.all([
+    supabase
+      .from('products')
+      .select('id', { count: 'exact', head: true })
+      .eq('supplier_id', supplierId)
+      .in('status', ['active', 'low_stock']),
+    supabase
+      .from('quote_offers')
+      .select('id', { count: 'exact', head: true })
+      .eq('supplier_id', supplierId)
+      .gte('created_at', monthStartIso),
+    agentIds.length
+      ? supabase
+          .from('agent_conversations')
+          .select('id', { count: 'exact', head: true })
+          .in('agent_id', agentIds)
+          .gte('started_at', monthStartIso)
+      : Promise.resolve({ count: 0, error: null }),
+    agentIds.length
+      ? supabase
+          .from('agent_conversations')
+          .select('id', { count: 'exact', head: true })
+          .in('agent_id', agentIds)
+          .eq('channel', 'voice')
+          .gte('started_at', monthStartIso)
+      : Promise.resolve({ count: 0, error: null }),
+  ]);
+
+  if (productsRes.error) throw productsRes.error;
+  if (quoteResponsesRes.error) throw quoteResponsesRes.error;
+  if (conversationsRes.error) throw conversationsRes.error;
+  if (voiceCallsRes.error) throw voiceCallsRes.error;
+
+  return {
+    activeProducts: productsRes.count || 0,
+    quoteResponsesThisMonth: quoteResponsesRes.count || 0,
+    aiConversationsThisMonth: conversationsRes.count || 0,
+    voiceCallsThisMonth: voiceCallsRes.count || 0,
+  };
 }
 
 // ========================
@@ -494,13 +794,21 @@ export async function getCategories() {
   return data;
 }
 
-export async function setUserCategories(userId, categoryIds) {
-  // Borrar existentes y reinsertar
-  await supabase.from('user_categories').delete().eq('user_id', userId);
+export async function setUserCategories(userId, categoryIds, scope = 'supplier_catalog') {
+  // Mantiene buyer/supplier aislados para permitir organizaciones con ambos roles.
+  await supabase
+    .from('user_categories')
+    .delete()
+    .eq('user_id', userId)
+    .eq('scope', scope);
 
   if (categoryIds.length === 0) return [];
 
-  const rows = categoryIds.map(cid => ({ user_id: userId, category_id: cid }));
+  const rows = categoryIds.map((categoryId) => ({
+    user_id: userId,
+    category_id: categoryId,
+    scope,
+  }));
   const { data, error } = await supabase
     .from('user_categories')
     .insert(rows)
@@ -514,7 +822,7 @@ export async function setUserCategories(userId, categoryIds) {
 // ========================
 
 export async function getSupplierStats(supplierId) {
-  const [quotesRes, reviewsRes, favoritesRes] = await Promise.all([
+  const [quotesRes, reviewsRes, favoritesRes, reviewCountRes] = await Promise.allSettled([
     supabase
       .from('quote_offers')
       .select('id', { count: 'exact', head: true })
@@ -523,14 +831,19 @@ export async function getSupplierStats(supplierId) {
     supabase.rpc('get_user_rating', { p_user_id: supplierId }),
     supabase
       .from('favorites')
-      .select('id', { count: 'exact', head: true })
+      .select('supplier_id', { count: 'exact', head: true })
       .eq('supplier_id', supplierId),
+    supabase
+      .from('reviews')
+      .select('id', { count: 'exact', head: true })
+      .eq('reviewed_id', supplierId),
   ]);
 
   return {
-    totalSales: quotesRes.count || 0,
-    rating: reviewsRes.data || 0,
-    recurringClients: favoritesRes.count || 0,
+    totalSales: quotesRes.status === 'fulfilled' ? (quotesRes.value.count || 0) : 0,
+    rating: reviewsRes.status === 'fulfilled' ? (reviewsRes.value.data || 0) : 0,
+    recurringClients: favoritesRes.status === 'fulfilled' ? (favoritesRes.value.count || 0) : 0,
+    totalReviews: reviewCountRes.status === 'fulfilled' ? (reviewCountRes.value.count || 0) : 0,
   };
 }
 
@@ -543,7 +856,7 @@ export async function getBuyerStats(buyerId) {
     supabase.rpc('get_user_rating', { p_user_id: buyerId }),
     supabase
       .from('favorites')
-      .select('id', { count: 'exact', head: true })
+      .select('supplier_id', { count: 'exact', head: true })
       .eq('buyer_id', buyerId),
   ]);
 

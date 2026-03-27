@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { chatWithAgent } from '../services/claudeApi';
 import { speakText, stopSpeaking } from '../services/ttsService';
+import RenderProfiler from './RenderProfiler';
 
-export default function VoiceCall({ agent, profile, onClose, onToast }) {
+export default function VoiceCall({ agent, profile, onClose }) {
   const [phase, setPhase] = useState('starting');  // starting | listening | thinking | speaking
   const [transcript, setTranscript] = useState('');
   const [agentText, setAgentText] = useState('');
@@ -58,7 +59,9 @@ export default function VoiceCall({ agent, profile, onClose, onToast }) {
     }
 
     // Kill previous
-    try { recRef.current?.stop(); } catch {}
+    try { recRef.current?.stop(); } catch {
+      // Ignore stale speech-recognition teardown errors.
+    }
 
     const rec = new SR();
     rec.lang = 'es-CL';
@@ -97,7 +100,9 @@ export default function VoiceCall({ agent, profile, onClose, onToast }) {
       if (currentText.trim()) {
         silenceTimeout = setTimeout(() => {
           if (!sent && alive.current) {
-            try { rec.stop(); } catch {}
+            try { rec.stop(); } catch {
+              // Ignore duplicate stop calls while processing silence.
+            }
           }
         }, 1200);
       }
@@ -184,14 +189,20 @@ export default function VoiceCall({ agent, profile, onClose, onToast }) {
       alive.current = false;
       clearTimeout(timer);
       stopSpeaking();
-      try { recRef.current?.stop(); } catch {}
+      try { recRef.current?.stop(); } catch {
+        // Ignore teardown errors when the call modal unmounts.
+      }
     };
+    // This call session is intentionally bootstrapped once when the modal opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleEndCall = () => {
     alive.current = false;
     stopSpeaking();
-    try { recRef.current?.stop(); } catch {}
+    try { recRef.current?.stop(); } catch {
+      // Ignore teardown errors if the microphone is already closed.
+    }
     onClose();
   };
 
@@ -211,9 +222,10 @@ export default function VoiceCall({ agent, profile, onClose, onToast }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0a1628]/95 backdrop-blur-xl animate-fade-in">
-      <div className="w-full max-w-sm mx-4">
-        <div className="bg-gradient-to-b from-[#0D1F3C] to-[#162d54] rounded-3xl p-8 shadow-2xl border border-white/5">
+    <RenderProfiler id="VoiceCall">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0a1628]/90 backdrop-blur-md animate-fade-in">
+        <div className="w-full max-w-sm mx-4">
+          <div className="transform-gpu bg-gradient-to-b from-[#0D1F3C] to-[#162d54] rounded-3xl p-8 shadow-2xl border border-white/5">
 
           {/* Avatar */}
           <div className="flex flex-col items-center mb-6">
@@ -301,15 +313,16 @@ export default function VoiceCall({ agent, profile, onClose, onToast }) {
             </button>
           </div>
           <p className="text-center text-xs text-gray-500 mt-2">Toca para colgar</p>
+          </div>
         </div>
-      </div>
 
-      <style>{`
+        <style>{`
         @keyframes waveform {
           0% { height: 4px; }
           100% { height: 18px; }
         }
-      `}</style>
-    </div>
+        `}</style>
+      </div>
+    </RenderProfiler>
   );
 }

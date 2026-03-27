@@ -1,16 +1,74 @@
-# React + Vite
+# Zentra
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend React + Vite para el marketplace B2B de abastecimiento Zentra.
 
-Currently, two official plugins are available:
+## Stage 1
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Esta iteracion deja lista la base de:
 
-## React Compiler
+- auth con Supabase
+- registro buyer
+- registro supplier
+- activacion de segundo rol sobre la misma organizacion
+- dashboards buyer/supplier protegidos por sesion
+- edicion persistente de perfiles buyer/supplier
+- deploy SPA en Vercel con `vercel.json`
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Variables de entorno
 
-## Expanding the ESLint configuration
+Usa `.env.example` como referencia:
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+- `VITE_ANTHROPIC_API_KEY`
+- `VITE_ELEVENLABS_API_KEY`
+
+## Supabase
+
+Antes de probar Stage 1, aplica tambien la migracion:
+
+- [supabase/migrations/002_stage1_profiles.sql](/mnt/c/Users/mateo/Desktop/Zentra-/supabase/migrations/002_stage1_profiles.sql)
+
+Esa migracion agrega `scope` a `user_categories` para soportar categorias buyer y supplier sin pisarse cuando una organizacion tiene ambos roles.
+
+## Backfill de datos
+
+Para cargar datos reales de prueba en el proyecto remoto, aplica primero las migraciones y luego corre el seed:
+
+```powershell
+$env:SUPABASE_URL="https://TU_PROJECT_REF.supabase.co"
+$env:SUPABASE_SERVICE_ROLE_KEY="TU_SERVICE_ROLE_KEY"
+$env:SEED_PASSWORD="ZentraDemo123!"
+npm run seed:demo
+```
+
+El backfill crea una cuenta admin y varias cuentas buyer/supplier con datos plausibles para probar el flujo completo. Credenciales base:
+
+- `admin@zentra.cl`
+- `ventas@vallefrio.cl`
+- `contacto@molinosdelsur.cl`
+- `ventas@agrosur.cl`
+- `compras@mozart.cl`
+- `compras@ritz.cl`
+- `abastecimiento@puertosur.cl`
+- `compras@cateringandes.cl`
+
+La contrasena por defecto es `ZentraDemo123!`, salvo que definas `SEED_PASSWORD`.
+
+## Desarrollo
+
+```bash
+npm install
+npm run dev
+```
+
+## Verificacion
+
+```bash
+npm run build
+```
+
+`npm run lint` todavia falla por deuda previa en:
+
+- [src/components/VoiceCall.jsx](/mnt/c/Users/mateo/Desktop/Zentra-/src/components/VoiceCall.jsx)
+- [src/services/ttsService.js](/mnt/c/Users/mateo/Desktop/Zentra-/src/services/ttsService.js)
