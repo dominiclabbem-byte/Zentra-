@@ -763,10 +763,11 @@ export default function BuyerDashboard() {
         <Modal title="Nueva Cotizacion" onClose={() => setShowModal(false)}>
           <form onSubmit={handleQuoteSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label htmlFor="quote-product" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Producto necesitado <span className="text-red-500">*</span>
               </label>
               <input
+                id="quote-product"
                 type="text"
                 required
                 placeholder="Ej: Harina extra fina, Aceite de oliva..."
@@ -776,8 +777,9 @@ export default function BuyerDashboard() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Categoria</label>
+              <label htmlFor="quote-category" className="block text-sm font-medium text-gray-700 mb-1.5">Categoria</label>
               <select
+                id="quote-category"
                 value={quoteForm.categoryId}
                 onChange={(e) => setQuoteForm({ ...quoteForm, categoryId: e.target.value })}
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] bg-white transition-all"
@@ -790,10 +792,11 @@ export default function BuyerDashboard() {
             </div>
             <div className="flex gap-3">
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label htmlFor="quote-quantity" className="block text-sm font-medium text-gray-700 mb-1.5">
                   Cantidad <span className="text-red-500">*</span>
                 </label>
                 <input
+                  id="quote-quantity"
                   type="number"
                   required
                   min="1"
@@ -804,8 +807,9 @@ export default function BuyerDashboard() {
                 />
               </div>
               <div className="w-28">
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Unidad</label>
+                <label htmlFor="quote-unit" className="block text-sm font-medium text-gray-700 mb-1.5">Unidad</label>
                 <select
+                  id="quote-unit"
                   value={quoteForm.unit}
                   onChange={(e) => setQuoteForm({ ...quoteForm, unit: e.target.value })}
                   className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] bg-white transition-all"
@@ -815,10 +819,11 @@ export default function BuyerDashboard() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label htmlFor="quote-delivery-date" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Fecha de entrega requerida <span className="text-red-500">*</span>
               </label>
               <input
+                id="quote-delivery-date"
                 type="date"
                 required
                 value={quoteForm.deliveryDate}
@@ -827,10 +832,11 @@ export default function BuyerDashboard() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label htmlFor="quote-notes" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Notas para proveedores
               </label>
               <textarea
+                id="quote-notes"
                 rows={3}
                 placeholder="Ej: Marca preferida, calibre, formato de entrega, horario de recepcion..."
                 value={quoteForm.notes}

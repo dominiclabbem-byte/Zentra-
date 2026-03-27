@@ -1,7 +1,7 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { buildMarketplaceSeed, buildPriceAlertSubscription } from '../test/marketplaceFixtures';
+import { buildMarketplaceSeed, buildPriceAlertSubscription, buildQuoteRequest } from '../test/marketplaceFixtures';
 import { renderWithRouter } from '../test/renderWithRouter';
 import BuyerDashboard from './BuyerDashboard';
 
@@ -98,5 +98,51 @@ describe('BuyerDashboard', () => {
         productId: null,
       });
     });
+  });
+
+  it('permite crear una nueva RFQ desde el modal principal', async () => {
+    const user = userEvent.setup();
+    const createdQuote = buildQuoteRequest({
+      id: 'quote-99',
+      buyer_id: 'buyer-1',
+      requester_id: 'buyer-1',
+      product_name: 'Mantequilla premium',
+      category_id: 'cat-2',
+      quantity: 120,
+      unit: 'kg',
+      delivery_date: '2026-04-12',
+      notes: 'Despacho refrigerado AM',
+      categories: seed.categories[1],
+      users: seed.buyer,
+      quote_offers: [],
+    });
+    mockDatabase.createQuoteRequest.mockResolvedValue(createdQuote);
+
+    renderWithRouter(<BuyerDashboard />);
+
+    await user.click(await screen.findByRole('button', { name: 'Nueva cotizacion' }));
+    await user.type(screen.getByLabelText(/Producto necesitado/i), 'Mantequilla premium');
+    await user.selectOptions(screen.getByLabelText('Categoria'), 'cat-2');
+    await user.type(screen.getByLabelText(/Cantidad/i), '120');
+    await user.selectOptions(screen.getByLabelText('Unidad'), 'kg');
+    await user.type(screen.getByLabelText(/Fecha de entrega requerida/i), '2026-04-12');
+    await user.type(screen.getByLabelText(/Notas para proveedores/i), 'Despacho refrigerado AM');
+    await user.click(screen.getByRole('button', { name: 'Enviar cotizacion' }));
+
+    await waitFor(() => {
+      expect(mockDatabase.createQuoteRequest).toHaveBeenCalledWith({
+        buyer_id: 'buyer-1',
+        requester_id: 'buyer-1',
+        product_name: 'Mantequilla premium',
+        category_id: 'cat-2',
+        quantity: 120,
+        unit: 'kg',
+        delivery_date: '2026-04-12',
+        notes: 'Despacho refrigerado AM',
+      });
+    });
+
+    expect(await screen.findByText('Cotizacion creada. Ahora los proveedores pueden ofertar.')).toBeInTheDocument();
+    expect(await screen.findByText('Mantequilla premium')).toBeInTheDocument();
   });
 });

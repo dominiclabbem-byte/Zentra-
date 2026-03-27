@@ -1,7 +1,7 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { buildMarketplaceSeed, buildPlan, buildSubscription } from '../test/marketplaceFixtures';
+import { buildMarketplaceSeed, buildPlan, buildQuoteOffer, buildQuoteRequest, buildSubscription } from '../test/marketplaceFixtures';
 import { renderWithRouter } from '../test/renderWithRouter';
 import SupplierDashboard from './SupplierDashboard';
 
@@ -68,6 +68,17 @@ describe('SupplierDashboard', () => {
       ...seed.quoteOffers[0],
       pipeline_status: 'negotiation',
     });
+    mockDatabase.submitOffer.mockResolvedValue(
+      buildQuoteOffer({
+        id: 'offer-99',
+        quote_id: 'quote-1',
+        supplier_id: 'supplier-1',
+        responder_id: 'supplier-1',
+        price: 1320,
+        notes: 'Incluye entrega en frio',
+        estimated_lead_time: '48 horas',
+      }),
+    );
   });
 
   it('muestra summary, cartera buyer y plan activo desde datos reales', async () => {
@@ -105,6 +116,53 @@ describe('SupplierDashboard', () => {
         pipelineStatus: 'negotiation',
       });
     });
+  });
+
+  it('permite responder una RFQ abierta desde el inbox', async () => {
+    const user = userEvent.setup();
+    const openQuote = buildQuoteRequest({
+      id: 'quote-open',
+      buyer_id: 'buyer-1',
+      requester_id: 'buyer-1',
+      product_name: 'Crema vegetal',
+      category_id: 'cat-1',
+      quantity: 80,
+      unit: 'cajas',
+      delivery_date: '2026-04-05',
+      notes: 'Entrega refrigerada antes de las 10 AM',
+      status: 'open',
+      categories: seed.categories[0],
+      users: seed.buyer,
+      quote_offers: [],
+    });
+    mockDatabase.getRelevantQuoteRequestsForSupplier.mockResolvedValue([openQuote]);
+    mockDatabase.getOffersForSupplier.mockResolvedValue(
+      seed.quoteOffers.filter((offer) => offer.quote_id !== openQuote.id),
+    );
+
+    renderWithRouter(<SupplierDashboard />);
+
+    const quoteButtons = await screen.findAllByRole('button', { name: 'Cotizar' });
+    await user.click(quoteButtons[0]);
+    await screen.findByText('Precio ofertado (CLP)');
+
+    await user.type(screen.getByLabelText(/Precio ofertado/i), '1320');
+    await user.type(screen.getByLabelText(/Lead time estimado/i), '48 horas');
+    await user.type(screen.getByLabelText(/Notas adicionales/i), 'Incluye entrega en frio');
+    await user.click(screen.getByRole('button', { name: 'Enviar oferta' }));
+
+    await waitFor(() => {
+      expect(mockDatabase.submitOffer).toHaveBeenCalledWith({
+        quoteId: 'quote-open',
+        supplierId: 'supplier-1',
+        responderId: 'supplier-1',
+        price: 1320,
+        notes: 'Incluye entrega en frio',
+        estimatedLeadTime: '48 horas',
+      });
+    });
+
+    expect(await screen.findByText(/Oferta enviada a Pasteleria Mozart/i)).toBeInTheDocument();
   });
 
   it('permite cambiar el plan desde la tab de plan', async () => {

@@ -732,12 +732,13 @@ export default function SupplierDashboard() {
           </div>
           <form onSubmit={handleOfferSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label htmlFor="offer-price" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Precio ofertado (CLP) <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-medium text-sm">$</span>
                 <input
+                  id="offer-price"
                   type="number"
                   required
                   min="1"
@@ -749,10 +750,11 @@ export default function SupplierDashboard() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label htmlFor="offer-lead-time" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Lead time estimado
               </label>
               <input
+                id="offer-lead-time"
                 type="text"
                 placeholder="Ej: 48 horas, 3 dias habiles"
                 value={offerForm.estimatedLeadTime}
@@ -761,10 +763,11 @@ export default function SupplierDashboard() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label htmlFor="offer-notes" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Notas adicionales
               </label>
               <textarea
+                id="offer-notes"
                 rows={3}
                 placeholder="Ej: Disponibilidad inmediata. Entrega en 48hrs. Incluye flete a Santiago."
                 value={offerForm.notes}

@@ -1,4 +1,34 @@
 import { supabase } from './supabase';
+import {
+  e2eAcceptOffer,
+  e2eCancelQuoteRequest,
+  e2eCreateQuoteRequest,
+  e2eGetBuyerProfile,
+  e2eGetBuyerStats,
+  e2eGetCategories,
+  e2eGetCurrentUser,
+  e2eGetFavorites,
+  e2eGetOffersForSupplier,
+  e2eGetPlans,
+  e2eGetPriceAlertSubscriptions,
+  e2eGetPriceAlerts,
+  e2eGetProducts,
+  e2eGetQuoteRequestsForBuyer,
+  e2eGetRelevantQuoteRequestsForSupplier,
+  e2eGetReviewsForUser,
+  e2eGetSupplierProfile,
+  e2eGetSupplierStats,
+  e2eGetSupplierUsageSummary,
+  e2eRemovePriceAlertSubscription,
+  e2eSignIn,
+  e2eSignOut,
+  e2eSubmitOffer,
+  e2eSubscribeToPlan,
+  e2eSubscribeToPriceAlert,
+  e2eToggleFavorite,
+  e2eUpdateOfferPipelineStatus,
+  isE2EMode,
+} from '../e2e/mockRuntime';
 
 const USER_PROFILE_SELECT = `
   *,
@@ -31,6 +61,10 @@ const SUPPLIER_RELEVANT_QUOTE_SELECT = `
 function takeSingle(value) {
   if (Array.isArray(value)) return value[0] ?? null;
   return value ?? null;
+}
+
+function useE2E() {
+  return isE2EMode();
 }
 
 async function getUserCategoryIds(userId, scope) {
@@ -77,17 +111,20 @@ export async function signUp({ email, password, companyName, rut, city, isSuppli
 }
 
 export async function signIn({ email, password }) {
+  if (useE2E()) return e2eSignIn({ email, password });
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw error;
   return data;
 }
 
 export async function signOut() {
+  if (useE2E()) return e2eSignOut();
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
 }
 
 export async function getCurrentUser() {
+  if (useE2E()) return e2eGetCurrentUser();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
@@ -130,6 +167,7 @@ export async function enableBuyerRole(userId, buyerData) {
 }
 
 export async function getSupplierProfile(userId) {
+  if (useE2E()) return e2eGetSupplierProfile(userId);
   const { data, error } = await supabase
     .from('users')
     .select(`
@@ -147,6 +185,7 @@ export async function getSupplierProfile(userId) {
 }
 
 export async function getBuyerProfile(userId) {
+  if (useE2E()) return e2eGetBuyerProfile(userId);
   const { data, error } = await supabase
     .from('users')
     .select(`
@@ -166,6 +205,7 @@ export async function getBuyerProfile(userId) {
 // ========================
 
 export async function getProducts(filters = {}) {
+  if (useE2E()) return e2eGetProducts(filters);
   let query = supabase
     .from('products')
     .select('*, categories(name, emoji), users!supplier_id(company_name)');
@@ -220,6 +260,7 @@ export async function deleteProduct(productId) {
 // ========================
 
 export async function createQuoteRequest(quote) {
+  if (useE2E()) return e2eCreateQuoteRequest(quote);
   const { data, error } = await supabase
     .from('quote_requests')
     .insert(quote)
@@ -237,6 +278,7 @@ export async function createQuoteRequest(quote) {
 }
 
 export async function getQuoteRequestsForBuyer(buyerId) {
+  if (useE2E()) return e2eGetQuoteRequestsForBuyer(buyerId);
   const { data, error } = await supabase
     .from('quote_requests')
     .select(`
@@ -269,6 +311,7 @@ export async function getOpenQuoteRequests() {
 }
 
 export async function getRelevantQuoteRequestsForSupplier(supplierId, filters = {}) {
+  if (useE2E()) return e2eGetRelevantQuoteRequestsForSupplier(supplierId, filters);
   const categoryIds = await getUserCategoryIds(supplierId, SUPPLIER_CATEGORY_SCOPE);
   if (!categoryIds.length) return [];
 
@@ -288,6 +331,7 @@ export async function getRelevantQuoteRequestsForSupplier(supplierId, filters = 
 }
 
 export async function getOffersForSupplier(supplierId) {
+  if (useE2E()) return e2eGetOffersForSupplier(supplierId);
   const { data, error } = await supabase
     .from('quote_offers')
     .select(`
@@ -305,6 +349,9 @@ export async function getOffersForSupplier(supplierId) {
 }
 
 export async function submitOffer({ quoteId, supplierId, responderId, price, notes, estimatedLeadTime }) {
+  if (useE2E()) {
+    return e2eSubmitOffer({ quoteId, supplierId, responderId, price, notes, estimatedLeadTime });
+  }
   const { data, error } = await supabase
     .from('quote_offers')
     .insert({
@@ -345,6 +392,9 @@ export async function getOffersForQuote(quoteId) {
 }
 
 export async function updateOfferPipelineStatus({ offerId, supplierId, pipelineStatus }) {
+  if (useE2E()) {
+    return e2eUpdateOfferPipelineStatus({ offerId, supplierId, pipelineStatus });
+  }
   const { data, error } = await supabase
     .from('quote_offers')
     .update({ pipeline_status: pipelineStatus })
@@ -366,6 +416,7 @@ export async function updateOfferPipelineStatus({ offerId, supplierId, pipelineS
 }
 
 export async function acceptOffer(offerId) {
+  if (useE2E()) return e2eAcceptOffer(offerId);
   const { data, error } = await supabase
     .from('quote_offers')
     .update({ status: 'accepted' })
@@ -390,6 +441,7 @@ export async function acceptOffer(offerId) {
 }
 
 export async function cancelQuoteRequest(quoteId) {
+  if (useE2E()) return e2eCancelQuoteRequest(quoteId);
   const { data, error } = await supabase
     .from('quote_requests')
     .update({ status: 'cancelled' })
@@ -428,6 +480,7 @@ export async function createReview({ reviewerId, reviewedId, quoteOfferId, ratin
 }
 
 export async function getReviewsForUser(userId) {
+  if (useE2E()) return e2eGetReviewsForUser(userId);
   const { data, error } = await supabase
     .from('reviews')
     .select('*, users!reviewer_id(company_name, city, verified)')
@@ -442,6 +495,7 @@ export async function getReviewsForUser(userId) {
 // ========================
 
 export async function toggleFavorite(buyerId, supplierId) {
+  if (useE2E()) return e2eToggleFavorite(buyerId, supplierId);
   const { data: existing, error: existingError } = await supabase
     .from('favorites')
     .select('buyer_id, supplier_id')
@@ -470,6 +524,7 @@ export async function toggleFavorite(buyerId, supplierId) {
 }
 
 export async function getFavorites(buyerId) {
+  if (useE2E()) return e2eGetFavorites(buyerId);
   const { data, error } = await supabase
     .from('favorites')
     .select(`
@@ -524,6 +579,7 @@ export async function getSuppliers(filters = {}) {
 // ========================
 
 export async function getPriceAlerts(buyerId) {
+  if (useE2E()) return e2eGetPriceAlerts(buyerId);
   const subscriptions = await getPriceAlertSubscriptions(buyerId);
   if (!subscriptions.length) return [];
 
@@ -562,6 +618,7 @@ export async function getPriceAlerts(buyerId) {
 }
 
 export async function getPriceAlertSubscriptions(buyerId) {
+  if (useE2E()) return e2eGetPriceAlertSubscriptions(buyerId);
   const { data, error } = await supabase
     .from('price_alert_subscriptions')
     .select(`
@@ -577,6 +634,7 @@ export async function getPriceAlertSubscriptions(buyerId) {
 }
 
 export async function subscribeToPriceAlert(buyerId, { categoryId, productId }) {
+  if (useE2E()) return e2eSubscribeToPriceAlert(buyerId, { categoryId, productId });
   if (!categoryId && !productId) {
     throw new Error('Debes seleccionar una categoria o un producto para la alerta.');
   }
@@ -616,6 +674,7 @@ export async function subscribeToPriceAlert(buyerId, { categoryId, productId }) 
 }
 
 export async function removePriceAlertSubscription(subscriptionId, buyerId) {
+  if (useE2E()) return e2eRemovePriceAlertSubscription(subscriptionId, buyerId);
   const { error } = await supabase
     .from('price_alert_subscriptions')
     .delete()
@@ -630,6 +689,7 @@ export async function removePriceAlertSubscription(subscriptionId, buyerId) {
 // ========================
 
 export async function getPlans() {
+  if (useE2E()) return e2eGetPlans();
   const { data, error } = await supabase
     .from('plans')
     .select('*')
@@ -650,6 +710,7 @@ export async function getActiveSubscription(supplierId) {
 }
 
 export async function subscribeToPlan(supplierId, planId) {
+  if (useE2E()) return e2eSubscribeToPlan(supplierId, planId);
   const currentSubscription = await getActiveSubscription(supplierId);
   if (currentSubscription?.plan_id === planId) {
     return currentSubscription;
@@ -677,6 +738,7 @@ export async function subscribeToPlan(supplierId, planId) {
 }
 
 export async function getSupplierUsageSummary(supplierId) {
+  if (useE2E()) return e2eGetSupplierUsageSummary(supplierId);
   const startOfMonth = new Date();
   startOfMonth.setUTCDate(1);
   startOfMonth.setUTCHours(0, 0, 0, 0);
@@ -786,6 +848,7 @@ export async function getConversationMessages(conversationId) {
 // ========================
 
 export async function getCategories() {
+  if (useE2E()) return e2eGetCategories();
   const { data, error } = await supabase
     .from('categories')
     .select('*')
@@ -822,6 +885,7 @@ export async function setUserCategories(userId, categoryIds, scope = 'supplier_c
 // ========================
 
 export async function getSupplierStats(supplierId) {
+  if (useE2E()) return e2eGetSupplierStats(supplierId);
   const [quotesRes, reviewsRes, favoritesRes, reviewCountRes] = await Promise.allSettled([
     supabase
       .from('quote_offers')
@@ -848,6 +912,7 @@ export async function getSupplierStats(supplierId) {
 }
 
 export async function getBuyerStats(buyerId) {
+  if (useE2E()) return e2eGetBuyerStats(buyerId);
   const [quotesRes, reviewsRes, favoritesRes] = await Promise.all([
     supabase
       .from('quote_requests')
