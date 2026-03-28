@@ -115,7 +115,11 @@ export function normalizeUserRecord(record) {
   const buyerProfile = takeSingle(record.buyer_profiles);
   const supplierProfile = takeSingle(record.supplier_profiles);
   const subscriptions = Array.isArray(record.subscriptions) ? record.subscriptions : [];
-  const activeSubscription = subscriptions.find((subscription) => subscription.status === 'active') ?? subscriptions[0] ?? null;
+  const activeSubscription = subscriptions.find((subscription) => subscription.status === 'active')
+    ?? subscriptions.find((subscription) => subscription.status === 'pending_payment')
+    ?? subscriptions[0]
+    ?? null;
+  const pendingSubscription = subscriptions.find((subscription) => subscription.status === 'pending_payment') ?? null;
   const categoryLinks = Array.isArray(record.user_categories) ? record.user_categories : [];
   const buyerLinks = categoryLinks.filter((link) => link?.scope === BUYER_CATEGORY_SCOPE);
   const supplierLinks = categoryLinks.filter((link) => link?.scope === SUPPLIER_CATEGORY_SCOPE);
@@ -131,6 +135,7 @@ export function normalizeUserRecord(record) {
     buyerCategories,
     supplierCategories,
     activeSubscription,
+    pendingSubscription,
   };
 }
 

@@ -1,7 +1,18 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { categories as fallbackCategoryNames } from '../data/mockData';
-import { getCategories, getCurrentUser, getPlans, signIn, signOut, subscribeToPlan } from '../services/database';
+import {
+  getCategories,
+  getCurrentUser,
+  getNotifications,
+  getPlans,
+  markAllNotificationsRead,
+  markNotificationRead,
+  requestFlowPlanActivation,
+  signIn,
+  signOut,
+  subscribeToPlan,
+} from '../services/database';
 import { supabase } from '../services/supabase';
 import { createBuyerAccount, createSupplierAccount, saveBuyerRole, saveSupplierRole } from '../services/accountService';
 import { normalizeUserRecord } from '../lib/profileAdapters';
@@ -24,6 +35,7 @@ export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [categories, setCategories] = useState(FALLBACK_CATEGORY_ROWS);
   const [plans, setPlans] = useState(FALLBACK_PLAN_ROWS);
+  const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const refreshCurrentUser = useCallback(async () => {
@@ -54,6 +66,22 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  const refreshNotifications = useCallback(async (userIdOverride) => {
+    const targetUserId = userIdOverride ?? currentUser?.id;
+    if (!targetUserId) {
+      setNotifications([]);
+      return [];
+    }
+
+    try {
+      const rows = await getNotifications(targetUserId);
+      setNotifications(rows);
+      return rows;
+    } catch {
+      return [];
+    }
+  }, [currentUser?.id]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -79,6 +107,21 @@ export function AuthProvider({ children }) {
       subscription.unsubscribe();
     };
   }, [loadOptions, refreshCurrentUser]);
+
+  useEffect(() => {
+    if (!currentUser?.id) {
+      setNotifications([]);
+      return undefined;
+    }
+
+    refreshNotifications(currentUser.id);
+
+    const interval = window.setInterval(() => {
+      refreshNotifications(currentUser.id);
+    }, 30000);
+
+    return () => window.clearInterval(interval);
+  }, [currentUser?.id, refreshNotifications]);
 
   const login = useCallback(async ({ email, password }) => {
     await signIn({ email, password });
@@ -135,10 +178,35 @@ export function AuthProvider({ children }) {
     return refreshCurrentUser();
   }, [currentUser, refreshCurrentUser]);
 
+  const requestSupplierPlanBilling = useCallback(async (planId) => {
+    if (!currentUser?.id) {
+      throw new Error('No hay una sesion activa para preparar el billing.');
+    }
+
+    await requestFlowPlanActivation(currentUser.id, planId, currentUser.email);
+    return refreshCurrentUser();
+  }, [currentUser, refreshCurrentUser]);
+
+  const readNotification = useCallback(async (notificationId) => {
+    if (!currentUser?.id) return null;
+
+    await markNotificationRead(notificationId, currentUser.id);
+    return refreshNotifications(currentUser.id);
+  }, [currentUser, refreshNotifications]);
+
+  const readAllNotifications = useCallback(async () => {
+    if (!currentUser?.id) return;
+
+    await markAllNotificationsRead(currentUser.id);
+    await refreshNotifications(currentUser.id);
+  }, [currentUser, refreshNotifications]);
+
   const value = useMemo(() => ({
     currentUser,
     categories,
     plans,
+    notifications,
+    unreadNotificationsCount: notifications.filter((notification) => !notification.read_at).length,
     isLoading,
     login,
     logout,
@@ -147,6 +215,10 @@ export function AuthProvider({ children }) {
     saveBuyerProfile,
     saveSupplierProfile,
     changeSupplierPlan,
+    requestSupplierPlanBilling,
+    refreshNotifications,
+    readNotification,
+    readAllNotifications,
     refreshCurrentUser,
   }), [
     categories,
@@ -154,13 +226,18 @@ export function AuthProvider({ children }) {
     isLoading,
     login,
     logout,
+    notifications,
     plans,
+    readAllNotifications,
+    readNotification,
+    refreshNotifications,
     refreshCurrentUser,
     registerBuyer,
     registerSupplier,
     saveBuyerProfile,
     saveSupplierProfile,
     changeSupplierPlan,
+    requestSupplierPlanBilling,
   ]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

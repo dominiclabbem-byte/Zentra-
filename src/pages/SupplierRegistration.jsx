@@ -356,7 +356,7 @@ export default function SupplierRegistration() {
               <span className="w-7 h-7 bg-gradient-to-r from-emerald-400 to-blue-500 text-white rounded-lg flex items-center justify-center text-sm font-bold shadow-sm">{currentUser ? '3' : '4'}</span>
               Elige tu plan
             </h2>
-            <p className="text-sm text-gray-500 mb-6">Puedes cambiarlo despues desde tu dashboard. La activacion funciona con estado interno mientras el billing sigue manual.</p>
+            <p className="text-sm text-gray-500 mb-6">Puedes cambiarlo despues desde tu dashboard. La activacion interna sigue disponible para desarrollo y el billing con Flow queda preparado para conectarlo mas adelante.</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {planCards.map((plan) => (
                 <button

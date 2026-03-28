@@ -76,6 +76,7 @@ export default function SupplierDashboard() {
     categories: categoryOptions,
     plans,
     changeSupplierPlan,
+    requestSupplierPlanBilling,
     saveSupplierProfile,
   } = useAuth();
   const defaultProductCategory = categoryOptions[0]?.name ?? 'Otros';
@@ -84,6 +85,7 @@ export default function SupplierDashboard() {
   const currentPlanKey = getPlanKey(currentUser) ?? 'starter';
   const currentPlanLabel = formatPlanName(currentPlanKey);
   const memberSinceLabel = formatMemberSince(currentUser?.created_at);
+  const pendingPlanRequest = currentUser?.pendingSubscription ?? null;
   const [toast, setToast] = useState(null);
   const [quoteModal, setQuoteModal] = useState(null);
   const [offerForm, setOfferForm] = useState({ price: '', notes: '', estimatedLeadTime: '' });
@@ -119,6 +121,7 @@ export default function SupplierDashboard() {
   });
   const [usageLoading, setUsageLoading] = useState(false);
   const [isChangingPlan, setIsChangingPlan] = useState(false);
+  const [isPreparingBilling, setIsPreparingBilling] = useState(false);
 
   const [imageMode, setImageMode] = useState('upload'); // 'upload' | 'generate'
   const [aiPrompt, setAiPrompt] = useState('');
@@ -706,6 +709,22 @@ export default function SupplierDashboard() {
       setToast({ message: error.message || 'No se pudo actualizar el plan.', type: 'error' });
     } finally {
       setIsChangingPlan(false);
+    }
+  };
+
+  const handlePrepareFlowBilling = async (planId) => {
+    if (!currentUser?.id || !requestSupplierPlanBilling) return;
+    if (pendingPlanRequest?.plan_id === planId) return;
+
+    setIsPreparingBilling(true);
+
+    try {
+      await requestSupplierPlanBilling(planId);
+      setToast({ message: 'Solicitud Flow preparada. Podras conectar checkout y webhooks cuando habilites tu cuenta.', type: 'success' });
+    } catch (error) {
+      setToast({ message: error.message || 'No se pudo preparar la solicitud de billing.', type: 'error' });
+    } finally {
+      setIsPreparingBilling(false);
     }
   };
 
@@ -2279,7 +2298,7 @@ export default function SupplierDashboard() {
                       Plan {currentPlanCard?.name ?? currentPlanLabel}
                     </h2>
                     <p className="text-sm text-gray-500 mt-2 max-w-2xl">
-                      Este plan gobierna acceso a agentes IA, voz y capacidades operativas del panel supplier. El cambio de plan actualiza el entitlement de inmediato.
+                      Este plan gobierna acceso a agentes IA, voz y capacidades operativas del panel supplier. Puedes seguir usando activacion interna para desarrollo, y en paralelo dejar preparado el billing con Flow.
                     </p>
                   </div>
                   <div className="rounded-2xl bg-[#0D1F3C] px-5 py-4 text-white min-w-[180px]">
@@ -2334,12 +2353,36 @@ export default function SupplierDashboard() {
                   </div>
                   {usageLoading && <div className="text-xs text-gray-400">Actualizando uso mensual...</div>}
                 </div>
+
+                <div className="mt-5 rounded-2xl border border-dashed border-[#2ECAD5]/30 bg-[#f0fdfa] px-4 py-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <div className="text-xs font-semibold uppercase tracking-wide text-[#2ECAD5]">Billing Flow</div>
+                      <div className="text-sm font-bold text-[#0D1F3C] mt-1">
+                        {pendingPlanRequest
+                          ? `Solicitud pendiente para Plan ${pendingPlanRequest.plans?.name ?? pendingPlanRequest.plan_id}`
+                          : 'Aun no hay una solicitud de cobro preparada'}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {pendingPlanRequest
+                          ? `Referencia ${pendingPlanRequest.billing_reference ?? 'sin referencia'} · estado ${pendingPlanRequest.billing_status ?? 'pendiente'}`
+                          : 'Cuando abras tu cuenta en Flow, este bloque servira para conectar checkout, referencia y webhook sin rehacer la logica de planes.'}
+                      </p>
+                    </div>
+                    <span className={`text-[10px] font-bold uppercase tracking-wide px-3 py-1 rounded-full ${
+                      pendingPlanRequest ? 'bg-amber-300 text-amber-950' : 'bg-white text-gray-500 border border-gray-200'
+                    }`}>
+                      {pendingPlanRequest ? 'Pendiente' : 'Placeholder'}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {planCards.map((plan) => {
                 const isCurrent = plan.key === currentPlanKey;
+                const hasPendingFlowRequest = pendingPlanRequest?.plan_id === plan.id;
 
                 return (
                   <div key={plan.id} className={`rounded-2xl border p-6 ${isCurrent ? 'border-[#2ECAD5] bg-[#2ECAD5]/5 shadow-lg shadow-emerald-400/10' : 'border-gray-100 bg-white card-premium'}`}>
@@ -2348,11 +2391,15 @@ export default function SupplierDashboard() {
                         <h3 className="text-xl font-extrabold text-[#0D1F3C]">{plan.name}</h3>
                         <p className="text-sm text-gray-400 mt-1">{plan.price}{plan.period}</p>
                       </div>
-                      {isCurrent && (
+                      {isCurrent ? (
                         <span className="text-[10px] font-bold uppercase tracking-wide px-3 py-1 rounded-full bg-emerald-400 text-emerald-950">
                           Actual
                         </span>
-                      )}
+                      ) : hasPendingFlowRequest ? (
+                        <span className="text-[10px] font-bold uppercase tracking-wide px-3 py-1 rounded-full bg-amber-300 text-amber-950">
+                          Flow pendiente
+                        </span>
+                      ) : null}
                     </div>
 
                     <div className="space-y-3 mt-5">
@@ -2375,18 +2422,35 @@ export default function SupplierDashboard() {
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      disabled={isCurrent || isChangingPlan}
-                      onClick={() => handlePlanChange(plan.id)}
-                      className={`w-full mt-5 rounded-xl py-3 text-sm font-bold transition-all ${
-                        isCurrent
-                          ? 'bg-gray-100 text-gray-400 cursor-default'
-                          : 'bg-gradient-to-r from-emerald-400 to-blue-500 text-[#0D1F3C] hover:shadow-lg hover:shadow-emerald-400/20'
-                      } ${isChangingPlan ? 'opacity-60 cursor-not-allowed' : ''}`}
-                    >
-                      {isCurrent ? 'Plan actual' : isChangingPlan ? 'Actualizando...' : `Cambiar a ${plan.name}`}
-                    </button>
+                    <div className="space-y-2 mt-5">
+                      <button
+                        type="button"
+                        disabled={isCurrent || isChangingPlan}
+                        onClick={() => handlePlanChange(plan.id)}
+                        className={`w-full rounded-xl py-3 text-sm font-bold transition-all ${
+                          isCurrent
+                            ? 'bg-gray-100 text-gray-400 cursor-default'
+                            : 'bg-gradient-to-r from-emerald-400 to-blue-500 text-[#0D1F3C] hover:shadow-lg hover:shadow-emerald-400/20'
+                        } ${isChangingPlan ? 'opacity-60 cursor-not-allowed' : ''}`}
+                      >
+                        {isCurrent ? 'Plan actual' : isChangingPlan ? 'Actualizando...' : `Cambiar a ${plan.name}`}
+                      </button>
+
+                      {!isCurrent && (
+                        <button
+                          type="button"
+                          disabled={isPreparingBilling || hasPendingFlowRequest}
+                          onClick={() => handlePrepareFlowBilling(plan.id)}
+                          className={`w-full rounded-xl py-3 text-sm font-semibold border transition-all ${
+                            hasPendingFlowRequest
+                              ? 'border-amber-200 bg-amber-50 text-amber-700 cursor-default'
+                              : 'border-[#2ECAD5]/30 text-[#0D1F3C] hover:bg-[#2ECAD5]/5'
+                          } ${isPreparingBilling ? 'opacity-60 cursor-not-allowed' : ''}`}
+                        >
+                          {hasPendingFlowRequest ? 'Flow pendiente para este plan' : isPreparingBilling ? 'Preparando Flow...' : 'Preparar pago con Flow'}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })}

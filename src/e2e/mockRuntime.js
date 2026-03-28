@@ -176,6 +176,18 @@ export async function e2eGetPriceAlerts(buyerId) {
   return ensureScenario().api.getPriceAlerts(buyerId);
 }
 
+export async function e2eGetNotifications(userId) {
+  return ensureScenario().api.getNotifications(userId);
+}
+
+export async function e2eMarkNotificationRead(notificationId, userId) {
+  return ensureScenario().api.markNotificationRead(notificationId, userId);
+}
+
+export async function e2eMarkAllNotificationsRead(userId) {
+  return ensureScenario().api.markAllNotificationsRead(userId);
+}
+
 export async function e2eGetSupplierUsageSummary(supplierId) {
   return ensureScenario().api.getSupplierUsageSummary(supplierId);
 }
@@ -202,6 +214,10 @@ export async function e2eGetSupplierProfile(userId) {
 
 export async function e2eSubscribeToPlan(supplierId, planId) {
   return ensureScenario().api.subscribeToPlan(supplierId, planId);
+}
+
+export async function e2eRequestFlowPlanActivation(supplierId, planId, billingCustomerEmail) {
+  return ensureScenario().api.requestFlowPlanActivation(supplierId, planId, billingCustomerEmail);
 }
 
 export async function e2eUpdateOfferPipelineStatus(payload) {

@@ -55,6 +55,19 @@ describe('marketplaceScenario', () => {
     expect(usage.quoteResponsesThisMonth).toBeGreaterThan(0);
   });
 
+  it('permite preparar una solicitud pending_payment para Flow sin cambiar el plan activo', async () => {
+    const scenario = createMarketplaceScenario();
+
+    const request = await scenario.api.requestFlowPlanActivation('supplier-1', 'plan-3', 'billing@vallefrio.cl');
+
+    expect(request.status).toBe('pending_payment');
+    expect(request.billing_provider).toBe('flow');
+    expect(request.billing_status).toBe('pending_checkout');
+
+    const active = await scenario.api.getActiveSubscription('supplier-1');
+    expect(active.plan_id).toBe('plan-2');
+  });
+
   it('evita duplicar favoritos y suscripciones de alerta ya existentes', async () => {
     const scenario = createMarketplaceScenario();
 
@@ -302,5 +315,55 @@ describe('marketplaceScenario', () => {
     expect(alerts).toHaveLength(1);
     expect(alerts[0].id).toBe('alert-2');
     expect(alerts[0].new_price).toBe(1180);
+  });
+
+  it('genera notificaciones in-app para RFQs, ofertas y aceptaciones', async () => {
+    const scenario = createMarketplaceScenario();
+
+    const quote = await scenario.api.createQuoteRequest({
+      buyer_id: 'buyer-1',
+      requester_id: 'buyer-1',
+      product_name: 'Aceite vegetal',
+      category_id: 'cat-1',
+      quantity: 40,
+      unit: 'cajas',
+      delivery_date: '2026-04-18',
+      notes: 'Entrega PM',
+    });
+
+    const supplierNotifications = await scenario.api.getNotifications('supplier-1');
+    expect(supplierNotifications.some((item) => item.type === 'rfq_created' && item.entity_id === quote.id)).toBe(true);
+
+    const offer = await scenario.api.submitOffer({
+      quoteId: quote.id,
+      supplierId: 'supplier-1',
+      responderId: 'supplier-1',
+      price: 2100,
+      notes: 'Incluye despacho',
+      estimatedLeadTime: '48 horas',
+    });
+
+    const buyerNotifications = await scenario.api.getNotifications('buyer-1');
+    expect(buyerNotifications.some((item) => item.type === 'offer_received' && item.entity_id === offer.id)).toBe(true);
+
+    await scenario.api.acceptOffer(offer.id);
+
+    const supplierNotificationsAfter = await scenario.api.getNotifications('supplier-1');
+    expect(supplierNotificationsAfter.some((item) => item.type === 'offer_accepted' && item.entity_id === offer.id)).toBe(true);
+  });
+
+  it('permite marcar notificaciones como leidas', async () => {
+    const scenario = createMarketplaceScenario();
+
+    const notifications = await scenario.api.getNotifications('buyer-1');
+    expect(notifications[0].read_at).toBeNull();
+
+    await scenario.api.markNotificationRead(notifications[0].id, 'buyer-1');
+    const updated = await scenario.api.getNotifications('buyer-1');
+    expect(updated[0].read_at).not.toBeNull();
+
+    await scenario.api.markAllNotificationsRead('buyer-1');
+    const allRead = await scenario.api.getNotifications('buyer-1');
+    expect(allRead.every((item) => item.read_at)).toBe(true);
   });
 });

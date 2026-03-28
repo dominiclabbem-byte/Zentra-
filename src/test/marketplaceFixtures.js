@@ -50,13 +50,23 @@ export function buildPlan(overrides = {}) {
 export function buildSubscription(plan, overrides = {}) {
   const planRecord = takeSingle(plan) ?? buildPlan();
   const supplierId = overrides.supplier_id ?? 'supplier-1';
+  const status = overrides.status ?? 'active';
 
   return {
     id: overrides.id ?? makeStableUuid(`subscription:${planRecord.id}:${supplierId}`),
     supplier_id: supplierId,
     plan_id: overrides.plan_id ?? planRecord.id,
-    status: overrides.status ?? 'active',
+    status,
     expires_at: overrides.expires_at ?? '2026-12-31T00:00:00Z',
+    billing_provider: overrides.billing_provider ?? 'internal',
+    billing_status: overrides.billing_status ?? (status === 'pending_payment' ? 'pending_checkout' : status === 'cancelled' ? 'cancelled' : 'paid'),
+    billing_reference: overrides.billing_reference ?? null,
+    billing_customer_email: overrides.billing_customer_email ?? 'billing@vallefrio.cl',
+    provider_subscription_id: overrides.provider_subscription_id ?? null,
+    provider_customer_id: overrides.provider_customer_id ?? null,
+    provider_checkout_url: overrides.provider_checkout_url ?? null,
+    paid_at: overrides.paid_at ?? (status === 'active' ? '2026-03-24T09:00:00Z' : null),
+    cancelled_at: overrides.cancelled_at ?? null,
     plans: planRecord,
     ...overrides,
   };
@@ -298,6 +308,22 @@ export function buildPriceAlert(overrides = {}) {
   };
 }
 
+export function buildNotification(overrides = {}) {
+  return {
+    id: overrides.id ?? `notification-${Math.random().toString(36).slice(2, 8)}`,
+    recipient_id: overrides.recipient_id ?? 'buyer-1',
+    actor_id: overrides.actor_id ?? 'supplier-1',
+    type: overrides.type ?? 'offer_received',
+    title: overrides.title ?? 'Nueva oferta recibida',
+    message: overrides.message ?? 'Valle Frio SpA envio una oferta para Harina premium.',
+    entity_type: overrides.entity_type ?? 'quote_offer',
+    entity_id: overrides.entity_id ?? 'offer-1',
+    read_at: overrides.read_at ?? null,
+    created_at: overrides.created_at ?? '2026-03-24T11:00:00Z',
+    ...overrides,
+  };
+}
+
 export function buildReview(overrides = {}) {
   const defaultReviewerId = overrides.reviewer_id ?? 'buyer-2';
   const reviewer = takeSingle(overrides.users) ?? buildBuyerUser({
@@ -490,6 +516,27 @@ export function buildMarketplaceSeed(overrides = {}) {
     quote_offer_id: acceptedOffer.id,
     users: secondBuyer,
   });
+  const notificationForBuyer = buildNotification({
+    id: 'notification-1',
+    recipient_id: buyer.id,
+    actor_id: supplier.id,
+    type: 'offer_received',
+    title: 'Nueva oferta recibida',
+    message: 'Valle Frio SpA envio una oferta para Harina premium.',
+    entity_type: 'quote_offer',
+    entity_id: offer.id,
+  });
+  const notificationForSupplier = buildNotification({
+    id: 'notification-2',
+    recipient_id: supplier.id,
+    actor_id: buyer.id,
+    type: 'rfq_created',
+    title: 'Nueva RFQ en una categoria relevante',
+    message: 'Pasteleria Mozart solicito Harina premium.',
+    entity_type: 'quote_request',
+    entity_id: quote.id,
+    read_at: '2026-03-24T12:00:00Z',
+  });
 
   return {
     categories,
@@ -504,6 +551,7 @@ export function buildMarketplaceSeed(overrides = {}) {
     priceAlertSubscriptions: [alertSubscription],
     priceAlerts: [alert],
     reviews: [review],
+    notifications: [notificationForBuyer, notificationForSupplier],
     agents: [
       {
         id: 'agent-1',

@@ -44,6 +44,7 @@ describe('SupplierDashboard', () => {
       plans: seed.plans,
       saveSupplierProfile: vi.fn(),
       changeSupplierPlan: vi.fn().mockResolvedValue(seed.supplier),
+      requestSupplierPlanBilling: vi.fn().mockResolvedValue(seed.supplier),
     });
 
     mockDatabase.getProducts.mockResolvedValue(seed.products);
@@ -173,6 +174,7 @@ describe('SupplierDashboard', () => {
       plans: seed.plans,
       saveSupplierProfile: vi.fn(),
       changeSupplierPlan: vi.fn().mockResolvedValue(seed.supplier),
+      requestSupplierPlanBilling: vi.fn().mockResolvedValue(seed.supplier),
     };
     mockUseAuth.mockReturnValue(authValue);
 
@@ -211,6 +213,7 @@ describe('SupplierDashboard', () => {
       plans: seed.plans,
       saveSupplierProfile: vi.fn(),
       changeSupplierPlan: vi.fn().mockResolvedValue(seed.supplier),
+      requestSupplierPlanBilling: vi.fn().mockResolvedValue(seed.supplier),
     });
     mockDatabase.getSupplierUsageSummary.mockResolvedValue({
       activeProducts: 25,
@@ -226,5 +229,60 @@ describe('SupplierDashboard', () => {
 
     await user.click(screen.getByRole('button', { name: /Agentes de Venta IA/ }));
     expect(await screen.findByText('Actualizar a Pro')).toBeInTheDocument();
+  });
+
+  it('permite preparar una solicitud placeholder de pago con Flow', async () => {
+    const user = userEvent.setup();
+    const requestSupplierPlanBilling = vi.fn().mockResolvedValue(seed.supplier);
+    const pendingSubscription = buildSubscription(seed.plans[2], {
+      supplier_id: seed.supplier.id,
+      plan_id: 'plan-3',
+      status: 'pending_payment',
+      billing_provider: 'flow',
+      billing_status: 'pending_checkout',
+      billing_reference: 'flow-placeholder-supplier-1-1',
+    });
+    const authValue = {
+      currentUser: {
+        ...seed.supplier,
+        pendingSubscription,
+        subscriptions: [seed.supplier.activeSubscription, pendingSubscription].filter(Boolean),
+      },
+      categories: seed.categories,
+      plans: seed.plans,
+      saveSupplierProfile: vi.fn(),
+      changeSupplierPlan: vi.fn().mockResolvedValue(seed.supplier),
+      requestSupplierPlanBilling,
+    };
+    mockUseAuth.mockReturnValue(authValue);
+
+    renderWithRouter(<SupplierDashboard />);
+
+    await user.click(await screen.findByRole('button', { name: /Plan/ }));
+    expect(await screen.findByText(/Solicitud pendiente para Plan/i)).toBeInTheDocument();
+    expect(screen.getByText('Flow pendiente para este plan')).toBeInTheDocument();
+  });
+
+  it('permite iniciar una solicitud nueva de Flow para otro plan', async () => {
+    const user = userEvent.setup();
+    const authValue = {
+      currentUser: seed.supplier,
+      categories: seed.categories,
+      plans: seed.plans,
+      saveSupplierProfile: vi.fn(),
+      changeSupplierPlan: vi.fn().mockResolvedValue(seed.supplier),
+      requestSupplierPlanBilling: vi.fn().mockResolvedValue(seed.supplier),
+    };
+    mockUseAuth.mockReturnValue(authValue);
+
+    renderWithRouter(<SupplierDashboard />);
+
+    await user.click(await screen.findByRole('button', { name: /Plan/ }));
+    const flowButtons = screen.getAllByRole('button', { name: 'Preparar pago con Flow' });
+    await user.click(flowButtons[0]);
+
+    await waitFor(() => {
+      expect(authValue.requestSupplierPlanBilling).toHaveBeenCalled();
+    });
   });
 });

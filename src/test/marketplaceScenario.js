@@ -70,6 +70,18 @@ function canReviewQuoteOffer(state, reviewerId, reviewedId, quoteOfferId) {
   ));
 }
 
+function createNotification(state, payload) {
+  const notification = {
+    id: `notification-${state.notifications.length + 1}`,
+    read_at: null,
+    created_at: new Date().toISOString(),
+    ...payload,
+  };
+
+  state.notifications = [notification, ...state.notifications];
+  return notification;
+}
+
 function filterProducts(products, filters = {}) {
   let next = [...products];
 
@@ -219,6 +231,19 @@ export function createMarketplaceScenario(overrides = {}) {
         quote_offers: [],
       });
       state.quoteRequests = [quote, ...state.quoteRequests];
+
+      if (supplier.supplierCategories.some((category) => category.id === quote.category_id)) {
+        createNotification(state, {
+          recipient_id: supplier.id,
+          actor_id: quote.buyer_id,
+          type: 'rfq_created',
+          title: 'Nueva RFQ en una categoria relevante',
+          message: `${buyer.company_name} solicito ${quote.product_name}.`,
+          entity_type: 'quote_request',
+          entity_id: quote.id,
+        });
+      }
+
       return clone(quote);
     },
 
@@ -239,6 +264,17 @@ export function createMarketplaceScenario(overrides = {}) {
       state.quoteOffers = [offer, ...state.quoteOffers];
       quote.status = 'in_review';
       quote.quote_offers = [offer, ...(quote.quote_offers ?? [])];
+
+      createNotification(state, {
+        recipient_id: quote.buyer_id,
+        actor_id: supplierId,
+        type: 'offer_received',
+        title: 'Nueva oferta recibida',
+        message: `${supplier.company_name} envio una oferta para ${quote.product_name}.`,
+        entity_type: 'quote_offer',
+        entity_id: offer.id,
+      });
+
       return clone(offer);
     },
 
@@ -254,6 +290,7 @@ export function createMarketplaceScenario(overrides = {}) {
     async acceptOffer(offerId) {
       const offer = state.quoteOffers.find((item) => item.id === offerId);
       if (!offer) throw new Error('offer not found');
+      const quote = state.quoteRequests.find((item) => item.id === offer.quote_id);
       offer.status = 'accepted';
       offer.pipeline_status = 'won';
       state.quoteRequests = state.quoteRequests.map((quote) => (
@@ -264,10 +301,23 @@ export function createMarketplaceScenario(overrides = {}) {
           ? { ...item, status: 'rejected', pipeline_status: 'lost' }
           : item
       ));
-      return clone({ ...offer, quote_requests: state.quoteRequests.find((quote) => quote.id === offer.quote_id) });
+
+      createNotification(state, {
+        recipient_id: offer.supplier_id,
+        actor_id: quote?.buyer_id ?? buyer.id,
+        type: 'offer_accepted',
+        title: 'Tu oferta fue aceptada',
+        message: `${buyer.company_name} acepto tu oferta para ${quote?.product_name ?? 'una RFQ'}.`,
+        entity_type: 'quote_offer',
+        entity_id: offer.id,
+      });
+
+      return clone({ ...offer, quote_requests: state.quoteRequests.find((quoteItem) => quoteItem.id === offer.quote_id) });
     },
 
     async cancelQuoteRequest(quoteId) {
+      const quote = state.quoteRequests.find((item) => item.id === quoteId);
+      const impactedOffers = state.quoteOffers.filter((offer) => offer.quote_id === quoteId && offer.status === 'pending');
       state.quoteRequests = state.quoteRequests.map((quote) => (
         quote.id === quoteId ? { ...quote, status: 'cancelled' } : quote
       ));
@@ -276,7 +326,47 @@ export function createMarketplaceScenario(overrides = {}) {
           ? { ...offer, status: 'rejected', pipeline_status: 'lost' }
           : offer
       ));
+
+      impactedOffers.forEach((offer) => {
+        createNotification(state, {
+          recipient_id: offer.supplier_id,
+          actor_id: quote?.buyer_id ?? buyer.id,
+          type: 'rfq_cancelled',
+          title: 'La RFQ fue cancelada',
+          message: `${buyer.company_name} cancelo la solicitud para ${quote?.product_name ?? 'una RFQ'}.`,
+          entity_type: 'quote_request',
+          entity_id: quoteId,
+        });
+      });
+
       return clone(state.quoteRequests.find((quote) => quote.id === quoteId));
+    },
+
+    async getNotifications(userId) {
+      return clone(
+        state.notifications
+          .filter((notification) => notification.recipient_id === userId)
+          .sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime()),
+      );
+    },
+
+    async markNotificationRead(notificationId, userId) {
+      state.notifications = state.notifications.map((notification) => (
+        notification.id === notificationId && notification.recipient_id === userId
+          ? { ...notification, read_at: notification.read_at ?? new Date().toISOString() }
+          : notification
+      ));
+
+      return clone(state.notifications.find((notification) => notification.id === notificationId) ?? null);
+    },
+
+    async markAllNotificationsRead(userId) {
+      const readAt = new Date().toISOString();
+      state.notifications = state.notifications.map((notification) => (
+        notification.recipient_id === userId && !notification.read_at
+          ? { ...notification, read_at: readAt }
+          : notification
+      ));
     },
 
     async getFavorites(buyerId) {
@@ -405,6 +495,32 @@ export function createMarketplaceScenario(overrides = {}) {
       });
       state.supplier.subscriptions.unshift(subscription);
       state.supplier.activeSubscription = subscription;
+      state.supplier.pendingSubscription = null;
+      return clone(subscription);
+    },
+
+    async requestFlowPlanActivation(supplierId, planId, billingCustomerEmail) {
+      const plan = state.plans.find((item) => item.id === planId);
+      const existingPending = state.supplier.subscriptions.find((item) => item.status === 'pending_payment' && item.supplier_id === supplierId);
+      if (existingPending?.plan_id === planId) return clone(existingPending);
+
+      state.supplier.subscriptions = state.supplier.subscriptions.map((subscription) => (
+        subscription.supplier_id === supplierId && subscription.status === 'pending_payment'
+          ? { ...subscription, status: 'cancelled', billing_status: 'cancelled' }
+          : subscription
+      ));
+
+      const subscription = buildSubscription(plan, {
+        supplier_id: supplierId,
+        plan_id: planId,
+        status: 'pending_payment',
+        billing_provider: 'flow',
+        billing_status: 'pending_checkout',
+        billing_reference: `flow-placeholder-${supplierId}-${state.supplier.subscriptions.length + 1}`,
+        billing_customer_email: billingCustomerEmail ?? supplier.email,
+      });
+      state.supplier.subscriptions.unshift(subscription);
+      state.supplier.pendingSubscription = subscription;
       return clone(subscription);
     },
 
@@ -572,6 +688,7 @@ export function createMarketplaceScenario(overrides = {}) {
         return clone(state.supplier);
       },
       changeSupplierPlan: async (planId) => api.subscribeToPlan(supplier.id, planId),
+      requestSupplierPlanBilling: async (planId) => api.requestFlowPlanActivation(supplier.id, planId, supplier.email),
     }),
   };
 

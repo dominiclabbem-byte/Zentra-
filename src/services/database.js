@@ -14,6 +14,7 @@ import {
   e2eGetPlans,
   e2eGetPriceAlertSubscriptions,
   e2eGetPriceAlerts,
+  e2eGetNotifications,
   e2eGetProducts,
   e2eGetQuoteRequestsForBuyer,
   e2eGetRelevantQuoteRequestsForSupplier,
@@ -21,6 +22,9 @@ import {
   e2eGetSupplierProfile,
   e2eGetSupplierStats,
   e2eGetSupplierUsageSummary,
+  e2eMarkAllNotificationsRead,
+  e2eMarkNotificationRead,
+  e2eRequestFlowPlanActivation,
   e2eRemovePriceAlertSubscription,
   e2eSignIn,
   e2eSignOut,
@@ -100,6 +104,18 @@ async function getUserCategoryIds(userId, scope) {
     .filter(Boolean);
 }
 
+async function createNotifications(rows) {
+  if (!rows?.length) return [];
+
+  const { data, error } = await supabase
+    .from('notifications')
+    .insert(rows)
+    .select('*');
+
+  if (error) throw error;
+  return data ?? [];
+}
+
 // ========================
 // AUTH
 // ========================
@@ -108,25 +124,18 @@ export async function signUp({ email, password, companyName, rut, city, isSuppli
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password,
+    options: {
+      data: {
+        company_name: companyName,
+        rut,
+        city,
+        is_supplier: isSupplier,
+        is_buyer: isBuyer,
+      },
+    },
   });
   if (authError) throw authError;
-
-  const { data, error } = await supabase
-    .from('users')
-    .insert({
-      auth_id: authData.user.id,
-      email,
-      company_name: companyName,
-      rut,
-      city,
-      is_supplier: isSupplier,
-      is_buyer: isBuyer,
-    })
-    .select()
-    .single();
-  if (error) throw error;
-
-  return data;
+  return authData.user;
 }
 
 export async function signIn({ email, password }) {
@@ -293,6 +302,30 @@ export async function createQuoteRequest(quote) {
     `)
     .single();
   if (error) throw error;
+
+  const { data: supplierLinks, error: supplierLinksError } = await supabase
+    .from('user_categories')
+    .select('user_id')
+    .eq('scope', SUPPLIER_CATEGORY_SCOPE)
+    .eq('category_id', quote.category_id);
+
+  if (supplierLinksError) throw supplierLinksError;
+
+  const supplierIds = [...new Set((supplierLinks ?? []).map((row) => row.user_id).filter(Boolean))];
+  if (supplierIds.length) {
+    await createNotifications(
+      supplierIds.map((recipientId) => ({
+        recipient_id: recipientId,
+        actor_id: quote.buyer_id,
+        type: 'rfq_created',
+        title: 'Nueva RFQ en una categoria relevante',
+        message: `Se publico una nueva solicitud para ${quote.product_name}.`,
+        entity_type: 'quote_request',
+        entity_id: data.id,
+      })),
+    );
+  }
+
   return data;
 }
 
@@ -394,6 +427,26 @@ export async function submitOffer({ quoteId, supplierId, responderId, price, not
     .eq('id', quoteId)
     .in('status', ['open', 'in_review']);
 
+  const { data: quoteRow, error: quoteError } = await supabase
+    .from('quote_requests')
+    .select('id, buyer_id, product_name')
+    .eq('id', quoteId)
+    .single();
+
+  if (quoteError) throw quoteError;
+
+  await createNotifications([
+    {
+      recipient_id: quoteRow.buyer_id,
+      actor_id: supplierId,
+      type: 'offer_received',
+      title: 'Nueva oferta recibida',
+      message: `Recibiste una oferta para ${quoteRow.product_name}.`,
+      entity_type: 'quote_offer',
+      entity_id: data.id,
+    },
+  ]);
+
   return data;
 }
 
@@ -440,7 +493,7 @@ export async function acceptOffer(offerId) {
     .from('quote_offers')
     .update({ status: 'accepted' })
     .eq('id', offerId)
-    .select('*, quote_requests(id)')
+    .select('*, quote_requests(id, buyer_id, product_name)')
     .single();
   if (error) throw error;
 
@@ -456,11 +509,31 @@ export async function acceptOffer(offerId) {
     .neq('id', offerId)
     .eq('status', 'pending');
 
+  await createNotifications([
+    {
+      recipient_id: data.supplier_id,
+      actor_id: data.quote_requests.buyer_id,
+      type: 'offer_accepted',
+      title: 'Tu oferta fue aceptada',
+      message: `Aceptaron tu oferta para ${data.quote_requests.product_name}.`,
+      entity_type: 'quote_offer',
+      entity_id: offerId,
+    },
+  ]);
+
   return data;
 }
 
 export async function cancelQuoteRequest(quoteId) {
   if (useE2E()) return e2eCancelQuoteRequest(quoteId);
+  const { data: impactedOffers, error: impactedOffersError } = await supabase
+    .from('quote_offers')
+    .select('id, supplier_id')
+    .eq('quote_id', quoteId)
+    .eq('status', 'pending');
+
+  if (impactedOffersError) throw impactedOffersError;
+
   const { data, error } = await supabase
     .from('quote_requests')
     .update({ status: 'cancelled' })
@@ -474,6 +547,20 @@ export async function cancelQuoteRequest(quoteId) {
     .update({ status: 'rejected' })
     .eq('quote_id', quoteId)
     .eq('status', 'pending');
+
+  if (impactedOffers?.length) {
+    await createNotifications(
+      impactedOffers.map((offer) => ({
+        recipient_id: offer.supplier_id,
+        actor_id: data.buyer_id,
+        type: 'rfq_cancelled',
+        title: 'La RFQ fue cancelada',
+        message: `La solicitud para ${data.product_name} fue cancelada por el comprador.`,
+        entity_type: 'quote_request',
+        entity_id: quoteId,
+      })),
+    );
+  }
 
   return data;
 }
@@ -762,6 +849,49 @@ export async function removePriceAlertSubscription(subscriptionId, buyerId) {
 }
 
 // ========================
+// NOTIFICACIONES
+// ========================
+
+export async function getNotifications(userId) {
+  if (useE2E()) return e2eGetNotifications(userId);
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('*')
+    .eq('recipient_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(30);
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function markNotificationRead(notificationId, userId) {
+  if (useE2E()) return e2eMarkNotificationRead(notificationId, userId);
+  const { data, error } = await supabase
+    .from('notifications')
+    .update({ read_at: new Date().toISOString() })
+    .eq('id', notificationId)
+    .eq('recipient_id', userId)
+    .is('read_at', null)
+    .select('*')
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function markAllNotificationsRead(userId) {
+  if (useE2E()) return e2eMarkAllNotificationsRead(userId);
+  const { error } = await supabase
+    .from('notifications')
+    .update({ read_at: new Date().toISOString() })
+    .eq('recipient_id', userId)
+    .is('read_at', null);
+
+  if (error) throw error;
+}
+
+// ========================
 // PLANES & SUSCRIPCIONES
 // ========================
 
@@ -796,20 +926,78 @@ export async function subscribeToPlan(supplierId, planId) {
   // Cancelar suscripcion activa
   const { error: cancelError } = await supabase
     .from('subscriptions')
-    .update({ status: 'cancelled' })
+    .update({ status: 'cancelled', billing_status: 'cancelled', cancelled_at: new Date().toISOString() })
     .eq('supplier_id', supplierId)
     .eq('status', 'active');
   if (cancelError) throw cancelError;
+
+  await supabase
+    .from('subscriptions')
+    .update({ status: 'cancelled', billing_status: 'cancelled', cancelled_at: new Date().toISOString() })
+    .eq('supplier_id', supplierId)
+    .eq('status', 'pending_payment');
 
   const { data, error } = await supabase
     .from('subscriptions')
     .insert({
       supplier_id: supplierId,
       plan_id: planId,
+      billing_provider: 'internal',
+      billing_status: 'paid',
+      paid_at: new Date().toISOString(),
       expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
     })
     .select('*, plans(*)')
     .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function requestFlowPlanActivation(supplierId, planId, billingCustomerEmail) {
+  if (useE2E()) return e2eRequestFlowPlanActivation(supplierId, planId, billingCustomerEmail);
+
+  const currentSubscription = await getActiveSubscription(supplierId);
+  if (currentSubscription?.plan_id === planId) {
+    return currentSubscription;
+  }
+
+  const { data: existingPending, error: existingPendingError } = await supabase
+    .from('subscriptions')
+    .select('*, plans(*)')
+    .eq('supplier_id', supplierId)
+    .eq('status', 'pending_payment')
+    .order('started_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (existingPendingError) throw existingPendingError;
+  if (existingPending?.plan_id === planId) return existingPending;
+
+  if (existingPending?.id) {
+    const { error: cancelPendingError } = await supabase
+      .from('subscriptions')
+      .update({ status: 'cancelled', billing_status: 'cancelled', cancelled_at: new Date().toISOString() })
+      .eq('id', existingPending.id);
+
+    if (cancelPendingError) throw cancelPendingError;
+  }
+
+  const now = Date.now();
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .insert({
+      supplier_id: supplierId,
+      plan_id: planId,
+      status: 'pending_payment',
+      billing_provider: 'flow',
+      billing_status: 'pending_checkout',
+      billing_reference: `flow-placeholder-${supplierId}-${now}`,
+      billing_customer_email: billingCustomerEmail || null,
+      expires_at: new Date(now + 3 * 24 * 60 * 60 * 1000).toISOString(),
+    })
+    .select('*, plans(*)')
+    .single();
+
   if (error) throw error;
   return data;
 }

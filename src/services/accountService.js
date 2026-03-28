@@ -24,6 +24,19 @@ function buildUserPayload(payload, roleUpdates = {}) {
   };
 }
 
+async function getCurrentUserWithRetry(attempts = 5, delayMs = 150) {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const currentUser = await getCurrentUser();
+    if (currentUser) return currentUser;
+
+    if (attempt < attempts - 1) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+
+  return null;
+}
+
 async function syncBuyerProfile(userId, payload) {
   await updateUser(userId, buildUserPayload(payload, { is_buyer: true }));
 
@@ -63,17 +76,12 @@ async function createBaseAccount(payload, roleFlags) {
   const { data, error } = await supabase.auth.signUp({
     email: payload.email,
     password: payload.password,
+    options: {
+      data: buildUserPayload(payload, roleFlags),
+    },
   });
 
   if (error) throw error;
-
-  const { error: insertError } = await supabase.from('users').insert({
-    auth_id: data.user.id,
-    email: payload.email,
-    ...buildUserPayload(payload, roleFlags),
-  });
-
-  if (insertError) throw insertError;
 
   return {
     authData: data,
@@ -86,7 +94,7 @@ export async function createBuyerAccount(payload) {
     is_supplier: false,
   });
 
-  const currentUser = await getCurrentUser();
+  const currentUser = await getCurrentUserWithRetry();
   if (!currentUser) {
     return {
       requiresEmailConfirmation: !authData.session,
@@ -108,7 +116,7 @@ export async function createSupplierAccount(payload) {
     is_buyer: false,
   });
 
-  const currentUser = await getCurrentUser();
+  const currentUser = await getCurrentUserWithRetry();
   if (!currentUser) {
     return {
       requiresEmailConfirmation: !authData.session,
