@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Toast from '../components/Toast';
 import Modal from '../components/Modal';
+import QuoteConversationModal from '../components/QuoteConversationModal';
 import DashboardPageHeader from '../components/DashboardPageHeader';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -26,14 +27,20 @@ import {
   getProducts,
   getPriceAlerts,
   getPriceAlertSubscriptions,
+  getQuoteConversationById,
+  getQuoteConversationForQuote,
+  getQuoteConversationMessages,
   getQuoteRequestsForBuyer,
   getReviewsForUser,
-  getSupplierStats,
   getSupplierProfile,
+  getSupplierStats,
+  markQuoteConversationRead,
   removePriceAlertSubscription,
+  sendQuoteConversationMessage,
   subscribeToPriceAlert,
   toggleFavorite,
 } from '../services/database';
+import { mapQuoteConversationMessageRecord, mapQuoteConversationRecord } from '../lib/conversationAdapters';
 import { mapProductRecordToCard } from '../lib/productAdapters';
 import { formatQuoteDateTime, mapQuoteRequestRecord, sortQuoteOffersForBuyer } from '../lib/quoteAdapters';
 
@@ -165,6 +172,10 @@ export default function BuyerDashboard() {
   const [quotesLoading, setQuotesLoading] = useState(false);
   const [buyerQuotes, setBuyerQuotes] = useState([]);
   const [selectedQuote, setSelectedQuote] = useState(null);
+  const [activeConversation, setActiveConversation] = useState(null);
+  const [conversationMessages, setConversationMessages] = useState([]);
+  const [conversationLoading, setConversationLoading] = useState(false);
+  const [isSendingConversationMessage, setIsSendingConversationMessage] = useState(false);
   const [isSubmittingQuote, setIsSubmittingQuote] = useState(false);
   const [quoteActionId, setQuoteActionId] = useState('');
   const [buyerStats, setBuyerStats] = useState({ totalOrders: 0, rating: 0, favoriteSuppliers: 0 });
@@ -186,7 +197,10 @@ export default function BuyerDashboard() {
   });
 
   const unreadBuyerOfferNotifications = useMemo(
-    () => notifications.filter((notification) => !notification.read_at && notification.type === 'offer_received').length,
+    () => notifications.filter((notification) => (
+      !notification.read_at
+      && ['offer_received', 'message_received'].includes(notification.type)
+    )).length,
     [notifications],
   );
 
@@ -299,6 +313,101 @@ export default function BuyerDashboard() {
     setQuoteForm({ ...initialQuoteForm, ...prefill });
     setShowModal(true);
   }, []);
+
+  const closeConversation = useCallback(() => {
+    setActiveConversation(null);
+    setConversationMessages([]);
+  }, []);
+
+  const handleRepeatQuote = useCallback((quote) => {
+    if (!quote) return;
+
+    openQuoteModal({
+      product: quote.productName ?? '',
+      categoryId: quote.categoryId ?? '',
+      quantity: quote.quantityValue ? String(quote.quantityValue) : '',
+      unit: quote.unit ?? 'kg',
+      notes: quote.notes ?? '',
+    });
+  }, [openQuoteModal]);
+
+  const loadConversationForBuyer = useCallback(async ({ conversationId = null, quoteId = null, supplierId = null, closeQuoteDetail = false } = {}) => {
+    if (!currentUser?.id) return null;
+
+    setConversationLoading(true);
+
+    try {
+      const conversationRecord = conversationId
+        ? await getQuoteConversationById(conversationId)
+        : await getQuoteConversationForQuote(quoteId, supplierId);
+
+      if (!conversationRecord) {
+        setToast({ message: 'Todavia no existe una conversacion disponible para esta oferta.', type: 'error' });
+        return null;
+      }
+
+      const [messageRows, markedConversation] = await Promise.all([
+        getQuoteConversationMessages(conversationRecord.id),
+        markQuoteConversationRead({ conversationId: conversationRecord.id, userId: currentUser.id }),
+      ]);
+
+      const mappedConversation = mapQuoteConversationRecord(markedConversation ?? conversationRecord);
+      setActiveConversation(mappedConversation);
+      setConversationMessages(messageRows.map((message) => mapQuoteConversationMessageRecord(message)));
+
+      if (closeQuoteDetail) {
+        setSelectedQuote(null);
+      }
+
+      return mappedConversation;
+    } catch (error) {
+      setToast({ message: error.message || 'No se pudo cargar la conversacion.', type: 'error' });
+      return null;
+    } finally {
+      setConversationLoading(false);
+    }
+  }, [currentUser?.id]);
+
+  const refreshActiveConversation = useCallback(async () => {
+    if (!activeConversation?.id || !currentUser?.id) return;
+
+    try {
+      const [conversationRecord, messageRows, markedConversation] = await Promise.all([
+        getQuoteConversationById(activeConversation.id),
+        getQuoteConversationMessages(activeConversation.id),
+        markQuoteConversationRead({ conversationId: activeConversation.id, userId: currentUser.id }),
+      ]);
+
+      if (!conversationRecord) {
+        closeConversation();
+        return;
+      }
+
+      setActiveConversation(mapQuoteConversationRecord(markedConversation ?? conversationRecord));
+      setConversationMessages(messageRows.map((message) => mapQuoteConversationMessageRecord(message)));
+    } catch (error) {
+      setToast({ message: error.message || 'No se pudo actualizar la conversacion.', type: 'error' });
+    }
+  }, [activeConversation?.id, closeConversation, currentUser?.id]);
+
+  const handleSendConversationMessage = useCallback(async (body) => {
+    if (!activeConversation?.id || !currentUser?.id) return;
+
+    setIsSendingConversationMessage(true);
+
+    try {
+      await sendQuoteConversationMessage({
+        conversationId: activeConversation.id,
+        senderUserId: currentUser.id,
+        body,
+      });
+      await refreshActiveConversation();
+    } catch (error) {
+      setToast({ message: error.message || 'No se pudo enviar el mensaje.', type: 'error' });
+    } finally {
+      setIsSendingConversationMessage(false);
+    }
+  }, [activeConversation?.id, currentUser?.id, refreshActiveConversation]);
 
   const enrichQuoteForBuyer = useCallback(async (quote) => {
     if (!quote) return null;
@@ -473,7 +582,7 @@ export default function BuyerDashboard() {
   }, [enrichQuoteForBuyer, loadBuyerQuotes]);
 
   useEffect(() => {
-    if (!location.state?.activeTab && !location.state?.focusQuoteId && !location.state?.focusOfferId) {
+    if (!location.state?.activeTab && !location.state?.focusQuoteId && !location.state?.focusOfferId && !location.state?.focusConversationId) {
       return;
     }
 
@@ -486,23 +595,43 @@ export default function BuyerDashboard() {
 
       const targetQuoteId = location.state?.focusQuoteId;
       const targetOfferId = location.state?.focusOfferId;
+      const targetConversationId = location.state?.focusConversationId;
 
-      if (!targetQuoteId && !targetOfferId) {
+      if (!targetQuoteId && !targetOfferId && !targetConversationId) {
         navigate(location.pathname, { replace: true, state: null });
         return;
       }
 
       try {
+        let resolvedQuoteId = targetQuoteId;
+        let resolvedOfferId = targetOfferId;
+
+        if (targetConversationId) {
+          const conversationRecord = await getQuoteConversationById(targetConversationId);
+          if (cancelled) return;
+          resolvedQuoteId = conversationRecord?.quote_request_id ?? resolvedQuoteId;
+          resolvedOfferId = resolvedOfferId ?? null;
+        }
+
         const refreshedQuotes = await loadBuyerQuotes();
         if (cancelled) return;
 
         const matchingQuote = refreshedQuotes.find((quote) => (
-          (targetQuoteId && quote.id === targetQuoteId)
-          || (targetOfferId && quote.offers.some((offer) => offer.id === targetOfferId))
+          (resolvedQuoteId && quote.id === resolvedQuoteId)
+          || (resolvedOfferId && quote.offers.some((offer) => offer.id === resolvedOfferId))
         ));
 
         if (matchingQuote) {
           await handleOpenQuoteOffers(matchingQuote);
+          if (!cancelled && targetConversationId) {
+            await loadConversationForBuyer({ conversationId: targetConversationId, closeQuoteDetail: true });
+          }
+        } else if (targetConversationId) {
+          await loadConversationForBuyer({ conversationId: targetConversationId });
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setToast({ message: error.message || 'No se pudo abrir la conversacion solicitada.', type: 'error' });
         }
       } finally {
         if (!cancelled) {
@@ -516,7 +645,7 @@ export default function BuyerDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [handleOpenQuoteOffers, loadBuyerQuotes, location.pathname, location.state, navigate]);
+  }, [handleOpenQuoteOffers, loadBuyerQuotes, loadConversationForBuyer, location.pathname, location.state, navigate]);
 
   const handleAcceptQuoteOffer = async (offerId) => {
     if (!selectedQuote) return;
@@ -802,6 +931,10 @@ export default function BuyerDashboard() {
   const activeSuppliers = quoteSummary.activeSuppliers;
   const closedQuotes = quoteSummary.closedQuotes;
   const acceptedOffers = quoteSummary.acceptedOffers;
+  const quoteHistory = useMemo(
+    () => [...buyerQuotes].sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()),
+    [buyerQuotes],
+  );
 
   const dashboardTabContent = useMemo(() => (
     <div className="space-y-8 animate-fade-in">
@@ -911,6 +1044,73 @@ export default function BuyerDashboard() {
           </div>
         )}
       </div>
+
+      <div>
+        <h2 className="text-xl font-extrabold text-[#0D1F3C] mb-4">Historial de cotizaciones</h2>
+        {quoteHistory.length > 0 ? (
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            {quoteHistory.map((quote, index) => {
+              const acceptedOffer = quote.offers.find((offer) => offer.status === 'accepted');
+
+              return (
+                <div
+                  key={quote.id}
+                  className={`flex items-center gap-4 px-5 py-4 hover:bg-[#f8fafc] transition-colors ${
+                    index < quoteHistory.length - 1 ? 'border-b border-gray-50' : ''
+                  }`}
+                >
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                    quote.status === 'closed'
+                      ? 'bg-emerald-50'
+                      : quote.status === 'cancelled'
+                        ? 'bg-rose-50'
+                        : 'bg-[#f8fafc]'
+                  }`}>
+                    <svg className={`w-5 h-5 ${
+                      quote.status === 'closed'
+                        ? 'text-emerald-500'
+                        : quote.status === 'cancelled'
+                          ? 'text-rose-500'
+                          : 'text-[#2ECAD5]'
+                    }`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-bold text-[#0D1F3C]">{quote.productName}</p>
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${quote.statusClass}`}>
+                        {quote.statusLabel}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {quote.quantityLabel} / {quote.categoryName} / {quote.createdAtLabel}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {quote.offerCount} {quote.offerCount === 1 ? 'oferta recibida' : 'ofertas recibidas'}
+                      {acceptedOffer ? ` / Mejor cierre ${acceptedOffer.priceLabel}` : ''}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRepeatQuote(quote)}
+                    className="flex items-center gap-1.5 text-xs font-semibold text-[#2ECAD5] border border-[#2ECAD5]/30 hover:bg-[#2ECAD5]/5 px-3 py-2 rounded-xl transition-all whitespace-nowrap flex-shrink-0"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                    </svg>
+                    Repetir cotizacion
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center text-sm text-gray-400">
+            Aun no tienes historial de cotizaciones.
+          </div>
+        )}
+      </div>
     </div>
   ), [
     activeQuotes.length,
@@ -919,8 +1119,10 @@ export default function BuyerDashboard() {
     closedQuotes,
     handleCancelBuyerQuote,
     handleOpenQuoteOffers,
+    handleRepeatQuote,
     openQuoteModal,
     quoteActionId,
+    quoteHistory,
     quotesLoading,
     totalOffersReceived,
     unreadBuyerOfferNotifications,
@@ -1205,6 +1407,17 @@ export default function BuyerDashboard() {
                               )}
                             </div>
                             <div className="mt-4 flex flex-wrap gap-2 lg:justify-end">
+                              <button
+                                type="button"
+                                onClick={() => loadConversationForBuyer({
+                                  quoteId: selectedQuote.id,
+                                  supplierId: offer.supplierId,
+                                  closeQuoteDetail: true,
+                                })}
+                                className="border border-[#2ECAD5]/30 text-[#2ECAD5] font-semibold px-5 py-2.5 rounded-xl hover:bg-[#2ECAD5]/5 transition-all"
+                              >
+                                Abrir conversacion
+                              </button>
                               {selectedQuote.status !== 'closed' && selectedQuote.status !== 'cancelled' && offer.status === 'pending' && (
                                 <button
                                   type="button"
@@ -1782,6 +1995,18 @@ export default function BuyerDashboard() {
           </div>
         </div>
       )}
+
+      <QuoteConversationModal
+        isOpen={Boolean(activeConversation)}
+        onClose={closeConversation}
+        conversation={activeConversation}
+        messages={conversationMessages}
+        currentUserId={currentUser?.id}
+        isLoading={conversationLoading}
+        isSending={isSendingConversationMessage}
+        onSendMessage={handleSendConversationMessage}
+        onRefresh={refreshActiveConversation}
+      />
 
       <DashboardPageHeader
         eyebrow="Panel de comprador"

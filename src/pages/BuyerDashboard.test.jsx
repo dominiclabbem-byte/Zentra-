@@ -22,11 +22,16 @@ const mockDatabase = vi.hoisted(() => ({
   getProducts: vi.fn(),
   getPriceAlerts: vi.fn(),
   getPriceAlertSubscriptions: vi.fn(),
+  getQuoteConversationById: vi.fn(),
+  getQuoteConversationForQuote: vi.fn(),
+  getQuoteConversationMessages: vi.fn(),
   getQuoteRequestsForBuyer: vi.fn(),
   getReviewsForUser: vi.fn(),
   getSupplierProfile: vi.fn(),
   getSupplierStats: vi.fn(),
+  markQuoteConversationRead: vi.fn(),
   removePriceAlertSubscription: vi.fn(),
+  sendQuoteConversationMessage: vi.fn(),
   subscribeToPriceAlert: vi.fn(),
   toggleFavorite: vi.fn(),
 }));
@@ -65,6 +70,18 @@ describe('BuyerDashboard', () => {
     mockDatabase.getSupplierProfile.mockResolvedValue(seed.supplier);
     mockDatabase.getReviewsForUser.mockResolvedValue(seed.reviews);
     mockDatabase.toggleFavorite.mockResolvedValue(true);
+    mockDatabase.getQuoteConversationForQuote.mockResolvedValue(seed.quoteConversations[0]);
+    mockDatabase.getQuoteConversationById.mockResolvedValue(seed.quoteConversations[0]);
+    mockDatabase.getQuoteConversationMessages.mockResolvedValue(seed.quoteConversationMessages);
+    mockDatabase.markQuoteConversationRead.mockResolvedValue(seed.quoteConversations[0]);
+    mockDatabase.sendQuoteConversationMessage.mockResolvedValue({
+      id: 'conversation-message-2',
+      conversation_id: 'conversation-1',
+      sender_user_id: 'buyer-1',
+      body: 'Necesito confirmar horario de recepcion.',
+      created_at: '2026-03-24T10:05:00Z',
+      sender: seed.buyer,
+    });
   });
 
   it('muestra datos reales de favoritos y alertas en sus tabs', async () => {
@@ -149,7 +166,48 @@ describe('BuyerDashboard', () => {
     });
 
     expect(await screen.findByText('Cotizacion creada. Ahora los proveedores pueden ofertar.')).toBeInTheDocument();
-    expect(await screen.findByText('Mantequilla premium')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getAllByText('Mantequilla premium').length).toBeGreaterThan(0);
+    });
+  });
+
+  it('permite repetir una cotizacion anterior desde el historial', async () => {
+    const user = userEvent.setup();
+
+    renderWithRouter(<BuyerDashboard />);
+
+    await user.click(await screen.findByRole('button', { name: 'Cotizaciones' }));
+    const repeatButtons = await screen.findAllByRole('button', { name: 'Repetir cotizacion' });
+    await user.click(repeatButtons[0]);
+
+    expect(await screen.findByDisplayValue('Harina premium')).toBeInTheDocument();
+    expect(screen.getByLabelText('Categoria')).toHaveValue('cat-1');
+    expect(screen.getByDisplayValue('500')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Entrega AM')).toBeInTheDocument();
+  });
+
+  it('permite abrir una conversacion desde una oferta y enviar un mensaje', async () => {
+    const user = userEvent.setup();
+
+    renderWithRouter(<BuyerDashboard />);
+
+    await user.click(await screen.findByRole('button', { name: 'Cotizaciones' }));
+    await user.click(screen.getByRole('button', { name: 'Ver ofertas' }));
+    await user.click(await screen.findByRole('button', { name: 'Abrir conversacion' }));
+
+    expect(await screen.findByText('Conversacion RFQ')).toBeInTheDocument();
+    expect(screen.getByText(/Podemos entregar en 48 horas/i)).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText('Mensaje'), 'Necesito confirmar horario de recepcion.');
+    await user.click(screen.getByRole('button', { name: 'Enviar mensaje' }));
+
+    await waitFor(() => {
+      expect(mockDatabase.sendQuoteConversationMessage).toHaveBeenCalledWith({
+        conversationId: 'conversation-1',
+        senderUserId: 'buyer-1',
+        body: 'Necesito confirmar horario de recepcion.',
+      });
+    });
   });
 
   it('permite dejar una reseña para una oferta aceptada elegible', async () => {

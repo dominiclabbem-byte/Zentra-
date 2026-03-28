@@ -101,12 +101,12 @@ afterEach(async () => {
   const authIds = [...authIdsToCleanup];
   authIdsToCleanup.clear();
 
-  await Promise.all(authIds.map(async (authId) => {
+  for (const authId of authIds) {
     const { error } = await adminClient.auth.admin.deleteUser(authId);
     if (error && !`${error.message}`.includes('User not found')) {
       throw error;
     }
-  }));
+  }
 });
 
 describe('Supabase local integration', () => {
@@ -412,5 +412,136 @@ describe('Supabase local integration', () => {
     expect(createOfferError).toBeNull();
     expect(createdOffer.quote_id).toBe(createdQuote.id);
     expect(createdOffer.supplier_id).toBe(supplierPublicUser.id);
+  });
+
+  it('crea una conversacion por oferta y restringe sus mensajes a los participantes', async () => {
+    const password = 'SuperSecreta123';
+    const buyerUser = await createConfirmedUser({
+      email: `buyer.${randomUUID()}@zentra.local`,
+      password,
+      metadata: {
+        company_name: 'Buyer Chat',
+        rut: createRut('buyer-chat'),
+        city: 'Santiago',
+        is_buyer: true,
+        is_supplier: false,
+      },
+    });
+    const supplierUser = await createConfirmedUser({
+      email: `supplier.${randomUUID()}@zentra.local`,
+      password,
+      metadata: {
+        company_name: 'Supplier Chat',
+        rut: createRut('supplier-chat'),
+        city: 'Valdivia',
+        is_buyer: false,
+        is_supplier: true,
+      },
+    });
+    const outsiderUser = await createConfirmedUser({
+      email: `outsider.${randomUUID()}@zentra.local`,
+      password,
+      metadata: {
+        company_name: 'Proveedor Ajeno',
+        rut: createRut('outsider-chat'),
+        city: 'Temuco',
+        is_buyer: false,
+        is_supplier: true,
+      },
+    });
+
+    const buyerPublicUser = await waitForPublicUser(buyerUser.id);
+    const supplierPublicUser = await waitForPublicUser(supplierUser.id);
+    const buyerClient = await signInWithPassword(buyerUser.email, password);
+    const supplierClient = await signInWithPassword(supplierUser.email, password);
+    const outsiderClient = await signInWithPassword(outsiderUser.email, password);
+    const categoryId = await getAnyCategoryId();
+
+    const { data: quote } = await buyerClient
+      .from('quote_requests')
+      .insert({
+        buyer_id: buyerPublicUser.id,
+        requester_id: buyerPublicUser.id,
+        product_name: 'Chat harina local',
+        category_id: categoryId,
+        quantity: 80,
+        unit: 'kg',
+        delivery_date: '2026-04-12',
+        notes: 'Entrega PM',
+      })
+      .select('*')
+      .single();
+
+    const { data: offer } = await supplierClient
+      .from('quote_offers')
+      .insert({
+        quote_id: quote.id,
+        supplier_id: supplierPublicUser.id,
+        responder_id: supplierPublicUser.id,
+        price: 1750,
+        notes: 'Oferta con despacho',
+        estimated_lead_time: '72 horas',
+      })
+      .select('*')
+      .single();
+
+    expect(offer.quote_id).toBe(quote.id);
+
+    const { data: conversation, error: conversationError } = await adminClient
+      .from('quote_conversations')
+      .select('*')
+      .eq('quote_request_id', quote.id)
+      .eq('supplier_user_id', supplierPublicUser.id)
+      .single();
+
+    expect(conversationError).toBeNull();
+    expect(conversation.buyer_user_id).toBe(buyerPublicUser.id);
+
+    const { data: buyerMessage, error: buyerMessageError } = await buyerClient
+      .from('quote_conversation_messages')
+      .insert({
+        conversation_id: conversation.id,
+        sender_user_id: buyerPublicUser.id,
+        body: 'Podemos recibir antes de las 9 AM?',
+      })
+      .select('*')
+      .single();
+
+    expect(buyerMessageError).toBeNull();
+    expect(buyerMessage.sender_user_id).toBe(buyerPublicUser.id);
+
+    const { data: supplierMessages, error: supplierMessagesError } = await supplierClient
+      .from('quote_conversation_messages')
+      .select('*')
+      .eq('conversation_id', conversation.id);
+
+    expect(supplierMessagesError).toBeNull();
+    expect(supplierMessages).toHaveLength(1);
+
+    const { data: outsiderConversation, error: outsiderConversationError } = await outsiderClient
+      .from('quote_conversations')
+      .select('*')
+      .eq('id', conversation.id)
+      .maybeSingle();
+
+    expect(outsiderConversationError).toBeNull();
+    expect(outsiderConversation).toBeNull();
+
+    const { error: closeQuoteError } = await buyerClient
+      .from('quote_requests')
+      .update({ status: 'cancelled' })
+      .eq('id', quote.id);
+
+    expect(closeQuoteError).toBeNull();
+
+    const { error: closedMessageError } = await supplierClient
+      .from('quote_conversation_messages')
+      .insert({
+        conversation_id: conversation.id,
+        sender_user_id: supplierPublicUser.id,
+        body: 'Este mensaje no deberia entrar.',
+      });
+
+    expect(closedMessageError).toBeTruthy();
   });
 });

@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Toast from '../components/Toast';
 import Modal from '../components/Modal';
+import QuoteConversationModal from '../components/QuoteConversationModal';
 import DashboardPageHeader from '../components/DashboardPageHeader';
 import { salesAgents } from '../data/mockData';
 import { chatWithAgent } from '../services/claudeApi';
@@ -45,15 +46,21 @@ import {
   getBuyerProfile,
   getBuyerStats,
   getOffersForSupplier,
+  getQuoteConversationById,
+  getQuoteConversationForQuote,
+  getQuoteConversationMessages,
   getRelevantQuoteRequestsForSupplier,
   getProducts,
   getReviewsForUser,
   getSupplierStats,
   getSupplierUsageSummary,
+  markQuoteConversationRead,
+  sendQuoteConversationMessage,
   submitOffer,
   updateProduct,
   updateOfferPipelineStatus,
 } from '../services/database';
+import { mapQuoteConversationMessageRecord, mapQuoteConversationRecord } from '../lib/conversationAdapters';
 
 const initialProfile = {
   companyName: 'Valle Frio SpA',
@@ -91,12 +98,16 @@ export default function SupplierDashboard() {
   const unreadSupplierQuoteNotifications = useMemo(
     () => notifications.filter((notification) => (
       !notification.read_at
-      && ['rfq_created', 'offer_accepted', 'rfq_cancelled'].includes(notification.type)
+      && ['rfq_created', 'offer_accepted', 'rfq_cancelled', 'message_received'].includes(notification.type)
     )).length,
     [notifications],
   );
   const [toast, setToast] = useState(null);
   const [quoteModal, setQuoteModal] = useState(null);
+  const [activeConversation, setActiveConversation] = useState(null);
+  const [conversationMessages, setConversationMessages] = useState([]);
+  const [conversationLoading, setConversationLoading] = useState(false);
+  const [isSendingConversationMessage, setIsSendingConversationMessage] = useState(false);
   const [offerForm, setOfferForm] = useState({ price: '', notes: '', estimatedLeadTime: '' });
   const [activeTab, setActiveTab] = useState('quotes');
   const [selectedAgent, setSelectedAgent] = useState(null);
@@ -306,7 +317,7 @@ export default function SupplierDashboard() {
   }, [loadQuotesData]);
 
   useEffect(() => {
-    if (!location.state?.activeTab && !location.state?.focusQuoteId && !location.state?.focusOfferId) {
+    if (!location.state?.activeTab && !location.state?.focusQuoteId && !location.state?.focusOfferId && !location.state?.focusConversationId) {
       return;
     }
 
@@ -319,32 +330,56 @@ export default function SupplierDashboard() {
 
       const targetQuoteId = location.state?.focusQuoteId;
       const targetOfferId = location.state?.focusOfferId;
+      const targetConversationId = location.state?.focusConversationId;
 
-      if (!targetQuoteId && !targetOfferId) {
+      if (!targetQuoteId && !targetOfferId && !targetConversationId) {
         navigate(location.pathname, { replace: true, state: null });
         return;
       }
 
-      const { openQuoteRows, supplierOfferRows } = await loadQuotesData();
-      if (cancelled) return;
+      try {
+        let resolvedQuoteId = targetQuoteId;
 
-      const mappedOpenQuotes = openQuoteRows.map((quote) => mapQuoteRequestRecord(quote));
-      const mappedOffers = supplierOfferRows.map((offer) => mapQuoteOfferRecord(offer));
+        if (targetConversationId) {
+          const conversationRecord = await getQuoteConversationById(targetConversationId);
+          if (cancelled) return;
+          resolvedQuoteId = conversationRecord?.quote_request_id ?? resolvedQuoteId;
+        }
 
-      const matchingOpenQuote = mappedOpenQuotes.find((quote) => quote.id === targetQuoteId);
-      const matchingOffer = mappedOffers.find((offer) => (
-        offer.id === targetOfferId
-        || (targetQuoteId && offer.quoteId === targetQuoteId)
-      ));
+        const { openQuoteRows, supplierOfferRows } = await loadQuotesData();
+        if (cancelled) return;
 
-      if (matchingOpenQuote) {
-        setHighlightedQuoteId(matchingOpenQuote.id);
-        openQuoteOfferModal(matchingOpenQuote);
-      } else if (matchingOffer) {
-        setHighlightedOfferId(matchingOffer.id);
+        const mappedOpenQuotes = openQuoteRows.map((quote) => mapQuoteRequestRecord(quote));
+        const mappedOffers = supplierOfferRows.map((offer) => mapQuoteOfferRecord(offer));
+
+        const matchingOpenQuote = mappedOpenQuotes.find((quote) => quote.id === resolvedQuoteId);
+        const matchingOffer = mappedOffers.find((offer) => (
+          offer.id === targetOfferId
+          || (resolvedQuoteId && offer.quoteId === resolvedQuoteId)
+        ));
+
+        if (targetConversationId) {
+          if (matchingOffer) {
+            setHighlightedOfferId(matchingOffer.id);
+          } else if (matchingOpenQuote) {
+            setHighlightedQuoteId(matchingOpenQuote.id);
+          }
+          await loadConversationForSupplier({ conversationId: targetConversationId });
+        } else if (matchingOpenQuote) {
+          setHighlightedQuoteId(matchingOpenQuote.id);
+          openQuoteOfferModal(matchingOpenQuote);
+        } else if (matchingOffer) {
+          setHighlightedOfferId(matchingOffer.id);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setToast({ message: error.message || 'No se pudo abrir la conversacion solicitada.', type: 'error' });
+        }
+      } finally {
+        if (!cancelled) {
+          navigate(location.pathname, { replace: true, state: null });
+        }
       }
-
-      navigate(location.pathname, { replace: true, state: null });
     }
 
     applyNotificationState();
@@ -507,6 +542,89 @@ export default function SupplierDashboard() {
     setQuoteModal(null);
     setOfferForm({ price: '', notes: '', estimatedLeadTime: '' });
   };
+
+  const closeConversation = useCallback(() => {
+    setActiveConversation(null);
+    setConversationMessages([]);
+  }, []);
+
+  const loadConversationForSupplier = useCallback(async ({ conversationId = null, quoteId = null, closeQuoteModal = false } = {}) => {
+    if (!currentUser?.id) return null;
+
+    setConversationLoading(true);
+
+    try {
+      const conversationRecord = conversationId
+        ? await getQuoteConversationById(conversationId)
+        : await getQuoteConversationForQuote(quoteId, currentUser.id);
+
+      if (!conversationRecord) {
+        setToast({ message: 'Todavia no existe una conversacion disponible para esta RFQ.', type: 'error' });
+        return null;
+      }
+
+      const [messageRows, markedConversation] = await Promise.all([
+        getQuoteConversationMessages(conversationRecord.id),
+        markQuoteConversationRead({ conversationId: conversationRecord.id, userId: currentUser.id }),
+      ]);
+
+      setActiveConversation(mapQuoteConversationRecord(markedConversation ?? conversationRecord));
+      setConversationMessages(messageRows.map((message) => mapQuoteConversationMessageRecord(message)));
+
+      if (closeQuoteModal) {
+        setQuoteModal(null);
+        setOfferForm({ price: '', notes: '', estimatedLeadTime: '' });
+      }
+
+      return conversationRecord;
+    } catch (error) {
+      setToast({ message: error.message || 'No se pudo cargar la conversacion.', type: 'error' });
+      return null;
+    } finally {
+      setConversationLoading(false);
+    }
+  }, [currentUser?.id]);
+
+  const refreshActiveConversation = useCallback(async () => {
+    if (!activeConversation?.id || !currentUser?.id) return;
+
+    try {
+      const [conversationRecord, messageRows, markedConversation] = await Promise.all([
+        getQuoteConversationById(activeConversation.id),
+        getQuoteConversationMessages(activeConversation.id),
+        markQuoteConversationRead({ conversationId: activeConversation.id, userId: currentUser.id }),
+      ]);
+
+      if (!conversationRecord) {
+        closeConversation();
+        return;
+      }
+
+      setActiveConversation(mapQuoteConversationRecord(markedConversation ?? conversationRecord));
+      setConversationMessages(messageRows.map((message) => mapQuoteConversationMessageRecord(message)));
+    } catch (error) {
+      setToast({ message: error.message || 'No se pudo actualizar la conversacion.', type: 'error' });
+    }
+  }, [activeConversation?.id, closeConversation, currentUser?.id]);
+
+  const handleSendConversationMessage = useCallback(async (body) => {
+    if (!activeConversation?.id || !currentUser?.id) return;
+
+    setIsSendingConversationMessage(true);
+
+    try {
+      await sendQuoteConversationMessage({
+        conversationId: activeConversation.id,
+        senderUserId: currentUser.id,
+        body,
+      });
+      await refreshActiveConversation();
+    } catch (error) {
+      setToast({ message: error.message || 'No se pudo enviar el mensaje.', type: 'error' });
+    } finally {
+      setIsSendingConversationMessage(false);
+    }
+  }, [activeConversation?.id, currentUser?.id, refreshActiveConversation]);
 
   const openBuyerSummary = async (quote) => {
     setLoadingBuyerId(quote.buyerId);
@@ -938,6 +1056,18 @@ export default function SupplierDashboard() {
           </form>
         </Modal>
       )}
+
+      <QuoteConversationModal
+        isOpen={Boolean(activeConversation)}
+        onClose={closeConversation}
+        conversation={activeConversation}
+        messages={conversationMessages}
+        currentUserId={currentUser?.id}
+        isLoading={conversationLoading}
+        isSending={isSendingConversationMessage}
+        onSendMessage={handleSendConversationMessage}
+        onRefresh={refreshActiveConversation}
+      />
 
       {productDetail && (
         <Modal title={productDetail.name} onClose={() => setProductDetail(null)}>
@@ -1973,6 +2103,12 @@ export default function SupplierDashboard() {
                                     <span className={`text-[10px] font-semibold px-3 py-1 rounded-full ${existingOffer.pipelineStatusClass}`}>
                                       {existingOffer.pipelineStatusLabel}
                                     </span>
+                                    <button
+                                      onClick={() => loadConversationForSupplier({ quoteId: quote.id })}
+                                      className="text-[10px] font-semibold px-3 py-1 rounded-full border border-[#2ECAD5]/30 text-[#2ECAD5] hover:bg-[#2ECAD5]/5 transition-all"
+                                    >
+                                      Abrir conversacion
+                                    </button>
                                   </div>
                                 ) : (
                                   entitlements.canRespondToQuotes ? (
@@ -2025,6 +2161,12 @@ export default function SupplierDashboard() {
                                 <span className={`text-[10px] font-semibold px-3 py-1 rounded-full ${existingOffer.pipelineStatusClass}`}>
                                   {existingOffer.pipelineStatusLabel}
                                 </span>
+                                <button
+                                  onClick={() => loadConversationForSupplier({ quoteId: quote.id })}
+                                  className="text-[10px] font-semibold px-3 py-1 rounded-full border border-[#2ECAD5]/30 text-[#2ECAD5] hover:bg-[#2ECAD5]/5 transition-all"
+                                >
+                                  Abrir conversacion
+                                </button>
                               </div>
                             ) : (
                               entitlements.canRespondToQuotes ? (
@@ -2094,6 +2236,13 @@ export default function SupplierDashboard() {
                         <div className="lg:text-right">
                           <div className="text-2xl font-extrabold text-[#0D1F3C]">{offer.priceLabel}</div>
                           <div className="text-xs text-gray-400 mt-1">{offer.createdAtLabel}</div>
+                          <button
+                            type="button"
+                            onClick={() => loadConversationForSupplier({ quoteId: offer.quoteId })}
+                            className="mt-4 border border-[#2ECAD5]/30 text-[#2ECAD5] font-semibold px-4 py-2 rounded-xl hover:bg-[#2ECAD5]/5 transition-all text-sm"
+                          >
+                            Abrir conversacion
+                          </button>
                           {offer.status === 'pending' && (
                             <div className="mt-4">
                               <label htmlFor={`offer-pipeline-${offer.id}`} className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">

@@ -1,5 +1,5 @@
-import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { lazy, Suspense, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import RenderProfiler from './components/RenderProfiler';
@@ -25,10 +25,21 @@ function PageLoader() {
   );
 }
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <div className="flex flex-col min-h-screen">
+        <ScrollToTop />
         <RenderProfiler id="Navbar">
           <Navbar />
         </RenderProfiler>
@@ -38,6 +49,7 @@ export default function App() {
               <Route path="/" element={<RenderProfiler id="Landing"><Landing /></RenderProfiler>} />
               <Route path="/marketplace" element={<RenderProfiler id="Marketplace"><Marketplace /></RenderProfiler>} />
               <Route path="/ingresar" element={<RenderProfiler id="Login"><Login /></RenderProfiler>} />
+              <Route path="/login" element={<RenderProfiler id="LoginAlias"><Login /></RenderProfiler>} />
               <Route path="/registro-comprador" element={<RenderProfiler id="BuyerRegistration"><BuyerRegistration /></RenderProfiler>} />
               <Route path="/registro-proveedor" element={<RenderProfiler id="SupplierRegistration"><SupplierRegistration /></RenderProfiler>} />
               <Route

@@ -16,6 +16,7 @@ dist
 dist-ssr
 *.local
 test-results
+.local-history-rewrite-notes.md
 
 # Editor directories and files
 .vscode/*

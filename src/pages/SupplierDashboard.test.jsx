@@ -17,11 +17,16 @@ const mockDatabase = vi.hoisted(() => ({
   getBuyerProfile: vi.fn(),
   getBuyerStats: vi.fn(),
   getOffersForSupplier: vi.fn(),
+  getQuoteConversationById: vi.fn(),
+  getQuoteConversationForQuote: vi.fn(),
+  getQuoteConversationMessages: vi.fn(),
   getRelevantQuoteRequestsForSupplier: vi.fn(),
   getProducts: vi.fn(),
   getReviewsForUser: vi.fn(),
   getSupplierStats: vi.fn(),
   getSupplierUsageSummary: vi.fn(),
+  markQuoteConversationRead: vi.fn(),
+  sendQuoteConversationMessage: vi.fn(),
   submitOffer: vi.fn(),
   updateOfferPipelineStatus: vi.fn(),
   updateProduct: vi.fn(),
@@ -80,6 +85,18 @@ describe('SupplierDashboard', () => {
         estimated_lead_time: '48 horas',
       }),
     );
+    mockDatabase.getQuoteConversationForQuote.mockResolvedValue(seed.quoteConversations[0]);
+    mockDatabase.getQuoteConversationById.mockResolvedValue(seed.quoteConversations[0]);
+    mockDatabase.getQuoteConversationMessages.mockResolvedValue(seed.quoteConversationMessages);
+    mockDatabase.markQuoteConversationRead.mockResolvedValue(seed.quoteConversations[0]);
+    mockDatabase.sendQuoteConversationMessage.mockResolvedValue({
+      id: 'conversation-message-2',
+      conversation_id: 'conversation-1',
+      sender_user_id: 'supplier-1',
+      body: 'Podemos mover la entrega a primera hora.',
+      created_at: '2026-03-24T10:15:00Z',
+      sender: seed.supplier,
+    });
   });
 
   it('muestra summary, cartera buyer y plan activo desde datos reales', async () => {
@@ -164,6 +181,29 @@ describe('SupplierDashboard', () => {
     });
 
     expect(await screen.findByText(/Oferta enviada a Pasteleria Mozart/i)).toBeInTheDocument();
+  });
+
+  it('permite abrir una conversacion desde una oferta enviada y responder', async () => {
+    const user = userEvent.setup();
+
+    renderWithRouter(<SupplierDashboard />);
+
+    const openConversationButtons = await screen.findAllByRole('button', { name: 'Abrir conversacion' });
+    await user.click(openConversationButtons[0]);
+
+    expect(await screen.findByText('Conversacion RFQ')).toBeInTheDocument();
+    expect(screen.getByText(/Podemos entregar en 48 horas/i)).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText('Mensaje'), 'Podemos mover la entrega a primera hora.');
+    await user.click(screen.getByRole('button', { name: 'Enviar mensaje' }));
+
+    await waitFor(() => {
+      expect(mockDatabase.sendQuoteConversationMessage).toHaveBeenCalledWith({
+        conversationId: 'conversation-1',
+        senderUserId: 'supplier-1',
+        body: 'Podemos mover la entrega a primera hora.',
+      });
+    });
   });
 
   it('permite cambiar el plan desde la tab de plan', async () => {

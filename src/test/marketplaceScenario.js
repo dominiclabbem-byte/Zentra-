@@ -117,6 +117,95 @@ function attachSupplierQuoteRelations(offer) {
   };
 }
 
+function attachQuoteConversationRelations(conversation, state) {
+  const quote = state.quoteRequests.find((item) => item.id === conversation.quote_request_id) ?? takeSingle(conversation.quote_requests) ?? null;
+  const buyer = state.buyer.id === conversation.buyer_user_id
+    ? state.buyer
+    : state.secondBuyer?.id === conversation.buyer_user_id
+      ? state.secondBuyer
+      : takeSingle(conversation.buyer) ?? null;
+  const supplier = state.supplier.id === conversation.supplier_user_id
+    ? state.supplier
+    : takeSingle(conversation.supplier) ?? null;
+
+  return {
+    ...clone(conversation),
+    quote_requests: quote ? {
+      ...clone(quote),
+      categories: clone(takeSingle(quote.categories) ?? quote.categories),
+      users: clone(takeSingle(quote.users) ?? quote.users),
+    } : null,
+    buyer: buyer ? clone(buyer) : null,
+    supplier: supplier ? clone(supplier) : null,
+  };
+}
+
+function createQuoteConversation(state, { quoteRequestId, supplierUserId, startedByUserId }) {
+  const existing = state.quoteConversations.find((conversation) => (
+    conversation.quote_request_id === quoteRequestId
+    && conversation.supplier_user_id === supplierUserId
+  ));
+  if (existing) return existing;
+
+  const quote = state.quoteRequests.find((item) => item.id === quoteRequestId);
+  const supplierUser = state.supplier.id === supplierUserId ? state.supplier : null;
+  const buyerUser = quote?.buyer_id === state.buyer.id ? state.buyer : state.secondBuyer;
+  const conversation = {
+    id: `conversation-${state.quoteConversations.length + 1}`,
+    quote_request_id: quoteRequestId,
+    buyer_user_id: quote?.buyer_id ?? buyerUser?.id ?? 'buyer-1',
+    supplier_user_id: supplierUserId,
+    started_by_user_id: startedByUserId,
+    status: 'active',
+    buyer_last_read_at: null,
+    supplier_last_read_at: null,
+    last_message_at: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    quote_requests: quote ?? null,
+    buyer: buyerUser ?? null,
+    supplier: supplierUser ?? null,
+  };
+
+  state.quoteConversations.unshift(conversation);
+  return conversation;
+}
+
+function createQuoteConversationMessage(state, { conversationId, senderUserId, body }) {
+  const conversation = state.quoteConversations.find((item) => item.id === conversationId);
+  if (!conversation) {
+    throw new Error('conversation not found');
+  }
+
+  const timestamp = new Date().toISOString();
+  const sender = [state.buyer, state.secondBuyer, state.supplier]
+    .find((user) => user?.id === senderUserId) ?? null;
+
+  const message = {
+    id: `conversation-message-${state.quoteConversationMessages.length + 1}`,
+    conversation_id: conversationId,
+    sender_user_id: senderUserId,
+    body,
+    created_at: timestamp,
+    sender,
+  };
+
+  state.quoteConversationMessages.push(message);
+  state.quoteConversations = state.quoteConversations.map((item) => {
+    if (item.id !== conversationId) return item;
+
+    return {
+      ...item,
+      last_message_at: timestamp,
+      updated_at: timestamp,
+      buyer_last_read_at: senderUserId === item.buyer_user_id ? timestamp : item.buyer_last_read_at,
+      supplier_last_read_at: senderUserId === item.supplier_user_id ? timestamp : item.supplier_last_read_at,
+    };
+  });
+
+  return message;
+}
+
 export function createMarketplaceScenario(overrides = {}) {
   const state = buildMarketplaceSeed(overrides);
   const buyer = state.buyer;
@@ -264,6 +353,11 @@ export function createMarketplaceScenario(overrides = {}) {
       state.quoteOffers = [offer, ...state.quoteOffers];
       quote.status = 'in_review';
       quote.quote_offers = [offer, ...(quote.quote_offers ?? [])];
+      createQuoteConversation(state, {
+        quoteRequestId: quoteId,
+        supplierUserId: supplierId,
+        startedByUserId: responderId,
+      });
 
       createNotification(state, {
         recipient_id: quote.buyer_id,
@@ -276,6 +370,76 @@ export function createMarketplaceScenario(overrides = {}) {
       });
 
       return clone(offer);
+    },
+
+    async getQuoteConversationForQuote(quoteRequestId, supplierUserId) {
+      const conversation = state.quoteConversations.find((item) => (
+        item.quote_request_id === quoteRequestId
+        && item.supplier_user_id === supplierUserId
+      )) ?? null;
+
+      return conversation ? attachQuoteConversationRelations(conversation, state) : null;
+    },
+
+    async getQuoteConversationById(conversationId) {
+      const conversation = state.quoteConversations.find((item) => item.id === conversationId) ?? null;
+      return conversation ? attachQuoteConversationRelations(conversation, state) : null;
+    },
+
+    async getQuoteConversationMessages(conversationId) {
+      return clone(
+        state.quoteConversationMessages
+          .filter((message) => message.conversation_id === conversationId)
+          .sort((left, right) => new Date(left.created_at).getTime() - new Date(right.created_at).getTime()),
+      );
+    },
+
+    async sendQuoteConversationMessage({ conversationId, senderUserId, body }) {
+      const conversation = state.quoteConversations.find((item) => item.id === conversationId);
+      if (!conversation) throw new Error('conversation not found');
+      if (conversation.status !== 'active') throw new Error('Esta conversacion ya no admite mensajes nuevos.');
+
+      const message = createQuoteConversationMessage(state, {
+        conversationId,
+        senderUserId,
+        body: body.trim(),
+      });
+
+      const quote = state.quoteRequests.find((item) => item.id === conversation.quote_request_id);
+      const recipientId = senderUserId === conversation.buyer_user_id
+        ? conversation.supplier_user_id
+        : conversation.buyer_user_id;
+
+      createNotification(state, {
+        recipient_id: recipientId,
+        actor_id: senderUserId,
+        type: 'message_received',
+        title: 'Nuevo mensaje en una cotizacion',
+        message: `${senderUserId === conversation.buyer_user_id ? 'Comprador' : 'Proveedor'} envio un mensaje sobre ${quote?.product_name ?? 'tu RFQ'}.`,
+        entity_type: 'quote_conversation',
+        entity_id: conversationId,
+      });
+
+      return clone(message);
+    },
+
+    async markQuoteConversationRead({ conversationId, userId }) {
+      const readAt = new Date().toISOString();
+      state.quoteConversations = state.quoteConversations.map((conversation) => {
+        if (conversation.id !== conversationId) return conversation;
+
+        if (conversation.buyer_user_id === userId) {
+          return { ...conversation, buyer_last_read_at: readAt, updated_at: readAt };
+        }
+
+        if (conversation.supplier_user_id === userId) {
+          return { ...conversation, supplier_last_read_at: readAt, updated_at: readAt };
+        }
+
+        return conversation;
+      });
+
+      return clone(state.quoteConversations.find((conversation) => conversation.id === conversationId) ?? null);
     },
 
     async updateOfferPipelineStatus({ offerId, supplierId, pipelineStatus }) {
@@ -301,6 +465,11 @@ export function createMarketplaceScenario(overrides = {}) {
           ? { ...item, status: 'rejected', pipeline_status: 'lost' }
           : item
       ));
+      state.quoteConversations = state.quoteConversations.map((conversation) => (
+        conversation.quote_request_id === offer.quote_id
+          ? { ...conversation, status: 'closed', updated_at: new Date().toISOString() }
+          : conversation
+      ));
 
       createNotification(state, {
         recipient_id: offer.supplier_id,
@@ -325,6 +494,11 @@ export function createMarketplaceScenario(overrides = {}) {
         offer.quote_id === quoteId && offer.status === 'pending'
           ? { ...offer, status: 'rejected', pipeline_status: 'lost' }
           : offer
+      ));
+      state.quoteConversations = state.quoteConversations.map((conversation) => (
+        conversation.quote_request_id === quoteId
+          ? { ...conversation, status: 'closed', updated_at: new Date().toISOString() }
+          : conversation
       ));
 
       impactedOffers.forEach((offer) => {

@@ -26,7 +26,7 @@ test.describe('Dashboard Flows', () => {
     await page.getByRole('button', { name: 'Enviar cotizacion' }).click();
 
     await expect(page.getByText('Cotizacion creada. Ahora los proveedores pueden ofertar.')).toBeVisible();
-    await expect(page.getByText('Levadura instantanea')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Levadura instantanea' })).toBeVisible();
   });
 
   test('buyer puede aceptar una oferta desde cotizaciones', async ({ page }) => {

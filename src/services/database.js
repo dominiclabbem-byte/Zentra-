@@ -5,6 +5,9 @@ import {
   e2eCreateReview,
   e2eCreateQuoteRequest,
   e2eGetBuyerProfile,
+  e2eGetQuoteConversationById,
+  e2eGetQuoteConversationForQuote,
+  e2eGetQuoteConversationMessages,
   e2eGetBuyerReviewOpportunities,
   e2eGetBuyerStats,
   e2eGetCategories,
@@ -26,6 +29,8 @@ import {
   e2eMarkNotificationRead,
   e2eRequestFlowPlanActivation,
   e2eRemovePriceAlertSubscription,
+  e2eMarkQuoteConversationRead,
+  e2eSendQuoteConversationMessage,
   e2eSignIn,
   e2eSignOut,
   e2eSubmitOffer,
@@ -62,6 +67,29 @@ const SUPPLIER_RELEVANT_QUOTE_SELECT = `
     created_at,
     users!supplier_id(company_name, city, verified)
   )
+`;
+
+const QUOTE_CONVERSATION_SELECT = `
+  *,
+  quote_requests(
+    id,
+    buyer_id,
+    requester_id,
+    product_name,
+    category_id,
+    quantity,
+    unit,
+    delivery_date,
+    status,
+    categories(id, name, emoji)
+  ),
+  buyer:users!buyer_user_id(id, company_name, city),
+  supplier:users!supplier_user_id(id, company_name, city, verified)
+`;
+
+const QUOTE_CONVERSATION_MESSAGE_SELECT = `
+  *,
+  sender:users!sender_user_id(id, company_name, city)
 `;
 
 function takeSingle(value) {
@@ -113,6 +141,17 @@ async function createNotifications(rows) {
 
   if (error) throw error;
   return rows;
+}
+
+async function getQuoteConversationRecordById(conversationId) {
+  const { data, error } = await supabase
+    .from('quote_conversations')
+    .select(QUOTE_CONVERSATION_SELECT)
+    .eq('id', conversationId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ?? null;
 }
 
 // ========================
@@ -560,6 +599,119 @@ export async function cancelQuoteRequest(quoteId) {
       })),
     );
   }
+
+  return data;
+}
+
+export async function getQuoteConversationForQuote(quoteRequestId, supplierUserId) {
+  if (useE2E()) return e2eGetQuoteConversationForQuote(quoteRequestId, supplierUserId);
+
+  const { data, error } = await supabase
+    .from('quote_conversations')
+    .select(QUOTE_CONVERSATION_SELECT)
+    .eq('quote_request_id', quoteRequestId)
+    .eq('supplier_user_id', supplierUserId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ?? null;
+}
+
+export async function getQuoteConversationById(conversationId) {
+  if (useE2E()) return e2eGetQuoteConversationById(conversationId);
+  return getQuoteConversationRecordById(conversationId);
+}
+
+export async function getQuoteConversationMessages(conversationId) {
+  if (useE2E()) return e2eGetQuoteConversationMessages(conversationId);
+
+  const { data, error } = await supabase
+    .from('quote_conversation_messages')
+    .select(QUOTE_CONVERSATION_MESSAGE_SELECT)
+    .eq('conversation_id', conversationId)
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function markQuoteConversationRead({ conversationId, userId }) {
+  if (useE2E()) return e2eMarkQuoteConversationRead({ conversationId, userId });
+
+  const conversation = await getQuoteConversationRecordById(conversationId);
+  if (!conversation) return null;
+
+  const updates = {};
+  const readAt = new Date().toISOString();
+
+  if (conversation.buyer_user_id === userId) {
+    updates.buyer_last_read_at = readAt;
+  }
+
+  if (conversation.supplier_user_id === userId) {
+    updates.supplier_last_read_at = readAt;
+  }
+
+  if (!Object.keys(updates).length) {
+    return null;
+  }
+
+  const { error } = await supabase
+    .from('quote_conversations')
+    .update(updates)
+    .eq('id', conversationId)
+    .select('id')
+    .maybeSingle();
+
+  if (error) throw error;
+  return getQuoteConversationRecordById(conversationId);
+}
+
+export async function sendQuoteConversationMessage({ conversationId, senderUserId, body }) {
+  if (useE2E()) return e2eSendQuoteConversationMessage({ conversationId, senderUserId, body });
+
+  const trimmedBody = String(body ?? '').trim();
+  if (!trimmedBody) {
+    throw new Error('Escribe un mensaje antes de enviarlo.');
+  }
+
+  const conversation = await getQuoteConversationRecordById(conversationId);
+  if (!conversation) {
+    throw new Error('No se encontro la conversacion seleccionada.');
+  }
+  if (conversation.status !== 'active') {
+    throw new Error('Esta conversacion ya no admite mensajes nuevos.');
+  }
+
+  const { data, error } = await supabase
+    .from('quote_conversation_messages')
+    .insert({
+      conversation_id: conversationId,
+      sender_user_id: senderUserId,
+      body: trimmedBody,
+    })
+    .select(QUOTE_CONVERSATION_MESSAGE_SELECT)
+    .single();
+
+  if (error) throw error;
+
+  const recipientId = senderUserId === conversation.buyer_user_id
+    ? conversation.supplier_user_id
+    : conversation.buyer_user_id;
+  const senderRoleLabel = senderUserId === conversation.buyer_user_id ? 'El comprador' : 'El proveedor';
+  const productName = takeSingle(conversation.quote_requests)?.product_name ?? 'tu cotizacion';
+
+  await createNotifications([
+    {
+      recipient_id: recipientId,
+      actor_id: senderUserId,
+      type: 'message_received',
+      title: 'Nuevo mensaje en una cotizacion',
+      message: `${senderRoleLabel} envio un mensaje sobre ${productName}.`,
+      entity_type: 'quote_conversation',
+      entity_id: conversationId,
+    },
+  ]);
 
   return data;
 }

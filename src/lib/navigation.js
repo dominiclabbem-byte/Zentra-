@@ -77,6 +77,16 @@ export function getNotificationTargetLocation(notification, user) {
     };
   }
 
+  if (user.is_supplier && notification.type === 'message_received') {
+    return {
+      pathname: '/dashboard-proveedor',
+      state: {
+        activeTab: 'quotes',
+        focusConversationId: notification.entity_type === 'quote_conversation' ? notification.entity_id : null,
+      },
+    };
+  }
+
   if (user.is_buyer && ['offer_received'].includes(notification.type)) {
     return {
       pathname: '/dashboard-comprador',
@@ -84,6 +94,16 @@ export function getNotificationTargetLocation(notification, user) {
         activeTab: 'dashboard',
         focusOfferId: notification.entity_type === 'quote_offer' ? notification.entity_id : null,
         focusQuoteId: notification.entity_type === 'quote_request' ? notification.entity_id : null,
+      },
+    };
+  }
+
+  if (user.is_buyer && notification.type === 'message_received') {
+    return {
+      pathname: '/dashboard-comprador',
+      state: {
+        activeTab: 'dashboard',
+        focusConversationId: notification.entity_type === 'quote_conversation' ? notification.entity_id : null,
       },
     };
   }

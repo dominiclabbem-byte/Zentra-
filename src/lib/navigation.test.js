@@ -64,6 +64,34 @@ describe('navigation helpers', () => {
     });
   });
 
+  it('resuelve message_received de buyer hacia cotizaciones con conversation focus', () => {
+    expect(getNotificationTargetLocation({
+      type: 'message_received',
+      entity_type: 'quote_conversation',
+      entity_id: 'conversation-1',
+    }, buyerUser)).toEqual({
+      pathname: '/dashboard-comprador',
+      state: {
+        activeTab: 'dashboard',
+        focusConversationId: 'conversation-1',
+      },
+    });
+  });
+
+  it('resuelve message_received de supplier hacia quote inbox con conversation focus', () => {
+    expect(getNotificationTargetLocation({
+      type: 'message_received',
+      entity_type: 'quote_conversation',
+      entity_id: 'conversation-2',
+    }, supplierUser)).toEqual({
+      pathname: '/dashboard-proveedor',
+      state: {
+        activeTab: 'quotes',
+        focusConversationId: 'conversation-2',
+      },
+    });
+  });
+
   it('cae al dashboard por defecto si la notificacion no tiene ruta contextual', () => {
     expect(getNotificationTargetLocation({
       type: 'generic',

@@ -324,6 +324,54 @@ export function buildNotification(overrides = {}) {
   };
 }
 
+export function buildQuoteConversation(overrides = {}) {
+  const quote = takeSingle(overrides.quote_requests) ?? buildQuoteRequest({
+    id: overrides.quote_request_id ?? 'quote-1',
+    buyer_id: overrides.buyer_user_id ?? 'buyer-1',
+  });
+  const buyer = takeSingle(overrides.buyer) ?? takeSingle(quote.users) ?? buildBuyerUser({
+    id: overrides.buyer_user_id ?? 'buyer-1',
+  });
+  const supplier = takeSingle(overrides.supplier) ?? buildSupplierUser({
+    id: overrides.supplier_user_id ?? 'supplier-1',
+  });
+
+  return {
+    id: overrides.id ?? 'conversation-1',
+    quote_request_id: overrides.quote_request_id ?? quote.id,
+    buyer_user_id: overrides.buyer_user_id ?? buyer.id,
+    supplier_user_id: overrides.supplier_user_id ?? supplier.id,
+    started_by_user_id: overrides.started_by_user_id ?? supplier.id,
+    status: overrides.status ?? 'active',
+    buyer_last_read_at: overrides.buyer_last_read_at ?? null,
+    supplier_last_read_at: overrides.supplier_last_read_at ?? null,
+    last_message_at: overrides.last_message_at ?? overrides.created_at ?? '2026-03-24T09:20:00Z',
+    created_at: overrides.created_at ?? '2026-03-24T09:20:00Z',
+    updated_at: overrides.updated_at ?? overrides.created_at ?? '2026-03-24T09:20:00Z',
+    quote_requests: quote,
+    buyer,
+    supplier,
+    ...overrides,
+  };
+}
+
+export function buildQuoteConversationMessage(overrides = {}) {
+  const sender = takeSingle(overrides.sender) ?? buildSupplierUser({
+    id: overrides.sender_user_id ?? 'supplier-1',
+    company_name: overrides.senderName ?? 'Valle Frio SpA',
+  });
+
+  return {
+    id: overrides.id ?? 'conversation-message-1',
+    conversation_id: overrides.conversation_id ?? 'conversation-1',
+    sender_user_id: overrides.sender_user_id ?? sender.id,
+    body: overrides.body ?? 'Podemos entregar en 48 horas.',
+    created_at: overrides.created_at ?? '2026-03-24T09:30:00Z',
+    sender,
+    ...overrides,
+  };
+}
+
 export function buildReview(overrides = {}) {
   const defaultReviewerId = overrides.reviewer_id ?? 'buyer-2';
   const reviewer = takeSingle(overrides.users) ?? buildBuyerUser({
@@ -537,6 +585,29 @@ export function buildMarketplaceSeed(overrides = {}) {
     entity_id: quote.id,
     read_at: '2026-03-24T12:00:00Z',
   });
+  const quoteConversation = buildQuoteConversation({
+    id: 'conversation-1',
+    quote_request_id: quote.id,
+    quote_requests: quote,
+    buyer_user_id: buyer.id,
+    supplier_user_id: supplier.id,
+    buyer,
+    supplier,
+    started_by_user_id: supplier.id,
+    buyer_last_read_at: '2026-03-24T10:00:00Z',
+    supplier_last_read_at: '2026-03-24T09:45:00Z',
+    last_message_at: '2026-03-24T10:00:00Z',
+    created_at: '2026-03-24T09:20:00Z',
+    updated_at: '2026-03-24T10:00:00Z',
+  });
+  const quoteConversationMessage = buildQuoteConversationMessage({
+    id: 'conversation-message-1',
+    conversation_id: quoteConversation.id,
+    sender_user_id: supplier.id,
+    sender: supplier,
+    body: 'Podemos entregar en 48 horas y mantener el precio por 7 dias.',
+    created_at: '2026-03-24T10:00:00Z',
+  });
 
   return {
     categories,
@@ -552,6 +623,8 @@ export function buildMarketplaceSeed(overrides = {}) {
     priceAlerts: [alert],
     reviews: [review],
     notifications: [notificationForBuyer, notificationForSupplier],
+    quoteConversations: [quoteConversation],
+    quoteConversationMessages: [quoteConversationMessage],
     agents: [
       {
         id: 'agent-1',

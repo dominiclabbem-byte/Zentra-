@@ -52,4 +52,14 @@ describe('Login', () => {
       expect(mockNavigate).toHaveBeenCalledWith('/dashboard-comprador', { replace: true });
     });
   });
+
+  it('adapta el copy cuando se entra con role proveedor', () => {
+    renderWithRouter(<Login />, { route: '/ingresar?role=proveedor' });
+
+    expect(screen.getByText('Iniciar sesion')).toBeInTheDocument();
+    expect(screen.getByText(/Accede como/i)).toBeInTheDocument();
+    expect(screen.getByText('Proveedor')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Crear perfil proveedor' })).toHaveAttribute('href', '/registro-proveedor');
+    expect(screen.getByRole('link', { name: 'Cambia aqui' })).toHaveAttribute('href', '/ingresar?role=comprador');
+  });
 });

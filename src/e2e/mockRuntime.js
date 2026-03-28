@@ -136,6 +136,26 @@ export async function e2eSubmitOffer(payload) {
   return ensureScenario().api.submitOffer(payload);
 }
 
+export async function e2eGetQuoteConversationForQuote(quoteRequestId, supplierUserId) {
+  return ensureScenario().api.getQuoteConversationForQuote(quoteRequestId, supplierUserId);
+}
+
+export async function e2eGetQuoteConversationById(conversationId) {
+  return ensureScenario().api.getQuoteConversationById(conversationId);
+}
+
+export async function e2eGetQuoteConversationMessages(conversationId) {
+  return ensureScenario().api.getQuoteConversationMessages(conversationId);
+}
+
+export async function e2eSendQuoteConversationMessage(payload) {
+  return ensureScenario().api.sendQuoteConversationMessage(payload);
+}
+
+export async function e2eMarkQuoteConversationRead(payload) {
+  return ensureScenario().api.markQuoteConversationRead(payload);
+}
+
 export async function e2eAcceptOffer(offerId) {
   return ensureScenario().api.acceptOffer(offerId);
 }
