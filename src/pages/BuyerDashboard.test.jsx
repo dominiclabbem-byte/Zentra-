@@ -1,7 +1,7 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { buildMarketplaceSeed, buildPriceAlertSubscription, buildQuoteRequest } from '../test/marketplaceFixtures';
+import { buildMarketplaceSeed, buildPriceAlertSubscription, buildQuoteOffer, buildQuoteRequest } from '../test/marketplaceFixtures';
 import { renderWithRouter } from '../test/renderWithRouter';
 import BuyerDashboard from './BuyerDashboard';
 
@@ -14,7 +14,9 @@ vi.mock('../context/AuthContext', () => ({
 const mockDatabase = vi.hoisted(() => ({
   acceptOffer: vi.fn(),
   cancelQuoteRequest: vi.fn(),
+  createReview: vi.fn(),
   createQuoteRequest: vi.fn(),
+  getBuyerReviewOpportunities: vi.fn(),
   getBuyerStats: vi.fn(),
   getFavorites: vi.fn(),
   getProducts: vi.fn(),
@@ -47,6 +49,7 @@ describe('BuyerDashboard', () => {
       seed.quoteRequests.filter((quote) => quote.buyer_id === 'buyer-1'),
     );
     mockDatabase.getBuyerStats.mockResolvedValue({ totalOrders: 1, rating: 4.8, favoriteSuppliers: 1 });
+    mockDatabase.getBuyerReviewOpportunities.mockResolvedValue([]);
     mockDatabase.getFavorites.mockResolvedValue(seed.favorites);
     mockDatabase.getPriceAlertSubscriptions.mockResolvedValue(seed.priceAlertSubscriptions);
     mockDatabase.getPriceAlerts.mockResolvedValue(seed.priceAlerts);
@@ -144,5 +147,76 @@ describe('BuyerDashboard', () => {
 
     expect(await screen.findByText('Cotizacion creada. Ahora los proveedores pueden ofertar.')).toBeInTheDocument();
     expect(await screen.findByText('Mantequilla premium')).toBeInTheDocument();
+  });
+
+  it('permite dejar una reseña para una oferta aceptada elegible', async () => {
+    const user = userEvent.setup();
+    const acceptedQuote = buildQuoteRequest({
+      id: 'quote-accepted',
+      buyer_id: 'buyer-1',
+      requester_id: 'buyer-1',
+      product_name: 'Crema premium',
+      category_id: 'cat-2',
+      quantity: 60,
+      unit: 'kg',
+      delivery_date: '2026-04-15',
+      status: 'closed',
+      categories: seed.categories[1],
+      users: seed.buyer,
+      quote_offers: [],
+    });
+    const acceptedOffer = buildQuoteOffer({
+      id: 'offer-accepted',
+      quote_id: 'quote-accepted',
+      quote_requests: acceptedQuote,
+      supplier_id: 'supplier-1',
+      responder_id: 'supplier-1',
+      price: 1850,
+      notes: 'Oferta aceptada',
+      estimated_lead_time: '48 horas',
+      status: 'accepted',
+      users: {
+        id: 'supplier-1',
+        company_name: 'Valle Frio SpA',
+        city: 'Santiago',
+        verified: true,
+      },
+    });
+    acceptedQuote.quote_offers = [acceptedOffer];
+
+    mockDatabase.getQuoteRequestsForBuyer.mockResolvedValue([
+      acceptedQuote,
+    ]);
+    mockDatabase.getBuyerReviewOpportunities.mockResolvedValue([
+      {
+        quoteOfferId: 'offer-accepted',
+        quoteId: 'quote-accepted',
+        reviewedId: 'supplier-1',
+        supplierName: 'Valle Frio SpA',
+        productName: 'Crema premium',
+      },
+    ]);
+    mockDatabase.createReview.mockResolvedValue({
+      id: 'review-99',
+      quote_offer_id: 'offer-accepted',
+    });
+
+    renderWithRouter(<BuyerDashboard />);
+
+    await user.click(await screen.findByRole('button', { name: 'Mi Perfil' }));
+    await user.click(await screen.findByRole('button', { name: 'Dejar reseña' }));
+    await user.selectOptions(screen.getByLabelText(/Calificacion/i), '5');
+    await user.type(screen.getByLabelText(/Comentario/i), 'Entrega impecable y muy buena comunicación.');
+    await user.click(screen.getByRole('button', { name: 'Publicar reseña' }));
+
+    await waitFor(() => {
+      expect(mockDatabase.createReview).toHaveBeenCalledWith({
+        reviewerId: 'buyer-1',
+        reviewedId: 'supplier-1',
+        quoteOfferId: 'offer-accepted',
+        rating: 5,
+        comment: 'Entrega impecable y muy buena comunicación.',
+      });
+    });
   });
 });

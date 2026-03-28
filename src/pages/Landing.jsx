@@ -100,6 +100,22 @@ export default function Landing() {
         </div>
       </section>
 
+      <section className="px-4 py-6 bg-[#f8fafc] border-y border-[#2ECAD5]/10">
+        <div className="max-w-6xl mx-auto rounded-2xl border border-[#2ECAD5]/15 bg-white px-6 py-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#2ECAD5]">Trust layer Zentra</div>
+            <p className="text-[#0D1F3C] font-semibold mt-1">
+              La reputacion visible del marketplace se construye con operaciones aceptadas, reseñas elegibles y verificacion comercial.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <span className="text-xs font-semibold bg-[#f0fdfa] text-[#0D1F3C] border border-[#2ECAD5]/20 px-3 py-1.5 rounded-full">Reseñas de operaciones reales</span>
+            <span className="text-xs font-semibold bg-[#f0fdfa] text-[#0D1F3C] border border-[#2ECAD5]/20 px-3 py-1.5 rounded-full">RUT y perfil verificado</span>
+            <span className="text-xs font-semibold bg-[#f0fdfa] text-[#0D1F3C] border border-[#2ECAD5]/20 px-3 py-1.5 rounded-full">Rating agregado en vivo</span>
+          </div>
+        </div>
+      </section>
+
       {/* B2B Connection Animation */}
       <section className="py-20 px-4 bg-[#060e1a] text-white overflow-hidden relative">
         <div className="absolute inset-0 bg-grid opacity-20" />

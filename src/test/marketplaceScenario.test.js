@@ -180,11 +180,30 @@ describe('marketplaceScenario', () => {
 
   it('permite crear una review y luego recuperarla desde la ficha del proveedor', async () => {
     const scenario = createMarketplaceScenario();
+    const quote = await scenario.api.createQuoteRequest({
+      buyer_id: 'buyer-1',
+      requester_id: 'buyer-1',
+      product_name: 'Crema premium',
+      category_id: 'cat-2',
+      quantity: 40,
+      unit: 'kg',
+      delivery_date: '2026-04-20',
+      notes: 'Entrega AM',
+    });
+    const offer = await scenario.api.submitOffer({
+      quoteId: quote.id,
+      supplierId: 'supplier-1',
+      responderId: 'supplier-1',
+      price: 2200,
+      notes: 'Lote refrigerado',
+      estimatedLeadTime: '48 horas',
+    });
+    await scenario.api.acceptOffer(offer.id);
 
     const review = await scenario.api.createReview({
       reviewerId: 'buyer-1',
       reviewedId: 'supplier-1',
-      quoteOfferId: 'offer-1',
+      quoteOfferId: offer.id,
       rating: 5,
       comment: 'Llego puntual y con excelente calidad.',
     });
@@ -194,6 +213,62 @@ describe('marketplaceScenario', () => {
     const reviews = await scenario.api.getReviewsForUser('supplier-1');
     expect(reviews.some((item) => item.id === review.id)).toBe(true);
     expect(reviews[0].comment).toContain('excelente calidad');
+  });
+
+  it('solo permite reseñar contrapartes con una oferta aceptada elegible', async () => {
+    const scenario = createMarketplaceScenario();
+
+    await expect(scenario.api.createReview({
+      reviewerId: 'buyer-1',
+      reviewedId: 'supplier-1',
+      quoteOfferId: 'offer-1',
+      rating: 4,
+      comment: 'No deberia pasar',
+    })).rejects.toThrow(/operaciones aceptadas/i);
+  });
+
+  it('expone oportunidades de reseña y recalcula el rating agregado tras una nueva review', async () => {
+    const scenario = createMarketplaceScenario();
+    const quote = await scenario.api.createQuoteRequest({
+      buyer_id: 'buyer-1',
+      requester_id: 'buyer-1',
+      product_name: 'Mantequilla premium',
+      category_id: 'cat-2',
+      quantity: 80,
+      unit: 'kg',
+      delivery_date: '2026-04-21',
+      notes: 'Entrega a primera hora',
+    });
+    const offer = await scenario.api.submitOffer({
+      quoteId: quote.id,
+      supplierId: 'supplier-1',
+      responderId: 'supplier-1',
+      price: 4100,
+      notes: 'Incluye cadena de frio',
+      estimatedLeadTime: '72 horas',
+    });
+    await scenario.api.acceptOffer(offer.id);
+
+    const opportunitiesBefore = await scenario.api.getBuyerReviewOpportunities('buyer-1');
+    expect(opportunitiesBefore.some((item) => item.quoteOfferId === offer.id)).toBe(true);
+
+    const statsBefore = await scenario.api.getSupplierStats('supplier-1');
+
+    await scenario.api.createReview({
+      reviewerId: 'buyer-1',
+      reviewedId: 'supplier-1',
+      quoteOfferId: offer.id,
+      rating: 4,
+      comment: 'Buen servicio y entrega ordenada.',
+    });
+
+    const opportunitiesAfter = await scenario.api.getBuyerReviewOpportunities('buyer-1');
+    expect(opportunitiesAfter.some((item) => item.quoteOfferId === offer.id)).toBe(false);
+
+    const statsAfter = await scenario.api.getSupplierStats('supplier-1');
+    expect(statsAfter.totalReviews).toBe(statsBefore.totalReviews + 1);
+    expect(statsAfter.rating).toBeGreaterThan(0);
+    expect(statsAfter.rating).not.toBe(statsBefore.rating);
   });
 
   it('filtra alertas segun suscripciones activas y deja de mostrarlas al remover la suscripcion', async () => {

@@ -17,7 +17,9 @@ import {
 import {
   acceptOffer,
   cancelQuoteRequest,
+  createReview,
   createQuoteRequest,
+  getBuyerReviewOpportunities,
   getBuyerStats,
   getFavorites,
   getProducts,
@@ -42,6 +44,15 @@ const initialQuoteForm = {
   unit: 'kg',
   deliveryDate: '',
   notes: '',
+};
+
+const initialReviewForm = {
+  quoteOfferId: '',
+  reviewedId: '',
+  supplierName: '',
+  productName: '',
+  rating: 5,
+  comment: '',
 };
 
 const initialBuyerProfile = {
@@ -155,6 +166,9 @@ export default function BuyerDashboard() {
   const [favoriteActionId, setFavoriteActionId] = useState('');
   const [subscriptionActionId, setSubscriptionActionId] = useState('');
   const [isSavingAlertSubscription, setIsSavingAlertSubscription] = useState(false);
+  const [reviewOpportunities, setReviewOpportunities] = useState([]);
+  const [reviewForm, setReviewForm] = useState(initialReviewForm);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [alertForm, setAlertForm] = useState({
     mode: 'category',
     categoryId: '',
@@ -221,6 +235,7 @@ export default function BuyerDashboard() {
       setFavoriteSuppliers([]);
       setAlertSubscriptions([]);
       setBuyerAlerts([]);
+      setReviewOpportunities([]);
       setFavoritesLoading(false);
       setAlertsLoading(false);
       return;
@@ -230,17 +245,19 @@ export default function BuyerDashboard() {
     setAlertsLoading(true);
 
     try {
-      const [statsData, favoritesData, subscriptionsData, alertsData] = await Promise.all([
+      const [statsData, favoritesData, subscriptionsData, alertsData, reviewOpportunitiesData] = await Promise.all([
         getBuyerStats(currentUser.id),
         getFavorites(currentUser.id),
         getPriceAlertSubscriptions(currentUser.id),
         getPriceAlerts(currentUser.id),
+        getBuyerReviewOpportunities(currentUser.id),
       ]);
 
       setBuyerStats(statsData);
       setFavoriteSuppliers((favoritesData ?? []).map((favorite) => mapFavoriteSupplier(favorite)).filter((favorite) => favorite.id));
       setAlertSubscriptions(subscriptionsData ?? []);
       setBuyerAlerts((alertsData ?? []).map((alert) => mapPriceAlertRecord(alert)));
+      setReviewOpportunities(reviewOpportunitiesData ?? []);
     } catch (error) {
       setToast({ message: error.message || 'No se pudo cargar tu workspace buyer.', type: 'error' });
     } finally {
@@ -567,6 +584,54 @@ export default function BuyerDashboard() {
 
     await handleSubscribeToAlert({ categoryId, productId: null });
   };
+
+  const openReviewModal = useCallback((opportunity) => {
+    setReviewForm({
+      quoteOfferId: opportunity.quoteOfferId,
+      reviewedId: opportunity.reviewedId,
+      supplierName: opportunity.supplierName,
+      productName: opportunity.productName,
+      rating: 5,
+      comment: '',
+    });
+  }, []);
+
+  const closeReviewModal = useCallback(() => {
+    setReviewForm(initialReviewForm);
+  }, []);
+
+  const handleReviewSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!currentUser?.id || !reviewForm.quoteOfferId || !reviewForm.reviewedId) {
+      setToast({ message: 'No se pudo preparar la reseña.', type: 'error' });
+      return;
+    }
+
+    setIsSubmittingReview(true);
+
+    try {
+      await createReview({
+        reviewerId: currentUser.id,
+        reviewedId: reviewForm.reviewedId,
+        quoteOfferId: reviewForm.quoteOfferId,
+        rating: Number(reviewForm.rating),
+        comment: reviewForm.comment.trim(),
+      });
+      await loadBuyerWorkspace();
+      closeReviewModal();
+      setToast({ message: `Reseña publicada para ${reviewForm.supplierName}.`, type: 'success' });
+    } catch (error) {
+      setToast({ message: error.message || 'No se pudo publicar la reseña.', type: 'error' });
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
+  const reviewOpportunityMap = useMemo(
+    () => new Map(reviewOpportunities.map((opportunity) => [opportunity.quoteOfferId, opportunity])),
+    [reviewOpportunities],
+  );
 
   const quoteSummary = useMemo(() => {
     const activeQuotes = buyerQuotes.filter((quote) => ['open', 'in_review'].includes(quote.status));
@@ -970,16 +1035,27 @@ export default function BuyerDashboard() {
                                 </span>
                               )}
                             </div>
-                            {selectedQuote.status !== 'closed' && selectedQuote.status !== 'cancelled' && offer.status === 'pending' && (
-                              <button
-                                type="button"
-                                onClick={() => handleAcceptQuoteOffer(offer.id)}
-                                disabled={quoteActionId === offer.id}
-                                className="mt-4 bg-gradient-to-r from-emerald-400 to-blue-500 text-white font-bold px-5 py-2.5 rounded-xl transition-all hover:shadow-lg hover:shadow-emerald-400/20 disabled:opacity-60 disabled:cursor-not-allowed"
-                              >
-                                {quoteActionId === offer.id ? 'Aceptando...' : 'Aceptar oferta'}
-                              </button>
-                            )}
+                            <div className="mt-4 flex flex-wrap gap-2 lg:justify-end">
+                              {selectedQuote.status !== 'closed' && selectedQuote.status !== 'cancelled' && offer.status === 'pending' && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleAcceptQuoteOffer(offer.id)}
+                                  disabled={quoteActionId === offer.id}
+                                  className="bg-gradient-to-r from-emerald-400 to-blue-500 text-white font-bold px-5 py-2.5 rounded-xl transition-all hover:shadow-lg hover:shadow-emerald-400/20 disabled:opacity-60 disabled:cursor-not-allowed"
+                                >
+                                  {quoteActionId === offer.id ? 'Aceptando...' : 'Aceptar oferta'}
+                                </button>
+                              )}
+                              {offer.status === 'accepted' && reviewOpportunityMap.has(offer.id) && (
+                                <button
+                                  type="button"
+                                  onClick={() => openReviewModal(reviewOpportunityMap.get(offer.id))}
+                                  className="border border-[#2ECAD5]/30 text-[#2ECAD5] font-semibold px-5 py-2.5 rounded-xl hover:bg-[#2ECAD5]/5 transition-all"
+                                >
+                                  Dejar reseña
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -994,6 +1070,69 @@ export default function BuyerDashboard() {
             </div>
           </div>
         </div>
+      )}
+
+      {reviewForm.quoteOfferId && (
+        <Modal title="Dejar reseña" onClose={closeReviewModal}>
+          <form onSubmit={handleReviewSubmit} className="space-y-5">
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3">
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-600">Operacion verificada</div>
+              <div className="text-sm font-bold text-[#0D1F3C] mt-1">{reviewForm.supplierName}</div>
+              <p className="text-sm text-gray-600 mt-1">
+                Comparte como fue la compra de {reviewForm.productName} para fortalecer la confianza del marketplace.
+              </p>
+            </div>
+
+            <div>
+              <label htmlFor="review-rating" className="block text-sm font-medium text-gray-700 mb-1.5">
+                Calificacion <span className="text-red-500">*</span>
+              </label>
+              <select
+                id="review-rating"
+                value={reviewForm.rating}
+                onChange={(event) => setReviewForm((current) => ({ ...current, rating: Number(event.target.value) }))}
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] bg-white transition-all"
+              >
+                {[5, 4, 3, 2, 1].map((value) => (
+                  <option key={value} value={value}>{value} estrella{value > 1 ? 's' : ''}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="review-comment" className="block text-sm font-medium text-gray-700 mb-1.5">
+                Comentario <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                id="review-comment"
+                rows={4}
+                required
+                minLength={12}
+                placeholder="Ej: entrega puntual, buena calidad, comunicación rapida..."
+                value={reviewForm.comment}
+                onChange={(event) => setReviewForm((current) => ({ ...current, comment: event.target.value }))}
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 resize-none transition-all"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={closeReviewModal}
+                className="flex-1 border border-gray-200 text-gray-600 font-medium py-3 rounded-xl hover:bg-gray-50 transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmittingReview}
+                className="flex-1 bg-gradient-to-r from-[#0D1F3C] to-[#1a3260] text-white font-bold py-3 rounded-xl hover:shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isSubmittingReview ? 'Publicando...' : 'Publicar reseña'}
+              </button>
+            </div>
+          </form>
+        </Modal>
       )}
 
       {editProfileOpen && (
@@ -1293,6 +1432,28 @@ export default function BuyerDashboard() {
             </div>
 
             <div className="px-6 pb-6 space-y-5">
+              <div className="rounded-2xl border border-[#2ECAD5]/15 bg-[#f0fdfa] px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#2ECAD5]">Trust layer</div>
+                  <p className="text-sm font-semibold text-[#0D1F3C] mt-1">
+                    {viewingSupplier.verified
+                      ? 'Proveedor validado con reputacion construida desde operaciones aceptadas y reseñas elegibles.'
+                      : 'Proveedor visible en Zentra con verificacion comercial todavia en revision.'}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <span className="text-xs font-semibold bg-white text-[#0D1F3C] border border-[#2ECAD5]/20 px-3 py-1.5 rounded-full">
+                    Rating {Number(viewingSupplier.rating || 0).toFixed(1)}
+                  </span>
+                  <span className="text-xs font-semibold bg-white text-[#0D1F3C] border border-[#2ECAD5]/20 px-3 py-1.5 rounded-full">
+                    {viewingSupplier.verified ? 'RUT validado' : 'Revision pendiente'}
+                  </span>
+                  <span className="text-xs font-semibold bg-white text-[#0D1F3C] border border-[#2ECAD5]/20 px-3 py-1.5 rounded-full">
+                    {viewingSupplier.reviews?.length ?? 0} reseñas publicas
+                  </span>
+                </div>
+              </div>
+
               {/* Stats */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
@@ -1862,9 +2023,20 @@ export default function BuyerDashboard() {
                       </div>
                       <div className="text-right flex-shrink-0">
                         <p className="text-sm font-bold text-[#0D1F3C]">{offer.priceLabel}</p>
-                        <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-0.5 rounded-full">
-                          Aceptada
-                        </span>
+                        <div className="flex flex-col items-end gap-2 mt-1">
+                          <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-0.5 rounded-full">
+                            Aceptada
+                          </span>
+                          {reviewOpportunityMap.has(offer.id) && (
+                            <button
+                              type="button"
+                              onClick={() => openReviewModal(reviewOpportunityMap.get(offer.id))}
+                              className="text-[11px] font-semibold text-[#2ECAD5] border border-[#2ECAD5]/30 hover:bg-[#2ECAD5]/5 px-3 py-1.5 rounded-lg transition-all"
+                            >
+                              Dejar reseña
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}

@@ -22,6 +22,37 @@ function countMatches(rows, predicate) {
   return rows.filter(predicate).length;
 }
 
+function getAverageRating(reviews, userId) {
+  const ratings = reviews
+    .filter((review) => review.reviewed_id === userId)
+    .map((review) => Number(review.rating) || 0)
+    .filter((rating) => rating > 0);
+
+  if (!ratings.length) return 0;
+
+  return ratings.reduce((total, rating) => total + rating, 0) / ratings.length;
+}
+
+function canReviewQuoteOffer(state, reviewerId, reviewedId, quoteOfferId) {
+  const offer = state.quoteOffers.find((item) => item.id === quoteOfferId);
+  if (!offer || offer.status !== 'accepted') return false;
+
+  const quote = state.quoteRequests.find((item) => item.id === offer.quote_id);
+  if (!quote) return false;
+
+  const isEligibleCounterparty = (
+    (quote.buyer_id === reviewerId && offer.supplier_id === reviewedId)
+    || (offer.supplier_id === reviewerId && quote.buyer_id === reviewedId)
+  );
+
+  if (!isEligibleCounterparty) return false;
+
+  return !state.reviews.some((review) => (
+    review.quote_offer_id === quoteOfferId
+    && review.reviewer_id === reviewerId
+  ));
+}
+
 function filterProducts(products, filters = {}) {
   let next = [...products];
 
@@ -412,7 +443,7 @@ export function createMarketplaceScenario(overrides = {}) {
     async getBuyerStats(buyerId) {
       return {
         totalOrders: state.quoteRequests.filter((quote) => quote.buyer_id === buyerId).length,
-        rating: 4.8,
+        rating: getAverageRating(state.reviews, buyerId),
         favoriteSuppliers: state.favorites.filter((favorite) => favorite.buyer_id === buyerId).length,
       };
     },
@@ -420,10 +451,41 @@ export function createMarketplaceScenario(overrides = {}) {
     async getSupplierStats(supplierId) {
       return {
         totalSales: state.quoteOffers.filter((offer) => offer.supplier_id === supplierId && offer.status === 'accepted').length,
-        rating: 4.7,
+        rating: getAverageRating(state.reviews, supplierId),
         recurringClients: state.favorites.filter((favorite) => favorite.supplier_id === supplierId).length,
         totalReviews: state.reviews.filter((review) => review.reviewed_id === supplierId).length,
       };
+    },
+
+    async getBuyerReviewOpportunities(buyerId) {
+      return clone(
+        state.quoteOffers
+          .filter((offer) => offer.status === 'accepted')
+          .filter((offer) => {
+            const quote = state.quoteRequests.find((item) => item.id === offer.quote_id);
+            return quote?.buyer_id === buyerId;
+          })
+          .filter((offer) => canReviewQuoteOffer(state, buyerId, offer.supplier_id, offer.id))
+          .map((offer) => {
+            const quote = state.quoteRequests.find((item) => item.id === offer.quote_id);
+            const supplierUser = supplierMap.get(offer.supplier_id) ?? offer.users ?? {};
+
+            return {
+              quoteOfferId: offer.id,
+              quoteId: offer.quote_id,
+              reviewedId: offer.supplier_id,
+              supplierName: supplierUser.company_name ?? 'Proveedor',
+              supplierCity: supplierUser.city ?? '',
+              supplierVerified: Boolean(supplierUser.verified),
+              productName: quote?.product_name ?? 'Producto',
+              quantity: Number(quote?.quantity ?? 0),
+              unit: quote?.unit ?? 'kg',
+              deliveryDate: quote?.delivery_date ?? null,
+              price: Number(offer.price ?? 0),
+              estimatedLeadTime: offer.estimated_lead_time ?? '',
+            };
+          }),
+      );
     },
 
     async getReviewsForUser(userId) {
@@ -438,13 +500,20 @@ export function createMarketplaceScenario(overrides = {}) {
     },
 
     async createReview({ reviewerId, reviewedId, quoteOfferId, rating, comment }) {
+      if (!canReviewQuoteOffer(state, reviewerId, reviewedId, quoteOfferId)) {
+        throw new Error('Solo puedes dejar reseñas para contrapartes con operaciones aceptadas.');
+      }
+
+      const reviewer = state.buyer.id === reviewerId
+        ? state.buyer
+        : (state.secondBuyer?.id === reviewerId ? state.secondBuyer : state.supplier);
       const review = buildReview({
         reviewer_id: reviewerId,
         reviewed_id: reviewedId,
         quote_offer_id: quoteOfferId,
         rating,
         comment,
-        users: buyer,
+        users: reviewer,
         created_at: '2026-03-24T14:00:00Z',
       });
       state.reviews.unshift(review);

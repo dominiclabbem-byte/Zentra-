@@ -299,9 +299,10 @@ export function buildPriceAlert(overrides = {}) {
 }
 
 export function buildReview(overrides = {}) {
+  const defaultReviewerId = overrides.reviewer_id ?? 'buyer-2';
   const reviewer = takeSingle(overrides.users) ?? buildBuyerUser({
-    id: overrides.reviewer_id ?? 'buyer-1',
-    company_name: overrides.reviewerName ?? 'Pasteleria Mozart Ltda.',
+    id: defaultReviewerId,
+    company_name: overrides.reviewerName ?? 'Hotel Ritz Santiago',
   });
 
   return {
@@ -485,14 +486,16 @@ export function buildMarketplaceSeed(overrides = {}) {
   const review = buildReview({
     id: 'review-1',
     reviewed_id: supplier.id,
-    reviewer_id: buyer.id,
-    users: buyer,
+    reviewer_id: secondBuyer.id,
+    quote_offer_id: acceptedOffer.id,
+    users: secondBuyer,
   });
 
   return {
     categories,
     plans: [starterPlan, proPlan, enterprisePlan],
     buyer,
+    secondBuyer,
     supplier,
     products: [product, secondProduct],
     quoteRequests: [quote, closedQuote],

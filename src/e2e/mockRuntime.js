@@ -184,6 +184,14 @@ export async function e2eGetReviewsForUser(userId) {
   return ensureScenario().api.getReviewsForUser(userId);
 }
 
+export async function e2eGetBuyerReviewOpportunities(buyerId) {
+  return ensureScenario().api.getBuyerReviewOpportunities(buyerId);
+}
+
+export async function e2eCreateReview(payload) {
+  return ensureScenario().api.createReview(payload);
+}
+
 export async function e2eGetBuyerProfile(userId) {
   return ensureScenario().api.getBuyerProfile(userId);
 }

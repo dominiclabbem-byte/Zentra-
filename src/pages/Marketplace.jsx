@@ -10,13 +10,14 @@ import {
   normalizeUserRecord,
 } from '../lib/profileAdapters';
 import { mapProductRecordToCard } from '../lib/productAdapters';
-import { getProducts, getSupplierProfile } from '../services/database';
+import { getProducts, getSupplierProfile, getSupplierStats } from '../services/database';
 
 export default function Marketplace() {
   const { categories: categoryOptions } = useAuth();
   const [toast, setToast] = useState(null);
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [catalogProducts, setCatalogProducts] = useState([]);
+  const [supplierInsights, setSupplierInsights] = useState({});
   const [categoryFilter, setCategoryFilter] = useState('Todos');
   const [supplierFilter, setSupplierFilter] = useState('Todos');
   const [searchTerm, setSearchTerm] = useState('');
@@ -30,9 +31,35 @@ export default function Marketplace() {
 
       try {
         const data = await getProducts();
+        const cards = data.map((product) => mapProductRecordToCard(product));
+        const supplierIds = [...new Set(cards.map((product) => product.supplierId).filter(Boolean))];
+        const insights = await Promise.all(
+          supplierIds.map(async (supplierId) => {
+            try {
+              const [supplierRaw, supplierStats] = await Promise.all([
+                getSupplierProfile(supplierId),
+                getSupplierStats(supplierId),
+              ]);
+              const supplierRecord = normalizeUserRecord(supplierRaw);
+              const supplierView = buildSupplierProfileView(supplierRecord);
+
+              return [supplierId, {
+                city: supplierView.city,
+                verified: Boolean(supplierRecord?.verified),
+                verificationStatus: supplierRecord?.verification_status ?? 'pending',
+                rating: Number(supplierStats?.rating ?? 0),
+                totalReviews: supplierStats?.totalReviews ?? 0,
+                categories: supplierView.categories,
+              }];
+            } catch {
+              return [supplierId, null];
+            }
+          }),
+        );
 
         if (!cancelled) {
-          setCatalogProducts(data.map((product) => mapProductRecordToCard(product)));
+          setCatalogProducts(cards);
+          setSupplierInsights(Object.fromEntries(insights.filter(([, value]) => value)));
         }
       } catch (error) {
         if (!cancelled) {
@@ -68,8 +95,13 @@ export default function Marketplace() {
 
   const openSupplierFromProduct = async (product) => {
     try {
-      const supplierRecord = normalizeUserRecord(await getSupplierProfile(product.supplierId));
+      const [supplierRaw, supplierStats] = await Promise.all([
+        getSupplierProfile(product.supplierId),
+        getSupplierStats(product.supplierId),
+      ]);
+      const supplierRecord = normalizeUserRecord(supplierRaw);
       const supplierView = buildSupplierProfileView(supplierRecord);
+      const supplierInsight = supplierInsights[product.supplierId];
 
       setViewingSupplier({
         initials: supplierView.initials,
@@ -77,8 +109,10 @@ export default function Marketplace() {
         description: supplierView.description,
         plan: formatPlanName(getPlanKey(supplierRecord)),
         verified: supplierRecord?.verified,
+        verificationStatus: supplierRecord?.verification_status ?? supplierInsight?.verificationStatus ?? 'pending',
         memberSince: formatMemberSince(supplierRecord?.created_at),
-        rating: supplierRecord?.verified ? 4.8 : 4.5,
+        rating: Number(supplierStats?.rating ?? supplierInsight?.rating ?? 0),
+        totalReviews: supplierStats?.totalReviews ?? supplierInsight?.totalReviews ?? 0,
         responseRate: `${supplierView.responseRate || 0}%`,
         rut: supplierView.rut,
         city: supplierView.city,
@@ -146,6 +180,9 @@ export default function Marketplace() {
                     {viewingSupplier.memberSince && (
                       <span className="text-xs text-gray-400">Miembro desde {viewingSupplier.memberSince}</span>
                     )}
+                    {viewingSupplier.totalReviews > 0 && (
+                      <span className="text-xs text-gray-400">{viewingSupplier.totalReviews} reseñas verificadas</span>
+                    )}
                   </div>
                 </div>
 
@@ -165,6 +202,28 @@ export default function Marketplace() {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
+                <div className="lg:col-span-2 rounded-2xl border border-[#2ECAD5]/15 bg-[#f0fdfa] px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#2ECAD5]">Trust layer</div>
+                    <p className="text-sm font-semibold text-[#0D1F3C] mt-1">
+                      {viewingSupplier.verified
+                        ? 'Proveedor con verificacion comercial aprobada y reputacion basada en operaciones reales.'
+                        : 'Proveedor visible en marketplace con verificacion todavia en revision.'}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="text-xs font-semibold bg-white text-[#0D1F3C] border border-[#2ECAD5]/20 px-3 py-1.5 rounded-full">
+                      Rating {Number(viewingSupplier.rating || 0).toFixed(1)}
+                    </span>
+                    <span className="text-xs font-semibold bg-white text-[#0D1F3C] border border-[#2ECAD5]/20 px-3 py-1.5 rounded-full">
+                      {viewingSupplier.totalReviews} reseñas
+                    </span>
+                    <span className="text-xs font-semibold bg-white text-[#0D1F3C] border border-[#2ECAD5]/20 px-3 py-1.5 rounded-full">
+                      {viewingSupplier.verified ? 'RUT validado' : 'Revision pendiente'}
+                    </span>
+                  </div>
+                </div>
+
                 <div className="bg-white rounded-xl border border-gray-100 p-4">
                   <h4 className="text-sm font-bold text-[#0D1F3C] mb-3">Informacion comercial</h4>
                   <div className="space-y-3 text-sm">
@@ -365,7 +424,10 @@ export default function Marketplace() {
             </div>
           ) : filteredProducts.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredProducts.map((product) => (
+              {filteredProducts.map((product) => {
+                const supplierInsight = supplierInsights[product.supplierId];
+
+                return (
                 <button
                   key={product.id}
                   type="button"
@@ -412,15 +474,25 @@ export default function Marketplace() {
                     <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between gap-3">
                       <div className="min-w-0">
                         <p className="text-xs font-semibold text-[#0D1F3C] truncate">{product.supplierName || 'Proveedor Zentra'}</p>
-                        <p className="text-[11px] text-gray-400">Ver ficha publica del proveedor</p>
+                        <p className="text-[11px] text-gray-400">
+                          {[supplierInsight?.city, supplierInsight?.categories?.slice(0, 2).join(' / ')].filter(Boolean).join(' / ') || 'Ver ficha publica del proveedor'}
+                        </p>
                       </div>
-                      <span className="text-sm font-bold text-[#2ECAD5] group-hover:translate-x-0.5 transition-transform">
-                        Abrir
-                      </span>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {supplierInsight?.verified && (
+                          <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-0.5 rounded-full">
+                            Verificado
+                          </span>
+                        )}
+                        <span className="text-sm font-bold text-[#2ECAD5] group-hover:translate-x-0.5 transition-transform">
+                          {supplierInsight ? Number(supplierInsight.rating || 0).toFixed(1) : 'Abrir'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </button>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">

@@ -2,8 +2,10 @@ import { supabase } from './supabase';
 import {
   e2eAcceptOffer,
   e2eCancelQuoteRequest,
+  e2eCreateReview,
   e2eCreateQuoteRequest,
   e2eGetBuyerProfile,
+  e2eGetBuyerReviewOpportunities,
   e2eGetBuyerStats,
   e2eGetCategories,
   e2eGetCurrentUser,
@@ -208,7 +210,7 @@ export async function getProducts(filters = {}) {
   if (useE2E()) return e2eGetProducts(filters);
   let query = supabase
     .from('products')
-    .select('*, categories(name, emoji), users!supplier_id(company_name)');
+    .select('*, categories(name, emoji), users!supplier_id(company_name, city, verified, verification_status)');
 
   if (filters.status) {
     query = Array.isArray(filters.status)
@@ -464,6 +466,9 @@ export async function cancelQuoteRequest(quoteId) {
 // ========================
 
 export async function createReview({ reviewerId, reviewedId, quoteOfferId, rating, comment }) {
+  if (useE2E()) {
+    return e2eCreateReview({ reviewerId, reviewedId, quoteOfferId, rating, comment });
+  }
   const { data, error } = await supabase
     .from('reviews')
     .insert({
@@ -488,6 +493,71 @@ export async function getReviewsForUser(userId) {
     .order('created_at', { ascending: false });
   if (error) throw error;
   return data;
+}
+
+export async function getBuyerReviewOpportunities(buyerId) {
+  if (useE2E()) return e2eGetBuyerReviewOpportunities(buyerId);
+
+  const { data: offers, error } = await supabase
+    .from('quote_offers')
+    .select(`
+      id,
+      quote_id,
+      supplier_id,
+      price,
+      estimated_lead_time,
+      created_at,
+      quote_requests!inner(
+        id,
+        buyer_id,
+        product_name,
+        quantity,
+        unit,
+        delivery_date
+      ),
+      users!supplier_id(company_name, city, verified, verification_status)
+    `)
+    .eq('status', 'accepted')
+    .eq('quote_requests.buyer_id', buyerId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+
+  const offerIds = (offers ?? []).map((offer) => offer.id);
+  if (!offerIds.length) return [];
+
+  const { data: existingReviews, error: reviewsError } = await supabase
+    .from('reviews')
+    .select('quote_offer_id')
+    .eq('reviewer_id', buyerId)
+    .in('quote_offer_id', offerIds);
+
+  if (reviewsError) throw reviewsError;
+
+  const reviewedOfferIds = new Set((existingReviews ?? []).map((review) => review.quote_offer_id));
+
+  return (offers ?? [])
+    .filter((offer) => !reviewedOfferIds.has(offer.id))
+    .map((offer) => {
+      const supplier = takeSingle(offer.users);
+      const quote = takeSingle(offer.quote_requests);
+
+      return {
+        quoteOfferId: offer.id,
+        quoteId: offer.quote_id,
+        reviewedId: offer.supplier_id,
+        supplierName: supplier?.company_name ?? 'Proveedor',
+        supplierCity: supplier?.city ?? '',
+        supplierVerified: Boolean(supplier?.verified),
+        supplierVerificationStatus: supplier?.verification_status ?? 'pending',
+        productName: quote?.product_name ?? 'Producto',
+        quantity: Number(quote?.quantity ?? 0),
+        unit: quote?.unit ?? 'kg',
+        deliveryDate: quote?.delivery_date ?? null,
+        price: Number(offer.price ?? 0),
+        estimatedLeadTime: offer.estimated_lead_time ?? '',
+      };
+    });
 }
 
 // ========================
