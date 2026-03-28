@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import mainLogo from '../assets/zentra_main_logo.png';
 import { useAuth } from '../context/AuthContext';
+import { getNavbarLinks, getNotificationTargetLocation } from '../lib/navigation';
 
 function formatNotificationDate(value) {
   if (!value) return '';
@@ -29,15 +30,7 @@ export default function Navbar() {
     logout,
   } = useAuth();
 
-  const navLinks = [
-    { to: '/', label: 'Inicio' },
-    { to: '/marketplace', label: 'Marketplace' },
-    { to: '/registro-comprador', label: currentUser?.is_buyer ? 'Perfil Comprador' : 'Soy Comprador' },
-    { to: '/registro-proveedor', label: currentUser?.is_supplier ? 'Perfil Proveedor' : 'Soy Proveedor' },
-    ...(currentUser?.is_admin ? [{ to: '/dashboard-admin', label: 'Admin' }] : []),
-    ...(currentUser?.is_buyer ? [{ to: '/dashboard-comprador', label: 'Dashboard Comprador' }] : []),
-    ...(currentUser?.is_supplier ? [{ to: '/dashboard-proveedor', label: 'Dashboard Proveedor' }] : []),
-  ];
+  const navLinks = useMemo(() => getNavbarLinks(currentUser), [currentUser]);
 
   const handleLogout = async () => {
     await logout();
@@ -71,22 +64,8 @@ export default function Navbar() {
     }
 
     setNotificationsOpen(false);
-
-    if (currentUser?.is_supplier && ['rfq_created', 'offer_accepted', 'rfq_cancelled'].includes(notification.type)) {
-      navigate('/dashboard-proveedor');
-      return;
-    }
-
-    if (currentUser?.is_buyer && ['offer_received'].includes(notification.type)) {
-      navigate('/dashboard-comprador');
-      return;
-    }
-
-    if (currentUser?.is_buyer) {
-      navigate('/dashboard-comprador');
-    } else if (currentUser?.is_supplier) {
-      navigate('/dashboard-proveedor');
-    }
+    const target = getNotificationTargetLocation(notification, currentUser);
+    navigate(target.pathname, { state: target.state });
   };
 
   return (

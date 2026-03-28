@@ -1,7 +1,10 @@
 import { Link } from 'react-router-dom';
 import BodegaLogo from './BodegaLogo';
+import { getFooterLinks } from '../lib/navigation';
 
 export default function Footer() {
+  const footerLinks = getFooterLinks();
+
   return (
     <footer className="bg-[#060e1a] text-gray-400 mt-auto relative overflow-hidden">
       {/* Subtle top accent line */}
@@ -27,11 +30,13 @@ export default function Footer() {
           <div>
             <h4 className="text-white font-semibold mb-4 text-sm uppercase tracking-wider">Plataforma</h4>
             <ul className="space-y-3 text-sm">
-              <li><Link to="/marketplace" className="hover:text-[#2ECAD5] transition-colors duration-200">🧭 Marketplace</Link></li>
-              <li><Link to="/registro-comprador" className="hover:text-[#2ECAD5] transition-colors duration-200">🛒 Registro Comprador</Link></li>
-              <li><Link to="/registro-proveedor" className="hover:text-[#2ECAD5] transition-colors duration-200">🏪 Registro Proveedor</Link></li>
-              <li><Link to="/dashboard-comprador" className="hover:text-[#2ECAD5] transition-colors duration-200">📊 Dashboard Comprador</Link></li>
-              <li><Link to="/dashboard-proveedor" className="hover:text-[#2ECAD5] transition-colors duration-200">📦 Dashboard Proveedor</Link></li>
+              {footerLinks.map((link) => (
+                <li key={link.to}>
+                  <Link to={link.to} className="hover:text-[#2ECAD5] transition-colors duration-200">
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 

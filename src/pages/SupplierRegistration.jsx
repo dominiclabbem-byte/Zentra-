@@ -24,8 +24,21 @@ const emptyForm = {
   selectedPlan: '',
 };
 
-function getErrorMessage(error) {
-  return error?.message || 'No se pudo guardar el perfil proveedor.';
+function getErrorMessage(error, payload = {}) {
+  const message = error?.message || '';
+
+  if (
+    message.includes('users_rut_key')
+    || message.includes('Database error saving new user')
+  ) {
+    return `Ya existe una cuenta con el RUT ${payload.rut || 'indicado'}. Inicia sesion con esa cuenta y activa el perfil proveedor desde ahi.`;
+  }
+
+  if (message.includes('User already registered')) {
+    return `Ya existe una cuenta con el email ${payload.email || 'ingresado'}. Inicia sesion o recupera tu acceso.`;
+  }
+
+  return message || 'No se pudo guardar el perfil proveedor.';
 }
 
 export default function SupplierRegistration() {
@@ -42,6 +55,11 @@ export default function SupplierRegistration() {
 
   useEffect(() => {
     const fallbackPlan = plans.find((plan) => plan.name === 'starter')?.id ?? plans[0]?.id ?? '';
+
+    if (currentUser?.is_supplier) {
+      navigate('/dashboard-proveedor', { replace: true });
+      return;
+    }
 
     if (!currentUser) {
       setForm({
@@ -67,7 +85,7 @@ export default function SupplierRegistration() {
       selectedCategories: currentUser.supplierCategories?.map((category) => category.id) ?? [],
       selectedPlan: currentUser.activeSubscription?.plan_id ?? fallbackPlan,
     });
-  }, [currentUser, plans, supplierProfile]);
+  }, [currentUser, navigate, plans, supplierProfile]);
 
   const title = currentUser
     ? currentUser.is_supplier
@@ -147,7 +165,7 @@ export default function SupplierRegistration() {
         }
       }
     } catch (error) {
-      setToast({ message: getErrorMessage(error), type: 'error' });
+      setToast({ message: getErrorMessage(error, payload), type: 'error' });
     } finally {
       setIsSubmitting(false);
     }

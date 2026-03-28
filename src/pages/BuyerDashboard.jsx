@@ -140,7 +140,12 @@ function mapPriceAlertRecord(alert) {
 export default function BuyerDashboard() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { currentUser, categories: categoryOptions, saveBuyerProfile } = useAuth();
+  const {
+    currentUser,
+    categories: categoryOptions,
+    notifications,
+    saveBuyerProfile,
+  } = useAuth();
   const liveBuyerProfile = currentUser ? buildBuyerProfileView(currentUser) : initialBuyerProfile;
   const buyerProfile = liveBuyerProfile;
   const memberSinceLabel = formatMemberSince(currentUser?.created_at);
@@ -179,6 +184,11 @@ export default function BuyerDashboard() {
     categoryId: '',
     productId: '',
   });
+
+  const unreadBuyerOfferNotifications = useMemo(
+    () => notifications.filter((notification) => !notification.read_at && notification.type === 'offer_received').length,
+    [notifications],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -461,6 +471,52 @@ export default function BuyerDashboard() {
     const nextQuote = refreshedQuotes.find((item) => item.id === quote.id) ?? quote;
     setSelectedQuote(await enrichQuoteForBuyer(nextQuote));
   }, [enrichQuoteForBuyer, loadBuyerQuotes]);
+
+  useEffect(() => {
+    if (!location.state?.activeTab && !location.state?.focusQuoteId && !location.state?.focusOfferId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function applyNotificationState() {
+      if (location.state?.activeTab) {
+        setActiveTab(location.state.activeTab);
+      }
+
+      const targetQuoteId = location.state?.focusQuoteId;
+      const targetOfferId = location.state?.focusOfferId;
+
+      if (!targetQuoteId && !targetOfferId) {
+        navigate(location.pathname, { replace: true, state: null });
+        return;
+      }
+
+      try {
+        const refreshedQuotes = await loadBuyerQuotes();
+        if (cancelled) return;
+
+        const matchingQuote = refreshedQuotes.find((quote) => (
+          (targetQuoteId && quote.id === targetQuoteId)
+          || (targetOfferId && quote.offers.some((offer) => offer.id === targetOfferId))
+        ));
+
+        if (matchingQuote) {
+          await handleOpenQuoteOffers(matchingQuote);
+        }
+      } finally {
+        if (!cancelled) {
+          navigate(location.pathname, { replace: true, state: null });
+        }
+      }
+    }
+
+    applyNotificationState();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [handleOpenQuoteOffers, loadBuyerQuotes, location.pathname, location.state, navigate]);
 
   const handleAcceptQuoteOffer = async (offerId) => {
     if (!selectedQuote) return;
@@ -867,6 +923,7 @@ export default function BuyerDashboard() {
     quoteActionId,
     quotesLoading,
     totalOffersReceived,
+    unreadBuyerOfferNotifications,
   ]);
 
   const headerTabs = [
@@ -886,6 +943,10 @@ export default function BuyerDashboard() {
       label: 'Cotizaciones',
       active: activeTab === 'dashboard',
       onClick: () => setActiveTab('dashboard'),
+      badge: unreadBuyerOfferNotifications || null,
+      badgeClassName: unreadBuyerOfferNotifications
+        ? 'text-[10px] font-bold bg-emerald-400 text-[#0D1F3C] px-2 py-0.5 rounded-full animate-pulse'
+        : undefined,
       icon: (
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />

@@ -49,4 +49,14 @@ describe('Navbar', () => {
     expect(screen.getByText(/Valle Frio SpA envio una oferta/i)).toBeInTheDocument();
     expect(screen.getByText(/1 sin leer/i)).toBeInTheDocument();
   });
+
+  it('muestra links alineados al rol autenticado', () => {
+    renderWithRouter(<Navbar />);
+
+    expect(screen.getByRole('link', { name: 'Dashboard Comprador' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Activar Perfil Proveedor' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Activar Perfil Comprador' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Dashboard Proveedor' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument();
+  });
 });

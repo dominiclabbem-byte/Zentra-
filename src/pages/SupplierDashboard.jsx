@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Toast from '../components/Toast';
 import Modal from '../components/Modal';
 import DashboardPageHeader from '../components/DashboardPageHeader';
@@ -70,10 +70,12 @@ const initialProfile = {
 };
 
 export default function SupplierDashboard() {
+  const location = useLocation();
   const navigate = useNavigate();
   const {
     currentUser,
     categories: categoryOptions,
+    notifications,
     plans,
     changeSupplierPlan,
     requestSupplierPlanBilling,
@@ -86,6 +88,13 @@ export default function SupplierDashboard() {
   const currentPlanLabel = formatPlanName(currentPlanKey);
   const memberSinceLabel = formatMemberSince(currentUser?.created_at);
   const pendingPlanRequest = currentUser?.pendingSubscription ?? null;
+  const unreadSupplierQuoteNotifications = useMemo(
+    () => notifications.filter((notification) => (
+      !notification.read_at
+      && ['rfq_created', 'offer_accepted', 'rfq_cancelled'].includes(notification.type)
+    )).length,
+    [notifications],
+  );
   const [toast, setToast] = useState(null);
   const [quoteModal, setQuoteModal] = useState(null);
   const [offerForm, setOfferForm] = useState({ price: '', notes: '', estimatedLeadTime: '' });
@@ -122,6 +131,8 @@ export default function SupplierDashboard() {
   const [usageLoading, setUsageLoading] = useState(false);
   const [isChangingPlan, setIsChangingPlan] = useState(false);
   const [isPreparingBilling, setIsPreparingBilling] = useState(false);
+  const [highlightedQuoteId, setHighlightedQuoteId] = useState('');
+  const [highlightedOfferId, setHighlightedOfferId] = useState('');
 
   const [imageMode, setImageMode] = useState('upload'); // 'upload' | 'generate'
   const [aiPrompt, setAiPrompt] = useState('');
@@ -145,6 +156,66 @@ export default function SupplierDashboard() {
   useEffect(() => {
     loadProducts();
   }, [loadProducts]);
+
+  useEffect(() => {
+    if (!location.state?.activeTab && !location.state?.focusQuoteId && !location.state?.focusOfferId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function applyNotificationState() {
+      if (location.state?.activeTab) {
+        setActiveTab(location.state.activeTab);
+      }
+
+      const targetQuoteId = location.state?.focusQuoteId;
+      const targetOfferId = location.state?.focusOfferId;
+
+      if (!targetQuoteId && !targetOfferId) {
+        navigate(location.pathname, { replace: true, state: null });
+        return;
+      }
+
+      const { openQuoteRows, supplierOfferRows } = await loadQuotesData();
+      if (cancelled) return;
+
+      const mappedOpenQuotes = openQuoteRows.map((quote) => mapQuoteRequestRecord(quote));
+      const mappedOffers = supplierOfferRows.map((offer) => mapQuoteOfferRecord(offer));
+
+      const matchingOpenQuote = mappedOpenQuotes.find((quote) => quote.id === targetQuoteId);
+      const matchingOffer = mappedOffers.find((offer) => (
+        offer.id === targetOfferId
+        || (targetQuoteId && offer.quoteId === targetQuoteId)
+      ));
+
+      if (matchingOpenQuote) {
+        setHighlightedQuoteId(matchingOpenQuote.id);
+        openQuoteOfferModal(matchingOpenQuote);
+      } else if (matchingOffer) {
+        setHighlightedOfferId(matchingOffer.id);
+      }
+
+      navigate(location.pathname, { replace: true, state: null });
+    }
+
+    applyNotificationState();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loadQuotesData, location.pathname, location.state, navigate]);
+
+  useEffect(() => {
+    if (!highlightedQuoteId && !highlightedOfferId) return undefined;
+
+    const timeout = window.setTimeout(() => {
+      setHighlightedQuoteId('');
+      setHighlightedOfferId('');
+    }, 4000);
+
+    return () => window.clearTimeout(timeout);
+  }, [highlightedOfferId, highlightedQuoteId]);
 
   const handleGenerateImage = async () => {
     if (!aiPrompt.trim()) {
@@ -753,6 +824,10 @@ export default function SupplierDashboard() {
       active: activeTab === 'quotes',
       onClick: () => setActiveTab('quotes'),
       badge: workspaceSummary.openRelevantQuotes,
+      dot: unreadSupplierQuoteNotifications > 0,
+      dotClassName: unreadSupplierQuoteNotifications > 0
+        ? 'w-2 h-2 bg-emerald-400 rounded-full animate-ping'
+        : undefined,
     },
     {
       id: 'buyers',
@@ -1856,7 +1931,14 @@ export default function SupplierDashboard() {
                           const existingOffer = supplierOfferMap.get(quote.id);
 
                           return (
-                            <tr key={quote.id} className="hover:bg-[#f8fafc] transition-colors">
+                            <tr
+                              key={quote.id}
+                              className={`transition-colors ${
+                                highlightedQuoteId === quote.id
+                                  ? 'bg-emerald-50'
+                                  : 'hover:bg-[#f8fafc]'
+                              }`}
+                            >
                               <td className="px-6 py-4">
                                 <button
                                   onClick={() => openBuyerSummary(quote)}
@@ -1984,7 +2066,14 @@ export default function SupplierDashboard() {
               {supplierOffers.length > 0 ? (
                 <div className="space-y-3">
                   {supplierOffers.map((offer) => (
-                    <div key={offer.id} className="bg-white rounded-2xl border border-gray-100 p-5 card-premium">
+                    <div
+                      key={offer.id}
+                      className={`bg-white rounded-2xl border p-5 card-premium ${
+                        highlightedOfferId === offer.id
+                          ? 'border-emerald-300 ring-2 ring-emerald-100'
+                          : 'border-gray-100'
+                      }`}
+                    >
                       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                         <div>
                           <div className="flex items-center gap-2 flex-wrap">

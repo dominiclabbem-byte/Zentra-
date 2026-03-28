@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Toast from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
-import { getDefaultDashboardPath } from '../lib/profileAdapters';
+import { resolvePostLoginPath } from '../lib/navigation';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -19,7 +19,7 @@ export default function Login() {
 
   useEffect(() => {
     if (currentUser) {
-      navigate(nextPath || getDefaultDashboardPath(currentUser), { replace: true });
+      navigate(resolvePostLoginPath(currentUser, nextPath), { replace: true });
     }
   }, [currentUser, navigate, nextPath]);
 
@@ -29,7 +29,7 @@ export default function Login() {
 
     try {
       const user = await login(form);
-      navigate(nextPath || getDefaultDashboardPath(user), { replace: true });
+      navigate(resolvePostLoginPath(user, nextPath), { replace: true });
     } catch (error) {
       setToast({
         message: error.message || 'No se pudo iniciar sesion.',

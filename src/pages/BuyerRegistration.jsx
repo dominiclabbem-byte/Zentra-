@@ -26,8 +26,21 @@ const emptyForm = {
   consent: false,
 };
 
-function getErrorMessage(error) {
-  return error?.message || 'No se pudo guardar el perfil comprador.';
+function getErrorMessage(error, payload = {}) {
+  const message = error?.message || '';
+
+  if (
+    message.includes('users_rut_key')
+    || message.includes('Database error saving new user')
+  ) {
+    return `Ya existe una cuenta con el RUT ${payload.rut || 'indicado'}. Inicia sesion con esa cuenta y activa el perfil comprador desde ahi.`;
+  }
+
+  if (message.includes('User already registered')) {
+    return `Ya existe una cuenta con el email ${payload.email || 'ingresado'}. Inicia sesion o recupera tu acceso.`;
+  }
+
+  return message || 'No se pudo guardar el perfil comprador.';
 }
 
 export default function BuyerRegistration() {
@@ -42,6 +55,11 @@ export default function BuyerRegistration() {
   ), [currentUser]);
 
   useEffect(() => {
+    if (currentUser?.is_buyer) {
+      navigate('/dashboard-comprador', { replace: true });
+      return;
+    }
+
     if (!currentUser) {
       setForm(emptyForm);
       return;
@@ -65,7 +83,7 @@ export default function BuyerRegistration() {
       confirmPassword: '',
       consent: true,
     }));
-  }, [buyerProfile, currentUser]);
+  }, [buyerProfile, currentUser, navigate]);
 
   const title = currentUser
     ? currentUser.is_buyer
@@ -150,7 +168,7 @@ export default function BuyerRegistration() {
         }
       }
     } catch (error) {
-      setToast({ message: getErrorMessage(error), type: 'error' });
+      setToast({ message: getErrorMessage(error, payload), type: 'error' });
     } finally {
       setIsSubmitting(false);
     }

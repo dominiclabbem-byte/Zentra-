@@ -107,13 +107,12 @@ async function getUserCategoryIds(userId, scope) {
 async function createNotifications(rows) {
   if (!rows?.length) return [];
 
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('notifications')
-    .insert(rows)
-    .select('*');
+    .insert(rows);
 
   if (error) throw error;
-  return data ?? [];
+  return rows;
 }
 
 // ========================
