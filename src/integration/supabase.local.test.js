@@ -527,6 +527,45 @@ describe('Supabase local integration', () => {
     expect(outsiderConversationError).toBeNull();
     expect(outsiderConversation).toBeNull();
 
+    const secondSupplierUser = await createConfirmedUser({
+      email: `supplier.${randomUUID()}@zentra.local`,
+      password,
+      metadata: {
+        company_name: 'Supplier Dos',
+        rut: createRut('supplier-two'),
+        city: 'Puerto Montt',
+        is_buyer: false,
+        is_supplier: true,
+      },
+    });
+    const secondSupplierPublicUser = await waitForPublicUser(secondSupplierUser.id);
+    const secondSupplierClient = await signInWithPassword(secondSupplierUser.email, password);
+
+    const { data: secondOffer, error: secondOfferError } = await secondSupplierClient
+      .from('quote_offers')
+      .insert({
+        quote_id: quote.id,
+        supplier_id: secondSupplierPublicUser.id,
+        responder_id: secondSupplierPublicUser.id,
+        price: 1820,
+        notes: 'Segunda oferta',
+        estimated_lead_time: '96 horas',
+      })
+      .select('*')
+      .single();
+
+    expect(secondOfferError).toBeNull();
+    expect(secondOffer.quote_id).toBe(quote.id);
+
+    const { data: secondSupplierConversation, error: secondSupplierConversationError } = await secondSupplierClient
+      .from('quote_conversations')
+      .select('*')
+      .eq('id', conversation.id)
+      .maybeSingle();
+
+    expect(secondSupplierConversationError).toBeNull();
+    expect(secondSupplierConversation).toBeNull();
+
     const { error: closeQuoteError } = await buyerClient
       .from('quote_requests')
       .update({ status: 'cancelled' })

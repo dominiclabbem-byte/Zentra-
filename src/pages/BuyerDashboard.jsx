@@ -42,6 +42,7 @@ import {
 } from '../services/database';
 import { mapQuoteConversationMessageRecord, mapQuoteConversationRecord } from '../lib/conversationAdapters';
 import { mapProductRecordToCard } from '../lib/productAdapters';
+import { buildBuyerRecommendations } from '../lib/recommendations';
 import { formatQuoteDateTime, mapQuoteRequestRecord, sortQuoteOffersForBuyer } from '../lib/quoteAdapters';
 
 const units = ['kg', 'unidades', 'cajas'];
@@ -62,6 +63,34 @@ const initialReviewForm = {
   rating: 5,
   comment: '',
 };
+
+const RECENT_BUYER_SEARCHES_STORAGE_KEY = 'zentra:buyer-recent-searches';
+
+function loadRecentBuyerSearches() {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    const rawValue = window.localStorage.getItem(RECENT_BUYER_SEARCHES_STORAGE_KEY);
+    if (!rawValue) return [];
+
+    const parsedValue = JSON.parse(rawValue);
+    return Array.isArray(parsedValue)
+      ? parsedValue.filter((term) => typeof term === 'string')
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRecentBuyerSearches(terms) {
+  if (typeof window === 'undefined') return;
+
+  try {
+    window.localStorage.setItem(RECENT_BUYER_SEARCHES_STORAGE_KEY, JSON.stringify(terms));
+  } catch {
+    // Optional UX enhancement only.
+  }
+}
 
 const initialBuyerProfile = {
   companyName: 'Pasteleria Mozart Ltda.',
@@ -164,6 +193,7 @@ export default function BuyerDashboard() {
   const [catalogSearch, setCatalogSearch] = useState('');
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [catalogProducts, setCatalogProducts] = useState([]);
+  const [recentSearchTerms, setRecentSearchTerms] = useState(() => loadRecentBuyerSearches());
   const [viewingSupplier, setViewingSupplier] = useState(null);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [profileForm, setProfileForm] = useState(initialBuyerProfile);
@@ -232,6 +262,25 @@ export default function BuyerDashboard() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    const normalizedSearch = catalogSearch.trim();
+    if (normalizedSearch.length < 3) return undefined;
+
+    const timeoutId = window.setTimeout(() => {
+      setRecentSearchTerms((current) => {
+        const nextTerms = [
+          normalizedSearch,
+          ...current.filter((term) => term.toLowerCase() !== normalizedSearch.toLowerCase()),
+        ].slice(0, 6);
+
+        saveRecentBuyerSearches(nextTerms);
+        return nextTerms;
+      });
+    }, 450);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [catalogSearch]);
 
   const loadBuyerQuotes = useCallback(async () => {
     if (!currentUser?.id) {
@@ -574,6 +623,103 @@ export default function BuyerDashboard() {
     });
   };
 
+  const renderCatalogProductCard = (product, { showRecommendationMeta = false } = {}) => (
+    <div
+      key={product.id}
+      className="bg-white rounded-2xl border border-gray-100 overflow-hidden card-premium cursor-pointer group"
+      onClick={() => openSupplierFromProduct(product)}
+    >
+      <div className={`relative h-40 bg-gradient-to-br ${product.gradient} overflow-hidden`}>
+        {product.customImage ? (
+          <img src={product.customImage} alt={product.imageAlt} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+        ) : (
+          <>
+            <div className="absolute inset-0 opacity-20">
+              <div className="absolute top-3 left-3 w-16 h-16 bg-white/30 rounded-full blur-xl" />
+              <div className="absolute bottom-4 right-4 w-20 h-20 bg-white/20 rounded-full blur-2xl" />
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-5xl filter drop-shadow-lg transform group-hover:scale-110 transition-transform duration-500">
+                {product.emoji}
+              </div>
+            </div>
+          </>
+        )}
+        <div className="absolute top-2 left-2 flex flex-col items-start gap-1.5">
+          {showRecommendationMeta && product.recommendationScore > 0 && (
+            <div className="text-[9px] font-bold bg-[#0D1F3C]/90 text-white px-2 py-0.5 rounded-full shadow-sm">
+              Para ti
+            </div>
+          )}
+          {product.hasTrackedPriceAlert && (
+            <div className="text-[9px] font-bold bg-white/90 text-[#0D1F3C] px-2 py-0.5 rounded-full shadow-sm">
+              Alerta activa
+            </div>
+          )}
+          {product.recentPriceAlert && (
+            <div
+              className={`text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm ${
+                product.recentPriceAlert.change === 'down'
+                  ? 'bg-emerald-400/95 text-emerald-950'
+                  : 'bg-rose-400/95 text-rose-950'
+              }`}
+            >
+              {product.recentPriceAlert.signalLabel}
+            </div>
+          )}
+        </div>
+        {product.status === 'low_stock' && (
+          <div className="absolute top-2 right-2 text-[9px] font-bold bg-amber-400/90 text-amber-900 px-2 py-0.5 rounded-full">
+            Stock bajo
+          </div>
+        )}
+      </div>
+
+      <div className="p-3.5">
+        <h3 className="text-sm font-bold text-[#0D1F3C] truncate">{product.name}</h3>
+        <p className="text-xs text-gray-400 mt-0.5">{product.category}</p>
+        <div className="flex items-center justify-between mt-3">
+          <span className="text-base font-extrabold text-[#0D1F3C]">{product.price}</span>
+        </div>
+        {showRecommendationMeta && product.recommendationReasons?.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {product.recommendationReasons.map((reason) => (
+              <span key={`${product.id}-${reason}`} className="text-[10px] font-semibold bg-[#f2f7fb] text-[#0D1F3C] border border-[#dce9f2] px-2 py-1 rounded-full">
+                {reason}
+              </span>
+            ))}
+          </div>
+        )}
+        {product.recentPriceAlert && (
+          <div className="mt-2 rounded-xl border border-gray-100 bg-[#f8fafc] px-3 py-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[11px] font-semibold text-[#0D1F3C]">{product.recentPriceAlert.impactLabel}</span>
+              <span className={`text-[10px] font-bold ${
+                product.recentPriceAlert.change === 'down' ? 'text-emerald-600' : 'text-rose-600'
+              }`}>
+                {product.recentPriceAlert.change === 'down' ? '↓' : '↑'} {product.recentPriceAlert.currentPrice}
+              </span>
+            </div>
+            <p className="text-[10px] text-gray-400 mt-1">
+              Antes {product.recentPriceAlert.previousPrice} · {product.recentPriceAlert.dateLabel}
+            </p>
+          </div>
+        )}
+        {product.supplierName && (
+          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-50">
+            <div className="w-6 h-6 bg-gradient-to-br from-[#0D1F3C] to-[#1a3260] rounded-md flex items-center justify-center text-[#2ECAD5] text-[8px] font-bold flex-shrink-0">
+              {product.supplierName.split(' ').map((word) => word[0]).join('').slice(0, 2).toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-semibold text-gray-600 truncate">{product.supplierName}</p>
+              <span className="text-[10px] text-gray-400">Ver proveedor</span>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   const handleOpenQuoteOffers = useCallback(async (quote) => {
     setSelectedQuote(quote);
     const refreshedQuotes = await loadBuyerQuotes();
@@ -897,6 +1043,18 @@ export default function BuyerDashboard() {
     [catalogPriceSignalMap, catalogProducts, trackedAlertTargets],
   );
 
+  const recommendedCatalogProducts = useMemo(
+    () => buildBuyerRecommendations(catalogProductsWithSignals, {
+      buyerProfile,
+      buyerQuotes,
+      favoriteSuppliers,
+      recentSearchTerms,
+      currentSearch: catalogSearch,
+      alertSubscriptions,
+    }).slice(0, 4),
+    [alertSubscriptions, buyerProfile, buyerQuotes, catalogProductsWithSignals, catalogSearch, favoriteSuppliers, recentSearchTerms],
+  );
+
   const filteredCatalogProducts = useMemo(() => {
     const normalizedSearch = catalogSearch.trim().toLowerCase();
 
@@ -919,6 +1077,18 @@ export default function BuyerDashboard() {
   const alertProductOptions = useMemo(
     () => [...catalogProductsWithSignals].sort((left, right) => left.name.localeCompare(right.name, 'es')),
     [catalogProductsWithSignals],
+  );
+
+  const showRecommendedCatalog = activeTab === 'catalog' && catalogFilter === 'Todos' && !catalogSearch.trim();
+  const recommendedCatalogProductIds = useMemo(
+    () => new Set(recommendedCatalogProducts.map((product) => product.id)),
+    [recommendedCatalogProducts],
+  );
+  const catalogGridProducts = useMemo(
+    () => (showRecommendedCatalog
+      ? filteredCatalogProducts.filter((product) => !recommendedCatalogProductIds.has(product.id))
+      : filteredCatalogProducts),
+    [filteredCatalogProducts, recommendedCatalogProductIds, showRecommendedCatalog],
   );
 
   const availableProfileCategories = useMemo(
@@ -2062,6 +2232,39 @@ export default function BuyerDashboard() {
               ))}
             </div>
 
+            {showRecommendedCatalog && recommendedCatalogProducts.length > 0 && (
+              <section className="bg-gradient-to-br from-[#0D1F3C] to-[#102746] rounded-3xl p-6 text-white overflow-hidden relative">
+                <div className="absolute inset-0 bg-grid opacity-20" />
+                <div className="relative z-10">
+                  <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-5">
+                    <div>
+                      <span className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.24em] text-[#2ECAD5]">
+                        Para ti
+                      </span>
+                      <h2 className="text-2xl font-extrabold mt-2">Sugerencias basadas en tu actividad</h2>
+                      <p className="text-sm text-slate-300 mt-2 max-w-3xl">
+                        Priorizamos RFQs previas, busquedas recientes, proveedores guardados y senales comerciales.
+                        La cercania geografica quedara para una fase posterior cuando tengamos direccion confirmada en mapa y coordenadas.
+                      </p>
+                    </div>
+                    {recentSearchTerms.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {recentSearchTerms.slice(0, 3).map((term) => (
+                          <span key={term} className="text-[11px] font-semibold bg-white/10 border border-white/10 px-3 py-1.5 rounded-full">
+                            {term}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                    {recommendedCatalogProducts.map((product) => renderCatalogProductCard(product, { showRecommendationMeta: true }))}
+                  </div>
+                </div>
+              </section>
+            )}
+
             {/* Product grid */}
             {(() => {
               if (catalogLoading) {
@@ -2072,95 +2275,9 @@ export default function BuyerDashboard() {
                 );
               }
 
-              return filteredCatalogProducts.length > 0 ? (
+              return catalogGridProducts.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {filteredCatalogProducts.map((product) => {
-                    return (
-                      <div
-                        key={product.id}
-                        className="bg-white rounded-2xl border border-gray-100 overflow-hidden card-premium cursor-pointer group"
-                        onClick={() => openSupplierFromProduct(product)}
-                      >
-                        {/* Product image */}
-                        <div className={`relative h-40 bg-gradient-to-br ${product.gradient} overflow-hidden`}>
-                          {product.customImage ? (
-                            <img src={product.customImage} alt={product.imageAlt} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                          ) : (
-                            <>
-                              <div className="absolute inset-0 opacity-20">
-                                <div className="absolute top-3 left-3 w-16 h-16 bg-white/30 rounded-full blur-xl" />
-                                <div className="absolute bottom-4 right-4 w-20 h-20 bg-white/20 rounded-full blur-2xl" />
-                              </div>
-                              <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="text-5xl filter drop-shadow-lg transform group-hover:scale-110 transition-transform duration-500">
-                                  {product.emoji}
-                                </div>
-                              </div>
-                            </>
-                          )}
-                          <div className="absolute top-2 left-2 flex flex-col items-start gap-1.5">
-                            {product.hasTrackedPriceAlert && (
-                              <div className="text-[9px] font-bold bg-white/90 text-[#0D1F3C] px-2 py-0.5 rounded-full shadow-sm">
-                                Alerta activa
-                              </div>
-                            )}
-                            {product.recentPriceAlert && (
-                              <div
-                                className={`text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm ${
-                                  product.recentPriceAlert.change === 'down'
-                                    ? 'bg-emerald-400/95 text-emerald-950'
-                                    : 'bg-rose-400/95 text-rose-950'
-                                }`}
-                              >
-                                {product.recentPriceAlert.signalLabel}
-                              </div>
-                            )}
-                          </div>
-                          {/* Status */}
-                          {product.status === 'low_stock' && (
-                            <div className="absolute top-2 right-2 text-[9px] font-bold bg-amber-400/90 text-amber-900 px-2 py-0.5 rounded-full">
-                              Stock bajo
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Info */}
-                        <div className="p-3.5">
-                          <h3 className="text-sm font-bold text-[#0D1F3C] truncate">{product.name}</h3>
-                          <p className="text-xs text-gray-400 mt-0.5">{product.category}</p>
-                          <div className="flex items-center justify-between mt-3">
-                            <span className="text-base font-extrabold text-[#0D1F3C]">{product.price}</span>
-                          </div>
-                          {product.recentPriceAlert && (
-                            <div className="mt-2 rounded-xl border border-gray-100 bg-[#f8fafc] px-3 py-2">
-                              <div className="flex items-center justify-between gap-2">
-                                <span className="text-[11px] font-semibold text-[#0D1F3C]">{product.recentPriceAlert.impactLabel}</span>
-                                <span className={`text-[10px] font-bold ${
-                                  product.recentPriceAlert.change === 'down' ? 'text-emerald-600' : 'text-rose-600'
-                                }`}>
-                                  {product.recentPriceAlert.change === 'down' ? '↓' : '↑'} {product.recentPriceAlert.currentPrice}
-                                </span>
-                              </div>
-                              <p className="text-[10px] text-gray-400 mt-1">
-                                Antes {product.recentPriceAlert.previousPrice} · {product.recentPriceAlert.dateLabel}
-                              </p>
-                            </div>
-                          )}
-                          {product.supplierName && (
-                            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-50">
-                              <div className="w-6 h-6 bg-gradient-to-br from-[#0D1F3C] to-[#1a3260] rounded-md flex items-center justify-center text-[#2ECAD5] text-[8px] font-bold flex-shrink-0">
-                                {product.supplierName.split(' ').map((word) => word[0]).join('').slice(0, 2).toUpperCase()}
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <p className="text-[11px] font-semibold text-gray-600 truncate">{product.supplierName}</p>
-                                <span className="text-[10px] text-gray-400">Ver proveedor</span>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+                  {catalogGridProducts.map((product) => renderCatalogProductCard(product))}
                 </div>
               ) : (
                 <div className="text-center py-16">

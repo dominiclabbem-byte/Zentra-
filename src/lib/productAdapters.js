@@ -83,6 +83,8 @@ export function mapProductRecordToCard(record) {
     id: record.id,
     supplierId: record.supplier_id,
     supplierName: supplierRelation?.company_name ?? '',
+    supplierCity: supplierRelation?.city ?? '',
+    supplierVerified: Boolean(supplierRelation?.verified),
     name: record.name,
     category: categoryName,
     categoryId: record.category_id,
@@ -98,5 +100,6 @@ export function mapProductRecordToCard(record) {
     emoji: categoryRelation?.emoji ?? PRODUCT_EMOJIS[categoryName] ?? '🍽️',
     imageAlt: record.name,
     customImage: record.image_url ?? null,
+    createdAt: record.created_at ?? null,
   };
 }

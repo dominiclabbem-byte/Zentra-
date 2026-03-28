@@ -43,6 +43,7 @@ describe('BuyerDashboard', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    window.localStorage.clear();
     mockUseAuth.mockReturnValue({
       currentUser: seed.buyer,
       categories: seed.categories,
@@ -102,6 +103,14 @@ describe('BuyerDashboard', () => {
     expect(await screen.findByText('Cambios recientes de precio')).toBeInTheDocument();
     expect(screen.getAllByText('Harina premium').length).toBeGreaterThan(0);
     expect(screen.getByText(/Valle Frio SpA \/ Harinas y cereales/)).toBeInTheDocument();
+  });
+
+  it('muestra sugerencias Para ti basadas en actividad reciente', async () => {
+    renderWithRouter(<BuyerDashboard />);
+
+    expect(await screen.findByText('Sugerencias basadas en tu actividad')).toBeInTheDocument();
+    expect(screen.getByText(/La cercania geografica quedara para una fase posterior/i)).toBeInTheDocument();
+    expect(screen.getAllByText('Proveedor guardado en favoritos').length).toBeGreaterThan(0);
   });
 
   it('permite crear una suscripcion de alerta por categoria', async () => {

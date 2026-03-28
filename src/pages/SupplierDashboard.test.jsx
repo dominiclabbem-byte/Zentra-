@@ -206,6 +206,28 @@ describe('SupplierDashboard', () => {
     });
   });
 
+  it('muestra la conversacion cerrada en solo lectura', async () => {
+    const user = userEvent.setup();
+    const closedConversation = {
+      ...seed.quoteConversations[0],
+      status: 'closed',
+      isClosed: true,
+    };
+
+    mockDatabase.getQuoteConversationForQuote.mockResolvedValue(closedConversation);
+    mockDatabase.getQuoteConversationById.mockResolvedValue(closedConversation);
+    mockDatabase.markQuoteConversationRead.mockResolvedValue(closedConversation);
+
+    renderWithRouter(<SupplierDashboard />);
+
+    const openConversationButtons = await screen.findAllByRole('button', { name: 'Abrir conversacion' });
+    await user.click(openConversationButtons[0]);
+
+    expect(await screen.findByText(/Esta conversacion quedo en solo lectura/i)).toBeInTheDocument();
+    expect(screen.getByLabelText('Mensaje')).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Enviar mensaje' })).toBeDisabled();
+  });
+
   it('permite cambiar el plan desde la tab de plan', async () => {
     const user = userEvent.setup();
     const authValue = {
