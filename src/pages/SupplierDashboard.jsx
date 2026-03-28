@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Toast from '../components/Toast';
 import Modal from '../components/Modal';
+import DashboardPageHeader from '../components/DashboardPageHeader';
 import { salesAgents } from '../data/mockData';
 import { chatWithAgent } from '../services/claudeApi';
 import { speakText as ttsSpeak, stopSpeaking as ttsStop } from '../services/ttsService';
@@ -707,6 +708,55 @@ export default function SupplierDashboard() {
       setIsChangingPlan(false);
     }
   };
+
+  const headerTabs = [
+    {
+      id: 'profile',
+      label: 'Mi Perfil',
+      active: activeTab === 'profile',
+      onClick: () => setActiveTab('profile'),
+      icon: (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+        </svg>
+      ),
+    },
+    {
+      id: 'products',
+      label: 'Mis Productos',
+      active: activeTab === 'products',
+      onClick: () => setActiveTab('products'),
+      badge: products.length,
+    },
+    {
+      id: 'quotes',
+      label: 'Quote Inbox',
+      active: activeTab === 'quotes',
+      onClick: () => setActiveTab('quotes'),
+      badge: workspaceSummary.openRelevantQuotes,
+    },
+    {
+      id: 'buyers',
+      label: 'Compradores',
+      active: activeTab === 'buyers',
+      onClick: () => setActiveTab('buyers'),
+      badge: buyerRelationships.length,
+    },
+    {
+      id: 'agents',
+      label: 'Agentes de Venta IA',
+      active: activeTab === 'agents',
+      onClick: () => setActiveTab('agents'),
+      dot: hasAgentFeature,
+    },
+    {
+      id: 'plan',
+      label: 'Plan',
+      active: activeTab === 'plan',
+      onClick: () => setActiveTab('plan'),
+      badge: currentPlanLabel,
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-[#f8fafc] bg-grid">
@@ -1506,117 +1556,24 @@ export default function SupplierDashboard() {
         </div>
       )}
 
-      {/* Header */}
-      <div className="relative bg-[#0a1628] text-white py-8 px-4 overflow-hidden">
-        <div className="absolute inset-0 bg-grid opacity-30" />
-        <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-[#2ECAD5]/5 rounded-full blur-[80px]" />
-        <div className="max-w-6xl mx-auto relative z-10">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-xs font-semibold uppercase tracking-widest text-[#2ECAD5]">Panel de proveedor</span>
-                <span className="text-[10px] font-bold bg-gradient-to-r from-emerald-400 to-blue-500 text-white px-2.5 py-0.5 rounded-full uppercase tracking-wide">
-                  Plan {currentPlanLabel}
-                </span>
-              </div>
-              <h1 className="text-2xl font-extrabold">{profile.companyName}</h1>
-              <p className="text-gray-500 text-sm mt-0.5">{profile.city} / RUT {profile.rut}</p>
-            </div>
-            {/* CTA: Switch to buyer mode */}
-            <button
-              onClick={() => navigate(currentUser?.is_buyer ? '/dashboard-comprador' : '/registro-comprador')}
-              className="ml-auto flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 to-blue-500 text-white text-sm font-bold shadow-lg shadow-emerald-400/20 hover:shadow-emerald-400/40 hover:scale-105 transition-all whitespace-nowrap"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
-              </svg>
-              {currentUser?.is_buyer ? 'Ir a comprador' : 'Activar comprador'}
-            </button>
-          </div>
-
-          {/* Tab navigation */}
-          <div className="flex gap-1 mt-6 overflow-x-auto">
-            <button
-              onClick={() => setActiveTab('profile')}
-              className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
-                activeTab === 'profile'
-                  ? 'bg-white/10 text-white'
-                  : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
-              }`}
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-              </svg>
-              Mi Perfil
-            </button>
-            <button
-              onClick={() => setActiveTab('products')}
-              className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
-                activeTab === 'products'
-                  ? 'bg-white/10 text-white'
-                  : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
-              }`}
-            >
-              Mis Productos
-              <span className="text-[10px] font-bold bg-white/10 text-[#2ECAD5] px-2 py-0.5 rounded-full">
-                {products.length}
-              </span>
-            </button>
-            <button
-              onClick={() => setActiveTab('quotes')}
-              className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
-                activeTab === 'quotes'
-                  ? 'bg-white/10 text-white'
-                  : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
-              }`}
-            >
-              Quote Inbox
-              <span className="text-[10px] font-bold bg-white/10 text-[#2ECAD5] px-2 py-0.5 rounded-full">
-                {workspaceSummary.openRelevantQuotes}
-              </span>
-            </button>
-            <button
-              onClick={() => setActiveTab('buyers')}
-              className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
-                activeTab === 'buyers'
-                  ? 'bg-white/10 text-white'
-                  : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
-              }`}
-            >
-              Compradores
-              <span className="text-[10px] font-bold bg-white/10 text-[#2ECAD5] px-2 py-0.5 rounded-full">
-                {buyerRelationships.length}
-              </span>
-            </button>
-            <button
-              onClick={() => setActiveTab('agents')}
-              className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
-                activeTab === 'agents'
-                  ? 'bg-white/10 text-white'
-                  : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
-              }`}
-            >
-              Agentes de Venta IA
-              {hasAgentFeature && (
-                <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('plan')}
-              className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
-                activeTab === 'plan'
-                  ? 'bg-white/10 text-white'
-                  : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
-              }`}
-            >
-              Plan
-              <span className="text-[10px] font-bold bg-white/10 text-[#2ECAD5] px-2 py-0.5 rounded-full">
-                {currentPlanLabel}
-              </span>
-            </button>
-          </div>
-        </div>
-      </div>
+      <DashboardPageHeader
+        eyebrow="Panel de proveedor"
+        title={profile.companyName}
+        subtitle={`${profile.city} / RUT ${profile.rut}`}
+        badges={[{ label: `Plan ${currentPlanLabel}` }]}
+        action={{
+          onClick: () => navigate(currentUser?.is_buyer ? '/dashboard-comprador' : '/registro-comprador'),
+          label: currentUser?.is_buyer ? 'Ir a comprador' : 'Activar comprador',
+          className: 'flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-400 to-blue-500 text-[#0D1F3C] font-bold transition-all whitespace-nowrap hover:scale-[1.02] shadow-lg shadow-emerald-400/20 hover:shadow-emerald-400/40',
+          icon: (
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+            </svg>
+          ),
+        }}
+        tabs={headerTabs}
+        accentBlobClass="bg-[#2ECAD5]/5"
+      />
 
       <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
 

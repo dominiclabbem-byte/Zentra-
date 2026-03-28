@@ -285,4 +285,22 @@ describe('marketplaceScenario', () => {
     const alertsAfter = await scenario.api.getPriceAlerts('buyer-1');
     expect(alertsAfter.length).toBe(0);
   });
+
+  it('deduplica el feed de alertas y conserva solo el cambio mas reciente por producto', async () => {
+    const scenario = createMarketplaceScenario();
+
+    scenario.state.priceAlerts.unshift({
+      ...scenario.state.priceAlerts[0],
+      id: 'alert-2',
+      old_price: 1200,
+      new_price: 1180,
+      created_at: '2026-03-24T12:00:00Z',
+    });
+
+    const alerts = await scenario.api.getPriceAlerts('buyer-1');
+
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0].id).toBe('alert-2');
+    expect(alerts[0].new_price).toBe(1180);
+  });
 });

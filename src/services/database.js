@@ -65,6 +65,23 @@ function takeSingle(value) {
   return value ?? null;
 }
 
+function dedupeLatestPriceAlerts(alerts) {
+  const latestByProductId = new Map();
+
+  (alerts ?? []).forEach((alert) => {
+    if (!alert?.product_id) return;
+
+    const existing = latestByProductId.get(alert.product_id);
+    if (!existing || new Date(alert.created_at).getTime() > new Date(existing.created_at).getTime()) {
+      latestByProductId.set(alert.product_id, alert);
+    }
+  });
+
+  return [...latestByProductId.values()]
+    .sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime())
+    .slice(0, 20);
+}
+
 function useE2E() {
   return isE2EMode();
 }
@@ -650,16 +667,10 @@ export async function getSuppliers(filters = {}) {
 
 export async function getPriceAlerts(buyerId) {
   if (useE2E()) return e2eGetPriceAlerts(buyerId);
-  const subscriptions = await getPriceAlertSubscriptions(buyerId);
-  if (!subscriptions.length) return [];
+  if (!buyerId) return [];
 
-  const productIds = subscriptions
-    .filter((subscription) => subscription.product_id)
-    .map((subscription) => subscription.product_id);
-
-  const categoryIds = subscriptions
-    .filter((subscription) => subscription.category_id)
-    .map((subscription) => subscription.category_id);
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 30);
 
   const { data, error } = await supabase
     .from('price_alerts')
@@ -674,17 +685,13 @@ export async function getPriceAlerts(buyerId) {
         categories(name, emoji)
       )
     `)
+    .gte('created_at', cutoff.toISOString())
     .order('created_at', { ascending: false })
     .limit(100);
 
   if (error) throw error;
 
-  return (data ?? [])
-    .filter((alert) => {
-      const product = takeSingle(alert.products);
-      return productIds.includes(alert.product_id) || categoryIds.includes(product?.category_id);
-    })
-    .slice(0, 20);
+  return dedupeLatestPriceAlerts(data ?? []);
 }
 
 export async function getPriceAlertSubscriptions(buyerId) {

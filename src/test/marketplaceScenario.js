@@ -13,6 +13,23 @@ function clone(value) {
     : JSON.parse(JSON.stringify(value));
 }
 
+function dedupeLatestPriceAlerts(alerts) {
+  const latestByProductId = new Map();
+
+  (alerts ?? []).forEach((alert) => {
+    if (!alert?.product_id) return;
+
+    const existing = latestByProductId.get(alert.product_id);
+    if (!existing || new Date(alert.created_at).getTime() > new Date(existing.created_at).getTime()) {
+      latestByProductId.set(alert.product_id, alert);
+    }
+  });
+
+  return [...latestByProductId.values()].sort(
+    (left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime(),
+  );
+}
+
 function takeSingle(value) {
   if (Array.isArray(value)) return value[0] ?? null;
   return value ?? null;
@@ -339,7 +356,8 @@ export function createMarketplaceScenario(overrides = {}) {
       const categoryIds = subscriptions.filter((subscription) => subscription.category_id).map((subscription) => subscription.category_id);
 
       return clone(
-        state.priceAlerts
+        dedupeLatestPriceAlerts(
+          state.priceAlerts
           .filter((alert) => {
             const product = takeSingle(alert.products);
             return productIds.includes(alert.product_id) || categoryIds.includes(product?.category_id);
@@ -356,6 +374,7 @@ export function createMarketplaceScenario(overrides = {}) {
               };
             })(),
           })),
+        )
       );
     },
 

@@ -73,6 +73,9 @@ describe('BuyerDashboard', () => {
     renderWithRouter(<BuyerDashboard />);
 
     expect(await screen.findByText('Harina premium')).toBeInTheDocument();
+    expect(screen.getByText('Alerta activa')).toBeInTheDocument();
+    expect(screen.getByText('Precio a la baja')).toBeInTheDocument();
+    expect(screen.getByText(/Antes \$1\.350/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Favoritos' }));
     expect(await screen.findByText('Valle Frio SpA')).toBeInTheDocument();

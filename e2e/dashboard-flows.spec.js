@@ -53,6 +53,15 @@ test.describe('Dashboard Flows', () => {
     await expect(page.locator('div.text-sm.font-bold.text-\\[\\#0D1F3C\\]').filter({ hasText: 'Lacteos' })).toBeVisible();
   });
 
+  test('buyer ve senales de precio recientes en el catalogo', async ({ page }) => {
+    await enableE2EMode(page, 'buyer');
+    await page.goto('/dashboard-comprador?e2e=1');
+
+    await expect(page.getByText('Harina premium')).toBeVisible();
+    await expect(page.getByText('Alerta activa')).toBeVisible();
+    await expect(page.getByText('Precio a la baja')).toBeVisible();
+  });
+
   test('supplier puede responder una RFQ abierta desde quote inbox', async ({ page }) => {
     await enableE2EMode(page, 'supplier');
     await page.goto('/dashboard-proveedor?e2e=1');

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Toast from '../components/Toast';
 import Modal from '../components/Modal';
+import DashboardPageHeader from '../components/DashboardPageHeader';
 import { useAuth } from '../context/AuthContext';
 import {
   BUSINESS_TYPE_OPTIONS,
@@ -120,6 +121,8 @@ function mapPriceAlertRecord(alert) {
 
   return {
     id: alert.id,
+    productId: alert.product_id,
+    categoryId: product?.category_id ?? category?.id ?? '',
     productName: product?.name ?? 'Producto',
     supplierName: supplier?.company_name ?? 'Proveedor',
     categoryName: category?.name ?? 'Sin categoria',
@@ -128,7 +131,9 @@ function mapPriceAlertRecord(alert) {
     change: alert.direction ?? 'down',
     changeLabel: isDown ? 'Bajo' : 'Subio',
     impactLabel: isDown ? 'Mejor oportunidad' : 'Precio al alza',
+    signalLabel: isDown ? 'Precio a la baja' : 'Precio al alza',
     dateLabel: formatQuoteDateTime(alert.created_at),
+    createdAt: alert.created_at,
   };
 }
 
@@ -669,22 +674,66 @@ export default function BuyerDashboard() {
     [categoryOptions],
   );
 
+  const catalogPriceSignalMap = useMemo(() => {
+    const latestByProductId = new Map();
+
+    buyerAlerts.forEach((alert) => {
+      if (!alert.productId) return;
+
+      const existing = latestByProductId.get(alert.productId);
+      if (!existing || new Date(alert.createdAt).getTime() > new Date(existing.createdAt).getTime()) {
+        latestByProductId.set(alert.productId, alert);
+      }
+    });
+
+    return latestByProductId;
+  }, [buyerAlerts]);
+
+  const trackedAlertTargets = useMemo(() => ({
+    productIds: new Set(
+      alertSubscriptions
+        .filter((subscription) => subscription.product_id)
+        .map((subscription) => subscription.product_id),
+    ),
+    categoryIds: new Set(
+      alertSubscriptions
+        .filter((subscription) => !subscription.product_id && subscription.category_id)
+        .map((subscription) => subscription.category_id),
+    ),
+  }), [alertSubscriptions]);
+
+  const catalogProductsWithSignals = useMemo(
+    () => catalogProducts.map((product) => ({
+      ...product,
+      recentPriceAlert: catalogPriceSignalMap.get(product.id) ?? null,
+      hasTrackedPriceAlert: trackedAlertTargets.productIds.has(product.id)
+        || trackedAlertTargets.categoryIds.has(product.categoryId),
+    })),
+    [catalogPriceSignalMap, catalogProducts, trackedAlertTargets],
+  );
+
   const filteredCatalogProducts = useMemo(() => {
     const normalizedSearch = catalogSearch.trim().toLowerCase();
 
-    return catalogProducts.filter((product) => {
-      const matchCategory = catalogFilter === 'Todos' || product.category === catalogFilter;
-      const matchSearch = !normalizedSearch
-        || product.name.toLowerCase().includes(normalizedSearch)
-        || product.category.toLowerCase().includes(normalizedSearch);
+    return catalogProductsWithSignals
+      .filter((product) => {
+        const matchCategory = catalogFilter === 'Todos' || product.category === catalogFilter;
+        const matchSearch = !normalizedSearch
+          || product.name.toLowerCase().includes(normalizedSearch)
+          || product.category.toLowerCase().includes(normalizedSearch);
 
-      return matchCategory && matchSearch;
-    });
-  }, [catalogFilter, catalogProducts, catalogSearch]);
+        return matchCategory && matchSearch;
+      })
+      .sort((left, right) => {
+        if (left.recentPriceAlert && !right.recentPriceAlert) return -1;
+        if (!left.recentPriceAlert && right.recentPriceAlert) return 1;
+        return left.name.localeCompare(right.name, 'es');
+      });
+  }, [catalogFilter, catalogProductsWithSignals, catalogSearch]);
 
   const alertProductOptions = useMemo(
-    () => [...catalogProducts].sort((left, right) => left.name.localeCompare(right.name, 'es')),
-    [catalogProducts],
+    () => [...catalogProductsWithSignals].sort((left, right) => left.name.localeCompare(right.name, 'es')),
+    [catalogProductsWithSignals],
   );
 
   const availableProfileCategories = useMemo(
@@ -819,6 +868,65 @@ export default function BuyerDashboard() {
     quotesLoading,
     totalOffersReceived,
   ]);
+
+  const headerTabs = [
+    {
+      id: 'catalog',
+      label: 'Catalogo',
+      active: activeTab === 'catalog',
+      onClick: () => setActiveTab('catalog'),
+      icon: (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-4.72L4.318 3.44A1.5 1.5 0 015.378 3h13.243a1.5 1.5 0 011.06.44l1.19 1.189a3 3 0 01-.621 4.72m-13.5 8.65h3.75a.75.75 0 00.75-.75V13.5a.75.75 0 00-.75-.75H6.75a.75.75 0 00-.75.75v3.75c0 .415.336.75.75.75z" />
+        </svg>
+      ),
+    },
+    {
+      id: 'dashboard',
+      label: 'Cotizaciones',
+      active: activeTab === 'dashboard',
+      onClick: () => setActiveTab('dashboard'),
+      icon: (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+        </svg>
+      ),
+    },
+    {
+      id: 'alerts',
+      label: 'Alertas',
+      active: activeTab === 'alerts',
+      onClick: () => setActiveTab('alerts'),
+      icon: (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M10.34 3.94c.09-.542.56-.94 1.11-.94h1.1c.55 0 1.02.398 1.11.94l.149.897c.052.313.245.585.52.735.299.163.64.266 1.007.3l.92.085a1.125 1.125 0 01.844 1.79l-.566.777a1.125 1.125 0 00-.182.918c.065.303.098.616.098.934 0 .318-.033.631-.098.934a1.125 1.125 0 00.182.918l.566.777a1.125 1.125 0 01-.844 1.79l-.92.085a2.822 2.822 0 00-1.007.3 1.125 1.125 0 00-.52.735l-.149.897c-.09.542-.56.94-1.11.94h-1.1c-.55 0-1.02-.398-1.11-.94l-.149-.897a1.125 1.125 0 00-.52-.735 2.822 2.822 0 00-1.007-.3l-.92-.085a1.125 1.125 0 01-.844-1.79l.566-.777a1.125 1.125 0 00.182-.918 4.473 4.473 0 010-1.868 1.125 1.125 0 00-.182-.918l-.566-.777a1.125 1.125 0 01.844-1.79l.92-.085c.367-.034.708-.137 1.007-.3.275-.15.468-.422.52-.735l.149-.897z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      ),
+    },
+    {
+      id: 'favorites',
+      label: 'Favoritos',
+      active: activeTab === 'favorites',
+      onClick: () => setActiveTab('favorites'),
+      icon: (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+        </svg>
+      ),
+    },
+    {
+      id: 'profile',
+      label: 'Mi Perfil',
+      active: activeTab === 'profile',
+      onClick: () => setActiveTab('profile'),
+      icon: (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+        </svg>
+      ),
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-[#f8fafc] bg-grid">
@@ -1614,103 +1722,23 @@ export default function BuyerDashboard() {
         </div>
       )}
 
-      {/* Page header */}
-      <div className="relative bg-[#0a1628] text-white py-8 px-4 overflow-hidden">
-        <div className="absolute inset-0 bg-grid opacity-30" />
-        <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-indigo-500/5 rounded-full blur-[80px]" />
-        <div className="max-w-6xl mx-auto relative z-10">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold uppercase tracking-widest text-[#2ECAD5]">Panel de comprador</span>
-              </div>
-              <h1 className="text-2xl font-extrabold mt-1">{buyerProfile.companyName}</h1>
-              <p className="text-gray-500 text-sm mt-0.5">
-                {buyerProfile.city} / {buyerProfile.businessType} / RUT {buyerProfile.rut}
-              </p>
-            </div>
-            <button
-              onClick={() => openQuoteModal()}
-              className="flex items-center gap-2 bg-gradient-to-r from-emerald-400 to-blue-500 hover:shadow-lg hover:shadow-emerald-400/20 text-[#0D1F3C] font-bold px-6 py-3 rounded-xl transition-all whitespace-nowrap hover:scale-[1.02]"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
-              Nueva cotizacion
-            </button>
-          </div>
-
-          {/* Tab navigation */}
-          <div className="flex gap-1 mt-6 overflow-x-auto">
-            <button
-              onClick={() => setActiveTab('catalog')}
-              className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
-                activeTab === 'catalog'
-                  ? 'bg-white/10 text-white'
-                  : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
-              }`}
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-4.72L4.318 3.44A1.5 1.5 0 015.378 3h13.243a1.5 1.5 0 011.06.44l1.19 1.189a3 3 0 01-.621 4.72m-13.5 8.65h3.75a.75.75 0 00.75-.75V13.5a.75.75 0 00-.75-.75H6.75a.75.75 0 00-.75.75v3.75c0 .415.336.75.75.75z" />
-              </svg>
-              Catalogo
-            </button>
-            <button
-              onClick={() => setActiveTab('dashboard')}
-              className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
-                activeTab === 'dashboard'
-                  ? 'bg-white/10 text-white'
-                  : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
-              }`}
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-              </svg>
-              Cotizaciones
-            </button>
-            <button
-              onClick={() => setActiveTab('alerts')}
-              className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
-                activeTab === 'alerts'
-                  ? 'bg-white/10 text-white'
-                  : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
-              }`}
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10.34 3.94c.09-.542.56-.94 1.11-.94h1.1c.55 0 1.02.398 1.11.94l.149.897c.052.313.245.585.52.735.299.163.64.266 1.007.3l.92.085a1.125 1.125 0 01.844 1.79l-.566.777a1.125 1.125 0 00-.182.918c.065.303.098.616.098.934 0 .318-.033.631-.098.934a1.125 1.125 0 00.182.918l.566.777a1.125 1.125 0 01-.844 1.79l-.92.085a2.822 2.822 0 00-1.007.3 1.125 1.125 0 00-.52.735l-.149.897c-.09.542-.56.94-1.11.94h-1.1c-.55 0-1.02-.398-1.11-.94l-.149-.897a1.125 1.125 0 00-.52-.735 2.822 2.822 0 00-1.007-.3l-.92-.085a1.125 1.125 0 01-.844-1.79l.566-.777a1.125 1.125 0 00.182-.918 4.473 4.473 0 010-1.868 1.125 1.125 0 00-.182-.918l-.566-.777a1.125 1.125 0 01.844-1.79l.92-.085c.367-.034.708-.137 1.007-.3.275-.15.468-.422.52-.735l.149-.897z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              Alertas
-            </button>
-            <button
-              onClick={() => setActiveTab('favorites')}
-              className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
-                activeTab === 'favorites'
-                  ? 'bg-white/10 text-white'
-                  : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
-              }`}
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
-              </svg>
-              Favoritos
-            </button>
-            <button
-              onClick={() => setActiveTab('profile')}
-              className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
-                activeTab === 'profile'
-                  ? 'bg-white/10 text-white'
-                  : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
-              }`}
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-              </svg>
-              Mi Perfil
-            </button>
-          </div>
-        </div>
-      </div>
+      <DashboardPageHeader
+        eyebrow="Panel de comprador"
+        title={buyerProfile.companyName}
+        subtitle={`${buyerProfile.city} / ${buyerProfile.businessType} / RUT ${buyerProfile.rut}`}
+        action={{
+          onClick: () => openQuoteModal(),
+          label: 'Nueva cotizacion',
+          className: 'flex items-center gap-2 bg-gradient-to-r from-emerald-400 to-blue-500 hover:shadow-lg hover:shadow-emerald-400/20 text-[#0D1F3C] font-bold px-6 py-3 rounded-xl transition-all whitespace-nowrap hover:scale-[1.02]',
+          icon: (
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+          ),
+        }}
+        tabs={headerTabs}
+        accentBlobClass="bg-indigo-500/5"
+      />
 
       <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
 
@@ -1784,6 +1812,24 @@ export default function BuyerDashboard() {
                               </div>
                             </>
                           )}
+                          <div className="absolute top-2 left-2 flex flex-col items-start gap-1.5">
+                            {product.hasTrackedPriceAlert && (
+                              <div className="text-[9px] font-bold bg-white/90 text-[#0D1F3C] px-2 py-0.5 rounded-full shadow-sm">
+                                Alerta activa
+                              </div>
+                            )}
+                            {product.recentPriceAlert && (
+                              <div
+                                className={`text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm ${
+                                  product.recentPriceAlert.change === 'down'
+                                    ? 'bg-emerald-400/95 text-emerald-950'
+                                    : 'bg-rose-400/95 text-rose-950'
+                                }`}
+                              >
+                                {product.recentPriceAlert.signalLabel}
+                              </div>
+                            )}
+                          </div>
                           {/* Status */}
                           {product.status === 'low_stock' && (
                             <div className="absolute top-2 right-2 text-[9px] font-bold bg-amber-400/90 text-amber-900 px-2 py-0.5 rounded-full">
@@ -1799,6 +1845,21 @@ export default function BuyerDashboard() {
                           <div className="flex items-center justify-between mt-3">
                             <span className="text-base font-extrabold text-[#0D1F3C]">{product.price}</span>
                           </div>
+                          {product.recentPriceAlert && (
+                            <div className="mt-2 rounded-xl border border-gray-100 bg-[#f8fafc] px-3 py-2">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-[11px] font-semibold text-[#0D1F3C]">{product.recentPriceAlert.impactLabel}</span>
+                                <span className={`text-[10px] font-bold ${
+                                  product.recentPriceAlert.change === 'down' ? 'text-emerald-600' : 'text-rose-600'
+                                }`}>
+                                  {product.recentPriceAlert.change === 'down' ? '↓' : '↑'} {product.recentPriceAlert.currentPrice}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-gray-400 mt-1">
+                                Antes {product.recentPriceAlert.previousPrice} · {product.recentPriceAlert.dateLabel}
+                              </p>
+                            </div>
+                          )}
                           {product.supplierName && (
                             <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-50">
                               <div className="w-6 h-6 bg-gradient-to-br from-[#0D1F3C] to-[#1a3260] rounded-md flex items-center justify-center text-[#2ECAD5] text-[8px] font-bold flex-shrink-0">
