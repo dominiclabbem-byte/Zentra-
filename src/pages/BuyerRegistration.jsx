@@ -198,8 +198,9 @@ export default function BuyerRegistration() {
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+                  <label htmlFor="buyer-register-email" className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
                   <input
+                    id="buyer-register-email"
                     type="email"
                     required
                     value={form.email}
@@ -209,8 +210,9 @@ export default function BuyerRegistration() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Contrasena</label>
+                  <label htmlFor="buyer-register-password" className="block text-sm font-medium text-gray-700 mb-1.5">Contrasena</label>
                   <input
+                    id="buyer-register-password"
                     type="password"
                     required
                     minLength={8}
@@ -221,8 +223,9 @@ export default function BuyerRegistration() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Confirmar contrasena</label>
+                  <label htmlFor="buyer-register-confirm-password" className="block text-sm font-medium text-gray-700 mb-1.5">Confirmar contrasena</label>
                   <input
+                    id="buyer-register-confirm-password"
                     type="password"
                     required
                     minLength={8}
@@ -243,8 +246,9 @@ export default function BuyerRegistration() {
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Nombre del negocio</label>
+                <label htmlFor="buyer-register-company-name" className="block text-sm font-medium text-gray-700 mb-1.5">Nombre del negocio</label>
                 <input
+                  id="buyer-register-company-name"
                   type="text"
                   required
                   value={form.companyName}
@@ -254,8 +258,9 @@ export default function BuyerRegistration() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">RUT empresa</label>
+                <label htmlFor="buyer-register-rut" className="block text-sm font-medium text-gray-700 mb-1.5">RUT empresa</label>
                 <input
+                  id="buyer-register-rut"
                   type="text"
                   required
                   value={form.rut}
@@ -265,8 +270,9 @@ export default function BuyerRegistration() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Ciudad</label>
+                <label htmlFor="buyer-register-city" className="block text-sm font-medium text-gray-700 mb-1.5">Ciudad</label>
                 <input
+                  id="buyer-register-city"
                   type="text"
                   required
                   value={form.city}
@@ -296,8 +302,9 @@ export default function BuyerRegistration() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Tipo de negocio</label>
+                <label htmlFor="buyer-register-business-type" className="block text-sm font-medium text-gray-700 mb-1.5">Tipo de negocio</label>
                 <select
+                  id="buyer-register-business-type"
                   required
                   value={form.businessType}
                   onChange={(event) => setForm((current) => ({ ...current, businessType: event.target.value }))}
@@ -401,8 +408,9 @@ export default function BuyerRegistration() {
 
           {!currentUser && (
             <div className="bg-[#f0fafb] rounded-xl p-5 border border-[#2ECAD5]/10">
-              <label className="flex items-start gap-3 cursor-pointer">
+              <label htmlFor="buyer-register-consent" className="flex items-start gap-3 cursor-pointer">
                 <input
+                  id="buyer-register-consent"
                   type="checkbox"
                   checked={form.consent}
                   onChange={(event) => setForm((current) => ({ ...current, consent: event.target.checked }))}

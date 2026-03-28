@@ -57,8 +57,9 @@ export default function Login() {
 
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+            <label htmlFor="login-email" className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
             <input
+              id="login-email"
               type="email"
               required
               value={form.email}
@@ -69,8 +70,9 @@ export default function Login() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Contrasena</label>
+            <label htmlFor="login-password" className="block text-sm font-medium text-gray-700 mb-1.5">Contrasena</label>
             <input
+              id="login-password"
               type="password"
               required
               value={form.password}

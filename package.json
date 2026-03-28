@@ -10,8 +10,10 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:supabase:local": "node scripts/run-supabase-local-tests.mjs",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
+    "supabase:reset:local": "npx supabase db reset --local",
     "seed:demo": "node scripts/backfill-demo-data.mjs"
   },
   "dependencies": {

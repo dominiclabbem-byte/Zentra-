@@ -75,7 +75,7 @@ export default function SupplierDashboard() {
   const {
     currentUser,
     categories: categoryOptions,
-    notifications,
+    notifications = [],
     plans,
     changeSupplierPlan,
     requestSupplierPlanBilling,
@@ -156,55 +156,6 @@ export default function SupplierDashboard() {
   useEffect(() => {
     loadProducts();
   }, [loadProducts]);
-
-  useEffect(() => {
-    if (!location.state?.activeTab && !location.state?.focusQuoteId && !location.state?.focusOfferId) {
-      return;
-    }
-
-    let cancelled = false;
-
-    async function applyNotificationState() {
-      if (location.state?.activeTab) {
-        setActiveTab(location.state.activeTab);
-      }
-
-      const targetQuoteId = location.state?.focusQuoteId;
-      const targetOfferId = location.state?.focusOfferId;
-
-      if (!targetQuoteId && !targetOfferId) {
-        navigate(location.pathname, { replace: true, state: null });
-        return;
-      }
-
-      const { openQuoteRows, supplierOfferRows } = await loadQuotesData();
-      if (cancelled) return;
-
-      const mappedOpenQuotes = openQuoteRows.map((quote) => mapQuoteRequestRecord(quote));
-      const mappedOffers = supplierOfferRows.map((offer) => mapQuoteOfferRecord(offer));
-
-      const matchingOpenQuote = mappedOpenQuotes.find((quote) => quote.id === targetQuoteId);
-      const matchingOffer = mappedOffers.find((offer) => (
-        offer.id === targetOfferId
-        || (targetQuoteId && offer.quoteId === targetQuoteId)
-      ));
-
-      if (matchingOpenQuote) {
-        setHighlightedQuoteId(matchingOpenQuote.id);
-        openQuoteOfferModal(matchingOpenQuote);
-      } else if (matchingOffer) {
-        setHighlightedOfferId(matchingOffer.id);
-      }
-
-      navigate(location.pathname, { replace: true, state: null });
-    }
-
-    applyNotificationState();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [loadQuotesData, location.pathname, location.state, navigate]);
 
   useEffect(() => {
     if (!highlightedQuoteId && !highlightedOfferId) return undefined;
@@ -353,6 +304,55 @@ export default function SupplierDashboard() {
   useEffect(() => {
     loadQuotesData();
   }, [loadQuotesData]);
+
+  useEffect(() => {
+    if (!location.state?.activeTab && !location.state?.focusQuoteId && !location.state?.focusOfferId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function applyNotificationState() {
+      if (location.state?.activeTab) {
+        setActiveTab(location.state.activeTab);
+      }
+
+      const targetQuoteId = location.state?.focusQuoteId;
+      const targetOfferId = location.state?.focusOfferId;
+
+      if (!targetQuoteId && !targetOfferId) {
+        navigate(location.pathname, { replace: true, state: null });
+        return;
+      }
+
+      const { openQuoteRows, supplierOfferRows } = await loadQuotesData();
+      if (cancelled) return;
+
+      const mappedOpenQuotes = openQuoteRows.map((quote) => mapQuoteRequestRecord(quote));
+      const mappedOffers = supplierOfferRows.map((offer) => mapQuoteOfferRecord(offer));
+
+      const matchingOpenQuote = mappedOpenQuotes.find((quote) => quote.id === targetQuoteId);
+      const matchingOffer = mappedOffers.find((offer) => (
+        offer.id === targetOfferId
+        || (targetQuoteId && offer.quoteId === targetQuoteId)
+      ));
+
+      if (matchingOpenQuote) {
+        setHighlightedQuoteId(matchingOpenQuote.id);
+        openQuoteOfferModal(matchingOpenQuote);
+      } else if (matchingOffer) {
+        setHighlightedOfferId(matchingOffer.id);
+      }
+
+      navigate(location.pathname, { replace: true, state: null });
+    }
+
+    applyNotificationState();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loadQuotesData, location.pathname, location.state, navigate]);
 
   const loadSupplierInsights = useCallback(async () => {
     if (!currentUser?.id) {

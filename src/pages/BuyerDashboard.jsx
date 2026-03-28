@@ -143,7 +143,7 @@ export default function BuyerDashboard() {
   const {
     currentUser,
     categories: categoryOptions,
-    notifications,
+    notifications = [],
     saveBuyerProfile,
   } = useAuth();
   const liveBuyerProfile = currentUser ? buildBuyerProfileView(currentUser) : initialBuyerProfile;
