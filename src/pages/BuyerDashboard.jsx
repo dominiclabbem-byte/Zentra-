@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Toast from '../components/Toast';
 import Modal from '../components/Modal';
@@ -21,6 +21,7 @@ import {
   cancelQuoteRequest,
   createReview,
   createQuoteRequest,
+  getBuyerActivityEvents,
   getBuyerReviewOpportunities,
   getBuyerStats,
   getFavorites,
@@ -38,6 +39,7 @@ import {
   removePriceAlertSubscription,
   sendQuoteConversationMessage,
   subscribeToPriceAlert,
+  trackBuyerActivityEvent,
   toggleFavorite,
 } from '../services/database';
 import { mapQuoteConversationMessageRecord, mapQuoteConversationRecord } from '../lib/conversationAdapters';
@@ -53,6 +55,9 @@ const initialQuoteForm = {
   unit: 'kg',
   deliveryDate: '',
   notes: '',
+  sourceProductId: '',
+  sourceSupplierId: '',
+  sourceContext: '',
 };
 
 const initialReviewForm = {
@@ -194,6 +199,7 @@ export default function BuyerDashboard() {
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [catalogProducts, setCatalogProducts] = useState([]);
   const [recentSearchTerms, setRecentSearchTerms] = useState(() => loadRecentBuyerSearches());
+  const [buyerActivityEvents, setBuyerActivityEvents] = useState([]);
   const [viewingSupplier, setViewingSupplier] = useState(null);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [profileForm, setProfileForm] = useState(initialBuyerProfile);
@@ -225,6 +231,7 @@ export default function BuyerDashboard() {
     categoryId: '',
     productId: '',
   });
+  const lastTrackedSearchRef = useRef('');
 
   const unreadBuyerOfferNotifications = useMemo(
     () => notifications.filter((notification) => (
@@ -277,10 +284,24 @@ export default function BuyerDashboard() {
         saveRecentBuyerSearches(nextTerms);
         return nextTerms;
       });
+
+      const normalizedKey = normalizedSearch.toLowerCase();
+      if (currentUser?.id && lastTrackedSearchRef.current !== normalizedKey) {
+        lastTrackedSearchRef.current = normalizedKey;
+        trackBuyerActivityEvent({
+          buyerId: currentUser.id,
+          eventType: 'search',
+          searchTerm: normalizedSearch,
+        })
+          .then((event) => {
+            setBuyerActivityEvents((current) => [event, ...current].slice(0, 80));
+          })
+          .catch(() => {});
+      }
     }, 450);
 
     return () => window.clearTimeout(timeoutId);
-  }, [catalogSearch]);
+  }, [catalogSearch, currentUser?.id]);
 
   const loadBuyerQuotes = useCallback(async () => {
     if (!currentUser?.id) {
@@ -307,10 +328,41 @@ export default function BuyerDashboard() {
     loadBuyerQuotes();
   }, [loadBuyerQuotes]);
 
+  const recordBuyerActivity = useCallback(async ({
+    eventType,
+    productId = null,
+    supplierId = null,
+    quoteRequestId = null,
+    categoryId = null,
+    searchTerm = null,
+    metadata = {},
+  }) => {
+    if (!currentUser?.id) return null;
+
+    try {
+      const event = await trackBuyerActivityEvent({
+        buyerId: currentUser.id,
+        eventType,
+        productId,
+        supplierId,
+        quoteRequestId,
+        categoryId,
+        searchTerm,
+        metadata,
+      });
+
+      setBuyerActivityEvents((current) => [event, ...current].slice(0, 80));
+      return event;
+    } catch {
+      return null;
+    }
+  }, [currentUser?.id]);
+
   const loadBuyerWorkspace = useCallback(async () => {
     if (!currentUser?.id) {
       setBuyerStats({ totalOrders: 0, rating: 0, favoriteSuppliers: 0 });
       setFavoriteSuppliers([]);
+      setBuyerActivityEvents([]);
       setAlertSubscriptions([]);
       setBuyerAlerts([]);
       setReviewOpportunities([]);
@@ -323,9 +375,10 @@ export default function BuyerDashboard() {
     setAlertsLoading(true);
 
     try {
-      const [statsData, favoritesData, subscriptionsData, alertsData, reviewOpportunitiesData] = await Promise.all([
+      const [statsData, favoritesData, activityEventsData, subscriptionsData, alertsData, reviewOpportunitiesData] = await Promise.all([
         getBuyerStats(currentUser.id),
         getFavorites(currentUser.id),
+        getBuyerActivityEvents(currentUser.id, { limit: 80 }),
         getPriceAlertSubscriptions(currentUser.id),
         getPriceAlerts(currentUser.id),
         getBuyerReviewOpportunities(currentUser.id),
@@ -333,6 +386,7 @@ export default function BuyerDashboard() {
 
       setBuyerStats(statsData);
       setFavoriteSuppliers((favoritesData ?? []).map((favorite) => mapFavoriteSupplier(favorite)).filter((favorite) => favorite.id));
+      setBuyerActivityEvents(activityEventsData ?? []);
       setAlertSubscriptions(subscriptionsData ?? []);
       setBuyerAlerts((alertsData ?? []).map((alert) => mapPriceAlertRecord(alert)));
       setReviewOpportunities(reviewOpportunitiesData ?? []);
@@ -510,6 +564,17 @@ export default function BuyerDashboard() {
       }));
 
       setBuyerQuotes((currentQuotes) => [savedQuote, ...currentQuotes]);
+      await recordBuyerActivity({
+        eventType: 'quote_created',
+        productId: quoteForm.sourceProductId || null,
+        supplierId: quoteForm.sourceSupplierId || null,
+        quoteRequestId: savedQuote.id,
+        categoryId: quoteForm.categoryId || null,
+        metadata: {
+          sourceContext: quoteForm.sourceContext || 'manual',
+          productName: quoteForm.product,
+        },
+      });
       setShowModal(false);
       setActiveTab('dashboard');
       setQuoteForm(initialQuoteForm);
@@ -611,15 +676,41 @@ export default function BuyerDashboard() {
         reviews: (supplierReviews ?? []).map((review) => mapReviewRecord(review)),
         isFavorite: favoriteSuppliers.some((supplier) => supplier.id === supplierRecord.id),
       });
+
+      if (options.trackActivity !== false) {
+        await recordBuyerActivity({
+          eventType: 'supplier_view',
+          supplierId,
+          productId: options.productId ?? null,
+          categoryId: options.requestCategoryId ?? null,
+          metadata: {
+            sourceContext: options.sourceContext ?? 'supplier_profile',
+            productName: options.requestProductName ?? '',
+          },
+        });
+      }
     } catch (error) {
       setToast({ message: error.message || 'No se pudo cargar el proveedor.', type: 'error' });
     }
   };
 
   const openSupplierFromProduct = async (product) => {
+    await recordBuyerActivity({
+      eventType: 'product_view',
+      productId: product.id,
+      supplierId: product.supplierId,
+      categoryId: product.categoryId ?? null,
+      metadata: {
+        sourceContext: 'catalog',
+        productName: product.name,
+      },
+    });
+
     await openSupplierProfile(product.supplierId, {
       requestProductName: product.name,
       requestCategoryId: product.categoryId ?? '',
+      productId: product.id,
+      sourceContext: 'catalog',
     });
   };
 
@@ -841,6 +932,13 @@ export default function BuyerDashboard() {
 
     try {
       const isFavorite = await toggleFavorite(currentUser.id, supplierId);
+      await recordBuyerActivity({
+        eventType: isFavorite ? 'favorite_added' : 'favorite_removed',
+        supplierId,
+        metadata: {
+          sourceContext: viewingSupplier?.id === supplierId ? 'supplier_profile' : 'favorites',
+        },
+      });
       await loadBuyerWorkspace();
 
       setViewingSupplier((currentSupplier) => (
@@ -1048,11 +1146,12 @@ export default function BuyerDashboard() {
       buyerProfile,
       buyerQuotes,
       favoriteSuppliers,
+      buyerActivityEvents,
       recentSearchTerms,
       currentSearch: catalogSearch,
       alertSubscriptions,
     }).slice(0, 4),
-    [alertSubscriptions, buyerProfile, buyerQuotes, catalogProductsWithSignals, catalogSearch, favoriteSuppliers, recentSearchTerms],
+    [alertSubscriptions, buyerActivityEvents, buyerProfile, buyerQuotes, catalogProductsWithSignals, catalogSearch, favoriteSuppliers, recentSearchTerms],
   );
 
   const filteredCatalogProducts = useMemo(() => {
@@ -1970,6 +2069,9 @@ export default function BuyerDashboard() {
                       openQuoteModal({
                         product: viewingSupplier.requestProductName ?? '',
                         categoryId: viewingSupplier.requestCategoryId ?? '',
+                        sourceProductId: viewingSupplier.products?.find((product) => product.name === viewingSupplier.requestProductName)?.id ?? '',
+                        sourceSupplierId: viewingSupplier.id,
+                        sourceContext: 'supplier_profile',
                       });
                     }}
                     className="flex items-center gap-2 bg-gradient-to-r from-emerald-400 to-blue-500 text-white font-bold px-5 py-2.5 rounded-xl transition-all hover:shadow-lg hover:shadow-emerald-400/20 text-sm whitespace-nowrap"

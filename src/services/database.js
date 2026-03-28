@@ -5,6 +5,7 @@ import {
   e2eCreateReview,
   e2eCreateQuoteRequest,
   e2eGetBuyerProfile,
+  e2eGetBuyerActivityEvents,
   e2eGetQuoteConversationById,
   e2eGetQuoteConversationForQuote,
   e2eGetQuoteConversationMessages,
@@ -37,6 +38,7 @@ import {
   e2eSubscribeToPlan,
   e2eSubscribeToPriceAlert,
   e2eToggleFavorite,
+  e2eTrackBuyerActivityEvent,
   e2eUpdateOfferPipelineStatus,
   isE2EMode,
 } from '../e2e/mockRuntime';
@@ -865,6 +867,48 @@ export async function getFavorites(buyerId) {
     `)
     .eq('buyer_id', buyerId)
     .order('supplier_id', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+export async function getBuyerActivityEvents(buyerId, { types = [], limit = 50 } = {}) {
+  if (useE2E()) return e2eGetBuyerActivityEvents(buyerId, { types, limit });
+  if (!buyerId) return [];
+
+  let query = supabase
+    .from('buyer_activity_events')
+    .select('*')
+    .eq('buyer_id', buyerId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (types.length > 0) {
+    query = query.in('event_type', types);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function trackBuyerActivityEvent(payload) {
+  if (useE2E()) return e2eTrackBuyerActivityEvent(payload);
+
+  const { data, error } = await supabase
+    .from('buyer_activity_events')
+    .insert({
+      buyer_id: payload.buyerId,
+      event_type: payload.eventType,
+      product_id: payload.productId ?? null,
+      supplier_id: payload.supplierId ?? null,
+      quote_request_id: payload.quoteRequestId ?? null,
+      category_id: payload.categoryId ?? null,
+      search_term: payload.searchTerm ?? null,
+      metadata: payload.metadata ?? {},
+    })
+    .select('*')
+    .single();
+
   if (error) throw error;
   return data;
 }

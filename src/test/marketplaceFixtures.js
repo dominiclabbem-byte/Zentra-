@@ -324,6 +324,22 @@ export function buildNotification(overrides = {}) {
   };
 }
 
+export function buildBuyerActivityEvent(overrides = {}) {
+  return {
+    id: overrides.id ?? `buyer-activity-${Math.random().toString(36).slice(2, 8)}`,
+    buyer_id: overrides.buyer_id ?? 'buyer-1',
+    event_type: overrides.event_type ?? 'search',
+    product_id: overrides.product_id ?? null,
+    supplier_id: overrides.supplier_id ?? null,
+    quote_request_id: overrides.quote_request_id ?? null,
+    category_id: overrides.category_id ?? null,
+    search_term: overrides.search_term ?? null,
+    metadata: overrides.metadata ?? {},
+    created_at: overrides.created_at ?? '2026-03-24T11:30:00Z',
+    ...overrides,
+  };
+}
+
 export function buildQuoteConversation(overrides = {}) {
   const quote = takeSingle(overrides.quote_requests) ?? buildQuoteRequest({
     id: overrides.quote_request_id ?? 'quote-1',
@@ -608,6 +624,25 @@ export function buildMarketplaceSeed(overrides = {}) {
     body: 'Podemos entregar en 48 horas y mantener el precio por 7 dias.',
     created_at: '2026-03-24T10:00:00Z',
   });
+  const buyerActivityEvents = [
+    buildBuyerActivityEvent({
+      id: 'buyer-activity-1',
+      buyer_id: buyer.id,
+      event_type: 'search',
+      category_id: 'cat-1',
+      search_term: 'harina premium',
+      created_at: '2026-03-24T11:30:00Z',
+    }),
+    buildBuyerActivityEvent({
+      id: 'buyer-activity-2',
+      buyer_id: buyer.id,
+      event_type: 'product_view',
+      product_id: product.id,
+      supplier_id: supplier.id,
+      category_id: product.category_id,
+      created_at: '2026-03-24T11:32:00Z',
+    }),
+  ];
 
   return {
     categories,
@@ -625,6 +660,7 @@ export function buildMarketplaceSeed(overrides = {}) {
     notifications: [notificationForBuyer, notificationForSupplier],
     quoteConversations: [quoteConversation],
     quoteConversationMessages: [quoteConversationMessage],
+    buyerActivityEvents,
     agents: [
       {
         id: 'agent-1',

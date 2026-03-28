@@ -82,6 +82,18 @@ function createNotification(state, payload) {
   return notification;
 }
 
+function createBuyerActivityEvent(state, payload) {
+  const event = {
+    id: `buyer-activity-${state.buyerActivityEvents.length + 1}`,
+    created_at: new Date().toISOString(),
+    metadata: {},
+    ...payload,
+  };
+
+  state.buyerActivityEvents = [event, ...state.buyerActivityEvents];
+  return event;
+}
+
 function filterProducts(products, filters = {}) {
   let next = [...products];
 
@@ -333,6 +345,17 @@ export function createMarketplaceScenario(overrides = {}) {
         });
       }
 
+      createBuyerActivityEvent(state, {
+        buyer_id: payload.buyer_id,
+        event_type: 'quote_created',
+        product_id: payload.product_id ?? null,
+        supplier_id: payload.supplier_id ?? null,
+        quote_request_id: quote.id,
+        category_id: payload.category_id ?? null,
+        search_term: null,
+        metadata: payload.metadata ?? {},
+      });
+
       return clone(quote);
     },
 
@@ -558,6 +581,11 @@ export function createMarketplaceScenario(overrides = {}) {
       const existingIndex = state.favorites.findIndex((favorite) => favorite.buyer_id === buyerId && favorite.supplier_id === supplierId);
       if (existingIndex >= 0) {
         state.favorites.splice(existingIndex, 1);
+        createBuyerActivityEvent(state, {
+          buyer_id: buyerId,
+          event_type: 'favorite_removed',
+          supplier_id: supplierId,
+        });
         return false;
       }
       state.favorites.unshift({
@@ -566,7 +594,30 @@ export function createMarketplaceScenario(overrides = {}) {
         supplier_id: supplierId,
         users: clone(supplier),
       });
+      createBuyerActivityEvent(state, {
+        buyer_id: buyerId,
+        event_type: 'favorite_added',
+        supplier_id: supplierId,
+      });
       return true;
+    },
+
+    async getBuyerActivityEvents(buyerId, { types = [], limit = 50 } = {}) {
+      let events = state.buyerActivityEvents.filter((event) => event.buyer_id === buyerId);
+
+      if (types.length > 0) {
+        events = events.filter((event) => types.includes(event.event_type));
+      }
+
+      return clone(
+        events
+          .sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime())
+          .slice(0, limit),
+      );
+    },
+
+    async trackBuyerActivityEvent(payload) {
+      return clone(createBuyerActivityEvent(state, payload));
     },
 
     async getPriceAlertSubscriptions(buyerId) {

@@ -180,6 +180,14 @@ export async function e2eToggleFavorite(buyerId, supplierId) {
   return ensureScenario().api.toggleFavorite(buyerId, supplierId);
 }
 
+export async function e2eGetBuyerActivityEvents(buyerId, options) {
+  return ensureScenario().api.getBuyerActivityEvents(buyerId, options);
+}
+
+export async function e2eTrackBuyerActivityEvent(payload) {
+  return ensureScenario().api.trackBuyerActivityEvent(payload);
+}
+
 export async function e2eGetPriceAlertSubscriptions(buyerId) {
   return ensureScenario().api.getPriceAlertSubscriptions(buyerId);
 }

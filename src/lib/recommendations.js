@@ -43,17 +43,39 @@ export function buildBuyerRecommendationSignals({
   buyerProfile,
   buyerQuotes = [],
   favoriteSuppliers = [],
+  buyerActivityEvents = [],
   recentSearchTerms = [],
   currentSearch = '',
   alertSubscriptions = [],
 } = {}) {
   const quoteSignals = collectRecentQuoteSignals(buyerQuotes);
+  const eventCategoryIds = new Set(
+    buyerActivityEvents
+      .map((event) => event?.category_id)
+      .filter(Boolean),
+  );
+  const eventSearchTerms = buyerActivityEvents
+    .filter((event) => event?.event_type === 'search')
+    .map((event) => event.search_term);
+  const eventProductIds = new Set(
+    buyerActivityEvents
+      .filter((event) => ['product_view', 'quote_created'].includes(event?.event_type))
+      .map((event) => event.product_id)
+      .filter(Boolean),
+  );
+  const eventSupplierIds = new Set(
+    buyerActivityEvents
+      .filter((event) => ['supplier_view', 'favorite_added', 'quote_created'].includes(event?.event_type))
+      .map((event) => event.supplier_id)
+      .filter(Boolean),
+  );
   const categoryNames = new Set([
     ...(buyerProfile?.categories ?? []),
     ...quoteSignals.categoryNames,
   ].filter(Boolean));
   const categoryIds = new Set([
     ...quoteSignals.categoryIds,
+    ...eventCategoryIds,
     ...alertSubscriptions
       .filter((subscription) => subscription?.category_id && !subscription?.product_id)
       .map((subscription) => subscription.category_id),
@@ -62,6 +84,7 @@ export function buildBuyerRecommendationSignals({
   const searchTerms = [
     currentSearch,
     ...recentSearchTerms,
+    ...eventSearchTerms,
   ].flatMap((term) => tokenize(term));
   const productTokens = new Set(quoteSignals.productTokens);
 
@@ -71,8 +94,12 @@ export function buildBuyerRecommendationSignals({
     productTokens,
     searchTerms: new Set(searchTerms),
     favoriteSupplierIds,
-    interactedSupplierIds: quoteSignals.supplierIds,
+    interactedSupplierIds: new Set([
+      ...quoteSignals.supplierIds,
+      ...eventSupplierIds,
+    ]),
     acceptedSupplierIds: quoteSignals.acceptedSupplierIds,
+    interactedProductIds: eventProductIds,
     trackedProductIds: new Set(
       alertSubscriptions
         .filter((subscription) => subscription?.product_id)
@@ -118,6 +145,11 @@ export function scoreRecommendedProduct(product, signals) {
   } else if (signals.interactedSupplierIds.has(product?.supplierId)) {
     score += 8;
     reasons.push('Proveedor con el que ya interactuaste');
+  }
+
+  if (signals.interactedProductIds.has(product?.id)) {
+    score += 14;
+    reasons.push('Ya exploraste este producto');
   }
 
   if (product?.recentPriceAlert?.change === 'down') {

@@ -347,6 +347,68 @@ describe('Supabase local integration', () => {
     expect(unchangedNotification.read_at).toBeNull();
   });
 
+  it('permite registrar actividad buyer propia y bloquea su lectura desde otro usuario', async () => {
+    const password = 'SuperSecreta123';
+    const buyerUser = await createConfirmedUser({
+      email: `buyer.${randomUUID()}@zentra.local`,
+      password,
+      metadata: {
+        company_name: 'Buyer Activity',
+        rut: createRut('buyer-activity'),
+        city: 'Santiago',
+        is_buyer: true,
+        is_supplier: false,
+      },
+    });
+    const outsiderUser = await createConfirmedUser({
+      email: `outsider.${randomUUID()}@zentra.local`,
+      password,
+      metadata: {
+        company_name: 'Outsider Activity',
+        rut: createRut('outsider-activity'),
+        city: 'Valparaiso',
+        is_buyer: false,
+        is_supplier: true,
+      },
+    });
+
+    const buyerPublicUser = await waitForPublicUser(buyerUser.id);
+    const buyerClient = await signInWithPassword(buyerUser.email, password);
+    const outsiderClient = await signInWithPassword(outsiderUser.email, password);
+    const categoryId = await getAnyCategoryId();
+
+    const { data: createdEvent, error: createEventError } = await buyerClient
+      .from('buyer_activity_events')
+      .insert({
+        buyer_id: buyerPublicUser.id,
+        event_type: 'search',
+        category_id: categoryId,
+        search_term: 'harina premium',
+        metadata: { source: 'test' },
+      })
+      .select('*')
+      .single();
+
+    expect(createEventError).toBeNull();
+    expect(createdEvent.buyer_id).toBe(buyerPublicUser.id);
+
+    const { data: buyerEvents, error: buyerEventsError } = await buyerClient
+      .from('buyer_activity_events')
+      .select('*')
+      .eq('id', createdEvent.id);
+
+    expect(buyerEventsError).toBeNull();
+    expect(buyerEvents).toHaveLength(1);
+
+    const { data: outsiderEvents, error: outsiderEventsError } = await outsiderClient
+      .from('buyer_activity_events')
+      .select('*')
+      .eq('id', createdEvent.id);
+
+    expect(outsiderEventsError).toBeNull();
+    expect(outsiderEvents).toHaveLength(0);
+  });
+
   it('permite que un buyer cree una RFQ y que un supplier responda con una oferta bajo RLS real', async () => {
     const password = 'SuperSecreta123';
     const buyerUser = await createConfirmedUser({

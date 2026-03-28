@@ -16,6 +16,7 @@ const mockDatabase = vi.hoisted(() => ({
   cancelQuoteRequest: vi.fn(),
   createReview: vi.fn(),
   createQuoteRequest: vi.fn(),
+  getBuyerActivityEvents: vi.fn(),
   getBuyerReviewOpportunities: vi.fn(),
   getBuyerStats: vi.fn(),
   getFavorites: vi.fn(),
@@ -33,6 +34,7 @@ const mockDatabase = vi.hoisted(() => ({
   removePriceAlertSubscription: vi.fn(),
   sendQuoteConversationMessage: vi.fn(),
   subscribeToPriceAlert: vi.fn(),
+  trackBuyerActivityEvent: vi.fn(),
   toggleFavorite: vi.fn(),
 }));
 
@@ -55,6 +57,7 @@ describe('BuyerDashboard', () => {
       seed.quoteRequests.filter((quote) => quote.buyer_id === 'buyer-1'),
     );
     mockDatabase.getBuyerStats.mockResolvedValue({ totalOrders: 1, rating: 4.8, favoriteSuppliers: 1 });
+    mockDatabase.getBuyerActivityEvents.mockResolvedValue(seed.buyerActivityEvents);
     mockDatabase.getBuyerReviewOpportunities.mockResolvedValue([]);
     mockDatabase.getFavorites.mockResolvedValue(seed.favorites);
     mockDatabase.getPriceAlertSubscriptions.mockResolvedValue(seed.priceAlertSubscriptions);
@@ -71,6 +74,18 @@ describe('BuyerDashboard', () => {
     mockDatabase.getSupplierProfile.mockResolvedValue(seed.supplier);
     mockDatabase.getReviewsForUser.mockResolvedValue(seed.reviews);
     mockDatabase.toggleFavorite.mockResolvedValue(true);
+    mockDatabase.trackBuyerActivityEvent.mockImplementation(async (payload) => ({
+      id: `buyer-activity-test-${Math.random().toString(36).slice(2, 8)}`,
+      buyer_id: payload.buyerId,
+      event_type: payload.eventType,
+      product_id: payload.productId ?? null,
+      supplier_id: payload.supplierId ?? null,
+      quote_request_id: payload.quoteRequestId ?? null,
+      category_id: payload.categoryId ?? null,
+      search_term: payload.searchTerm ?? null,
+      metadata: payload.metadata ?? {},
+      created_at: '2026-03-24T12:00:00Z',
+    }));
     mockDatabase.getQuoteConversationForQuote.mockResolvedValue(seed.quoteConversations[0]);
     mockDatabase.getQuoteConversationById.mockResolvedValue(seed.quoteConversations[0]);
     mockDatabase.getQuoteConversationMessages.mockResolvedValue(seed.quoteConversationMessages);
@@ -111,6 +126,41 @@ describe('BuyerDashboard', () => {
     expect(await screen.findByText('Sugerencias basadas en tu actividad')).toBeInTheDocument();
     expect(screen.getByText(/La cercania geografica quedara para una fase posterior/i)).toBeInTheDocument();
     expect(screen.getAllByText('Proveedor guardado en favoritos').length).toBeGreaterThan(0);
+  });
+
+  it('registra eventos de busqueda y apertura de proveedor desde catalogo', async () => {
+    const user = userEvent.setup();
+
+    renderWithRouter(<BuyerDashboard />);
+
+    await user.type(await screen.findByPlaceholderText('Buscar productos, insumos, proveedores...'), 'harina premium');
+
+    await waitFor(() => {
+      expect(mockDatabase.trackBuyerActivityEvent).toHaveBeenCalledWith(expect.objectContaining({
+        buyerId: 'buyer-1',
+        eventType: 'search',
+        searchTerm: 'harina premium',
+      }));
+    });
+
+    await user.click(screen.getAllByText('Harina premium')[0]);
+
+    await waitFor(() => {
+      expect(mockDatabase.trackBuyerActivityEvent).toHaveBeenCalledWith(expect.objectContaining({
+        buyerId: 'buyer-1',
+        eventType: 'product_view',
+        productId: 'prod-1',
+        supplierId: 'supplier-1',
+      }));
+    });
+
+    await waitFor(() => {
+      expect(mockDatabase.trackBuyerActivityEvent).toHaveBeenCalledWith(expect.objectContaining({
+        buyerId: 'buyer-1',
+        eventType: 'supplier_view',
+        supplierId: 'supplier-1',
+      }));
+    });
   });
 
   it('permite crear una suscripcion de alerta por categoria', async () => {
