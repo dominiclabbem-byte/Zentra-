@@ -14,10 +14,14 @@ import SupplierRegistration from './pages/SupplierRegistration';
 import BuyerDashboard from './pages/BuyerDashboard';
 import SupplierDashboard from './pages/SupplierDashboard';
 import Login from './pages/Login';
+import ZChatPage from './pages/ZChatPage';
 
 function HomeRedirect() {
+  const location = useLocation();
+  // Solo redirige automaticamente si llega directo (sin key de navegacion interna)
+  const isDirectEntry = location.key === 'default';
   const raw = localStorage.getItem('zentra_session');
-  if (raw) {
+  if (isDirectEntry && raw) {
     const session = JSON.parse(raw);
     if (session?.loggedIn) {
       return <Navigate to={session.role === 'proveedor' ? '/dashboard-proveedor' : '/dashboard-comprador'} replace />;
@@ -40,6 +44,7 @@ export default function App() {
             <Route path="/dashboard-comprador" element={<BuyerDashboard />} />
             <Route path="/dashboard-proveedor" element={<SupplierDashboard />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/zchat" element={<ZChatPage />} />
           </Routes>
         </main>
         <Footer />

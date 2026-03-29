@@ -18,14 +18,13 @@ export default function Navbar() {
 
   const handleChat = () => {
     setMenuOpen(false);
-    const path = session?.role === 'proveedor' ? '/dashboard-proveedor' : '/dashboard-comprador';
-    navigate(path, { state: { activeTab: 'zchat' } });
+    navigate('/zchat');
   };
 
   const navLinks = [
-    { to: '/', label: 'Inicio' },
-    { to: '/dashboard-comprador', label: 'Dashboard Comprador' },
-    { to: '/dashboard-proveedor', label: 'Dashboard Proveedor' },
+    { to: '/', label: 'Inicio', state: null },
+    { to: '/dashboard-comprador', label: 'Comprador', state: null },
+    { to: '/dashboard-proveedor', label: 'Proveedor', state: { activeTab: 'profile' } },
   ];
 
   return (
@@ -51,9 +50,9 @@ export default function Navbar() {
           {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-1">
             {navLinks.map((link) => (
-              <Link
+              <button
                 key={link.to}
-                to={link.to}
+                onClick={() => navigate(link.to, link.state ? { state: link.state } : undefined)}
                 className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                   location.pathname === link.to
                     ? 'bg-gradient-to-r from-emerald-400 to-blue-500 text-white shadow-lg shadow-emerald-400/20'
@@ -61,16 +60,17 @@ export default function Navbar() {
                 }`}
               >
                 {link.label}
-              </Link>
+              </button>
             ))}
 
             {/* ZChat button */}
             <button
               onClick={handleChat}
               title="ZChat"
-              className="w-9 h-9 flex items-center justify-center rounded-lg text-xl text-gray-400 hover:text-white hover:bg-white/5 transition-all duration-200"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-all duration-200"
             >
-              💬
+              <span className="text-base">💬</span>
+              <span className="font-bold text-[#2ECAD5]">Z</span>
             </button>
 
             {isLoggedIn && (
@@ -99,18 +99,17 @@ export default function Navbar() {
         <div className="md:hidden bg-[#0a1628]/98 backdrop-blur-xl border-t border-[#2ECAD5]/10 animate-fade-in">
           <div className="py-2 px-3">
             {navLinks.map((link) => (
-              <Link
+              <button
                 key={link.to}
-                to={link.to}
-                onClick={() => setMenuOpen(false)}
-                className={`block px-4 py-3 rounded-lg text-sm font-medium my-0.5 transition-all ${
+                onClick={() => { setMenuOpen(false); navigate(link.to, link.state ? { state: link.state } : undefined); }}
+                className={`block w-full text-left px-4 py-3 rounded-lg text-sm font-medium my-0.5 transition-all ${
                   location.pathname === link.to
                     ? 'text-[#2ECAD5] bg-[#2ECAD5]/10'
                     : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`}
               >
                 {link.label}
-              </Link>
+              </button>
             ))}
             <button
               onClick={handleChat}

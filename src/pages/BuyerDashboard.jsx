@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Toast from '../components/Toast';
 import Modal from '../components/Modal';
 import { quoteRequests, priceAlerts, supplierProfiles, supplierProducts, categories as allCategories } from '../data/mockData';
-import ZChat from '../components/ZChat';
 
 const units = ['kg', 'unidades', 'cajas'];
 
@@ -756,19 +755,6 @@ export default function BuyerDashboard() {
             >
               Proveedores
             </button>
-            <button
-              onClick={() => setActiveTab('zchat')}
-              className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
-                activeTab === 'zchat'
-                  ? 'bg-white/10 text-white'
-                  : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
-              }`}
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
-              </svg>
-              Z Chat
-            </button>
           </div>
         </div>
       </div>
@@ -1371,15 +1357,6 @@ export default function BuyerDashboard() {
           </div>
         )}
 
-        {/* ===== Z CHAT TAB ===== */}
-        {activeTab === 'zchat' && (
-          <div className="animate-fade-in">
-            <ZChat
-              contacts={supplierProfiles}
-              userLabel="Comprador — Pasteleria Mozart"
-            />
-          </div>
-        )}
       </div>
     </div>
   );

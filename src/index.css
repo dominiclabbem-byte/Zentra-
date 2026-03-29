@@ -105,9 +105,9 @@ body {
 /* Subtle grid background */
 .bg-grid {
   background-image:
-    linear-gradient(rgba(46, 202, 213, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(46, 202, 213, 0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
+    linear-gradient(rgba(46, 202, 213, 0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(46, 202, 213, 0.015) 1px, transparent 1px);
+  background-size: 60px 60px;
 }
 
 /* B2B data flow animation */

@@ -1,11 +1,20 @@
 <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect x="4" y="14" width="24" height="14" rx="3" fill="#0D1F3C"/>
-  <rect x="3" y="11.5" width="26" height="4" rx="2" fill="#2ECAD5"/>
-  <circle cx="16" cy="8" r="5.5" fill="#f97316"/>
-  <circle cx="13.5" cy="6" r="2" fill="#fb923c" opacity="0.5"/>
-  <path d="M16.5 2.5c2-0.5 4 0.5 4 2s-2 2.5-3.5 2c-0.5-0.2-0.5-0.8-0.5-1.2V2.5z" fill="#22c55e"/>
-  <line x1="6" y1="21.5" x2="26" y2="21.5" stroke="#2ECAD5" stroke-width="0.7" opacity="0.25"/>
-  <circle cx="11" cy="24.5" r="1" fill="#2ECAD5" opacity="0.5"/>
-  <circle cx="16" cy="24.5" r="1.2" fill="#2ECAD5" opacity="0.9"/>
-  <circle cx="21" cy="24.5" r="1" fill="#2ECAD5" opacity="0.5"/>
+  <rect width="32" height="32" rx="7" fill="#0f1f3a"/>
+  <defs>
+    <linearGradient id="g1" x1="7" y1="8" x2="25" y2="24" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#6ea8fe"/>
+      <stop offset="100%" stop-color="#4fd1b8"/>
+    </linearGradient>
+  </defs>
+  <!-- Top line -->
+  <line x1="8" y1="9" x2="24" y2="9" stroke="url(#g1)" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Diagonal -->
+  <line x1="24" y1="9" x2="8" y2="23" stroke="url(#g1)" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Bottom line -->
+  <line x1="8" y1="23" x2="24" y2="23" stroke="url(#g1)" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Corner dots -->
+  <circle cx="8"  cy="9"  r="3" fill="#6ea8fe"/>
+  <circle cx="24" cy="9"  r="3" fill="#5bc8d4"/>
+  <circle cx="8"  cy="23" r="3" fill="#5b9ef8"/>
+  <circle cx="24" cy="23" r="3" fill="#4fd1b8"/>
 </svg>

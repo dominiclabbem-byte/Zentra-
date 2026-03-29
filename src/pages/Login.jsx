@@ -21,7 +21,10 @@ export default function Login() {
       localStorage.setItem('zentra_session', JSON.stringify({ role, loggedIn: true }));
       setToast({ message: 'Sesion iniciada correctamente.', type: 'success' });
       setTimeout(() => {
-        navigate(isSupplier ? '/dashboard-proveedor' : '/dashboard-comprador');
+        navigate(
+          isSupplier ? '/dashboard-proveedor' : '/dashboard-comprador',
+          isSupplier ? { state: { activeTab: 'profile' } } : undefined
+        );
       }, 1200);
     }, 1000);
   };

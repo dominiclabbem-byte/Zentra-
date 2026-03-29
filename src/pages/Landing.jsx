@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import BodegaLogo from '../components/BodegaLogo';
 import mainLogo from '../assets/zentra_main_logo.png';
 import AuthChoiceModal from '../components/AuthChoiceModal';
 
@@ -43,7 +42,7 @@ export default function Landing() {
       {/* Hero */}
       <section className="relative bg-[#0d2a4a] text-white py-24 px-4 overflow-hidden">
         {/* Background effects */}
-        <div className="absolute inset-0 bg-grid opacity-50" />
+        <div className="absolute inset-0 bg-grid opacity-20" />
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[#2ECAD5]/8 rounded-full blur-[120px]" />
         <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-indigo-500/8 rounded-full blur-[100px]" />
 
@@ -284,7 +283,7 @@ export default function Landing() {
       </section>
 
       {/* How it works */}
-      <section className="py-20 px-4 bg-[#e8f0fb] bg-grid">
+      <section className="py-20 px-4 bg-[#e8f0fb]">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
             <span className="inline-block text-[#2ECAD5] text-sm font-semibold uppercase tracking-widest mb-3">Proceso</span>
@@ -358,7 +357,7 @@ export default function Landing() {
 
       {/* CTA bottom */}
       <section className="relative bg-[#0d2a4a] text-white py-20 px-4 overflow-hidden">
-        <div className="absolute inset-0 bg-grid opacity-30" />
+        <div className="absolute inset-0 bg-grid opacity-15" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#2ECAD5]/10 rounded-full blur-[100px]" />
 
         {/* Floating emojis in CTA */}
