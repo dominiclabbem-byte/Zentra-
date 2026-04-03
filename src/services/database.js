@@ -1,4 +1,160 @@
 import { supabase } from './supabase';
+import {
+  e2eAcceptOffer,
+  e2eCancelQuoteRequest,
+  e2eCreateReview,
+  e2eCreateQuoteRequest,
+  e2eGetBuyerProfile,
+  e2eGetBuyerActivityEvents,
+  e2eGetQuoteConversationById,
+  e2eGetQuoteConversationForQuote,
+  e2eGetQuoteConversationMessages,
+  e2eGetBuyerReviewOpportunities,
+  e2eGetBuyerStats,
+  e2eGetCategories,
+  e2eGetCurrentUser,
+  e2eGetFavorites,
+  e2eGetOffersForSupplier,
+  e2eGetPlans,
+  e2eGetPriceAlertSubscriptions,
+  e2eGetPriceAlerts,
+  e2eGetNotifications,
+  e2eGetProducts,
+  e2eGetQuoteRequestsForBuyer,
+  e2eGetRelevantQuoteRequestsForSupplier,
+  e2eGetReviewsForUser,
+  e2eGetSupplierProfile,
+  e2eGetSupplierStats,
+  e2eGetSupplierUsageSummary,
+  e2eMarkAllNotificationsRead,
+  e2eMarkNotificationRead,
+  e2eRequestFlowPlanActivation,
+  e2eRemovePriceAlertSubscription,
+  e2eMarkQuoteConversationRead,
+  e2eSendQuoteConversationMessage,
+  e2eSignIn,
+  e2eSignOut,
+  e2eSubmitOffer,
+  e2eSubscribeToPlan,
+  e2eSubscribeToPriceAlert,
+  e2eToggleFavorite,
+  e2eTrackBuyerActivityEvent,
+  e2eUpdateOfferPipelineStatus,
+  isE2EMode,
+} from '../e2e/mockRuntime';
+
+const USER_PROFILE_SELECT = `
+  *,
+  buyer_profiles(*),
+  supplier_profiles(*),
+  user_categories(scope, category_id, categories(id, name, emoji)),
+  subscriptions(*, plans(*))
+`;
+
+const SUPPLIER_CATEGORY_SCOPE = 'supplier_catalog';
+const SUPPLIER_RELEVANT_QUOTE_SELECT = `
+  *,
+  categories(id, name, emoji),
+  users!buyer_id(company_name, city, rut, verified),
+  quote_offers(
+    id,
+    quote_id,
+    supplier_id,
+    responder_id,
+    price,
+    notes,
+    estimated_lead_time,
+    status,
+    pipeline_status,
+    created_at,
+    users!supplier_id(company_name, city, verified)
+  )
+`;
+
+const QUOTE_CONVERSATION_SELECT = `
+  *,
+  quote_requests(
+    id,
+    buyer_id,
+    requester_id,
+    product_name,
+    category_id,
+    quantity,
+    unit,
+    delivery_date,
+    status,
+    categories(id, name, emoji)
+  ),
+  buyer:users!buyer_user_id(id, company_name, city),
+  supplier:users!supplier_user_id(id, company_name, city, verified)
+`;
+
+const QUOTE_CONVERSATION_MESSAGE_SELECT = `
+  *,
+  sender:users!sender_user_id(id, company_name, city)
+`;
+
+function takeSingle(value) {
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value ?? null;
+}
+
+function dedupeLatestPriceAlerts(alerts) {
+  const latestByProductId = new Map();
+
+  (alerts ?? []).forEach((alert) => {
+    if (!alert?.product_id) return;
+
+    const existing = latestByProductId.get(alert.product_id);
+    if (!existing || new Date(alert.created_at).getTime() > new Date(existing.created_at).getTime()) {
+      latestByProductId.set(alert.product_id, alert);
+    }
+  });
+
+  return [...latestByProductId.values()]
+    .sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime())
+    .slice(0, 20);
+}
+
+function useE2E() {
+  return isE2EMode();
+}
+
+async function getUserCategoryIds(userId, scope) {
+  const { data, error } = await supabase
+    .from('user_categories')
+    .select('category_id')
+    .eq('user_id', userId)
+    .eq('scope', scope);
+
+  if (error) throw error;
+
+  return (data ?? [])
+    .map((row) => row.category_id)
+    .filter(Boolean);
+}
+
+async function createNotifications(rows) {
+  if (!rows?.length) return [];
+
+  const { error } = await supabase
+    .from('notifications')
+    .insert(rows);
+
+  if (error) throw error;
+  return rows;
+}
+
+async function getQuoteConversationRecordById(conversationId) {
+  const { data, error } = await supabase
+    .from('quote_conversations')
+    .select(QUOTE_CONVERSATION_SELECT)
+    .eq('id', conversationId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ?? null;
+}
 
 // ========================
 // AUTH
@@ -8,45 +164,41 @@ export async function signUp({ email, password, companyName, rut, city, isSuppli
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password,
+    options: {
+      data: {
+        company_name: companyName,
+        rut,
+        city,
+        is_supplier: isSupplier,
+        is_buyer: isBuyer,
+      },
+    },
   });
   if (authError) throw authError;
-
-  const { data, error } = await supabase
-    .from('users')
-    .insert({
-      auth_id: authData.user.id,
-      email,
-      company_name: companyName,
-      rut,
-      city,
-      is_supplier: isSupplier,
-      is_buyer: isBuyer,
-    })
-    .select()
-    .single();
-  if (error) throw error;
-
-  return data;
+  return authData.user;
 }
 
 export async function signIn({ email, password }) {
+  if (useE2E()) return e2eSignIn({ email, password });
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw error;
   return data;
 }
 
 export async function signOut() {
+  if (useE2E()) return e2eSignOut();
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
 }
 
 export async function getCurrentUser() {
+  if (useE2E()) return e2eGetCurrentUser();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
   const { data, error } = await supabase
     .from('users')
-    .select('*, buyer_profiles(*), supplier_profiles(*)')
+    .select(USER_PROFILE_SELECT)
     .eq('auth_id', user.id)
     .single();
   if (error) throw error;
@@ -83,13 +235,14 @@ export async function enableBuyerRole(userId, buyerData) {
 }
 
 export async function getSupplierProfile(userId) {
+  if (useE2E()) return e2eGetSupplierProfile(userId);
   const { data, error } = await supabase
     .from('users')
     .select(`
       *,
       supplier_profiles(*),
-      user_categories(category_id, categories(id, name, emoji)),
-      products(*),
+      user_categories(scope, category_id, categories(id, name, emoji)),
+      products(*, categories(name, emoji)),
       subscriptions(*, plans(*))
     `)
     .eq('id', userId)
@@ -100,12 +253,13 @@ export async function getSupplierProfile(userId) {
 }
 
 export async function getBuyerProfile(userId) {
+  if (useE2E()) return e2eGetBuyerProfile(userId);
   const { data, error } = await supabase
     .from('users')
     .select(`
       *,
       buyer_profiles(*),
-      user_categories(category_id, categories(id, name, emoji))
+      user_categories(scope, category_id, categories(id, name, emoji))
     `)
     .eq('id', userId)
     .eq('is_buyer', true)
@@ -119,10 +273,18 @@ export async function getBuyerProfile(userId) {
 // ========================
 
 export async function getProducts(filters = {}) {
+  if (useE2E()) return e2eGetProducts(filters);
   let query = supabase
     .from('products')
-    .select('*, categories(name, emoji), users!supplier_id(company_name)')
-    .eq('status', 'active');
+    .select('*, categories(name, emoji), users!supplier_id(company_name, city, verified, verification_status)');
+
+  if (filters.status) {
+    query = Array.isArray(filters.status)
+      ? query.in('status', filters.status)
+      : query.eq('status', filters.status);
+  } else if (!filters.includeAllStatuses) {
+    query = query.eq('status', 'active');
+  }
 
   if (filters.categoryId) query = query.eq('category_id', filters.categoryId);
   if (filters.supplierId) query = query.eq('supplier_id', filters.supplierId);
@@ -166,19 +328,59 @@ export async function deleteProduct(productId) {
 // ========================
 
 export async function createQuoteRequest(quote) {
+  if (useE2E()) return e2eCreateQuoteRequest(quote);
   const { data, error } = await supabase
     .from('quote_requests')
     .insert(quote)
-    .select()
+    .select(`
+      *,
+      categories(id, name, emoji),
+      quote_offers(
+        *,
+        users!supplier_id(company_name, city, verified)
+      )
+    `)
     .single();
   if (error) throw error;
+
+  const { data: supplierLinks, error: supplierLinksError } = await supabase
+    .from('user_categories')
+    .select('user_id')
+    .eq('scope', SUPPLIER_CATEGORY_SCOPE)
+    .eq('category_id', quote.category_id);
+
+  if (supplierLinksError) throw supplierLinksError;
+
+  const supplierIds = [...new Set((supplierLinks ?? []).map((row) => row.user_id).filter(Boolean))];
+  if (supplierIds.length) {
+    await createNotifications(
+      supplierIds.map((recipientId) => ({
+        recipient_id: recipientId,
+        actor_id: quote.buyer_id,
+        type: 'rfq_created',
+        title: 'Nueva RFQ en una categoria relevante',
+        message: `Se publico una nueva solicitud para ${quote.product_name}.`,
+        entity_type: 'quote_request',
+        entity_id: data.id,
+      })),
+    );
+  }
+
   return data;
 }
 
 export async function getQuoteRequestsForBuyer(buyerId) {
+  if (useE2E()) return e2eGetQuoteRequestsForBuyer(buyerId);
   const { data, error } = await supabase
     .from('quote_requests')
-    .select('*, quote_offers(count)')
+    .select(`
+      *,
+      categories(id, name, emoji),
+      quote_offers(
+        *,
+        users!supplier_id(company_name, city, verified)
+      )
+    `)
     .eq('buyer_id', buyerId)
     .order('created_at', { ascending: false });
   if (error) throw error;
@@ -188,32 +390,102 @@ export async function getQuoteRequestsForBuyer(buyerId) {
 export async function getOpenQuoteRequests() {
   const { data, error } = await supabase
     .from('quote_requests')
-    .select('*, users!buyer_id(company_name, city, rut), quote_offers(count)')
-    .eq('status', 'open')
+    .select(`
+      *,
+      categories(id, name, emoji),
+      users!buyer_id(company_name, city, rut, verified),
+      quote_offers(id, supplier_id, status, pipeline_status)
+    `)
+    .in('status', ['open', 'in_review'])
     .order('created_at', { ascending: false });
   if (error) throw error;
   return data;
 }
 
-export async function submitOffer({ quoteId, supplierId, price, notes }) {
+export async function getRelevantQuoteRequestsForSupplier(supplierId, filters = {}) {
+  if (useE2E()) return e2eGetRelevantQuoteRequestsForSupplier(supplierId, filters);
+  const categoryIds = await getUserCategoryIds(supplierId, SUPPLIER_CATEGORY_SCOPE);
+  if (!categoryIds.length) return [];
+
+  const statuses = filters.statuses?.length
+    ? filters.statuses
+    : ['open', 'in_review'];
+
+  const { data, error } = await supabase
+    .from('quote_requests')
+    .select(SUPPLIER_RELEVANT_QUOTE_SELECT)
+    .in('category_id', categoryIds)
+    .in('status', statuses)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getOffersForSupplier(supplierId) {
+  if (useE2E()) return e2eGetOffersForSupplier(supplierId);
+  const { data, error } = await supabase
+    .from('quote_offers')
+    .select(`
+      *,
+      quote_requests(
+        *,
+        categories(id, name, emoji),
+        users!buyer_id(company_name, city, rut, verified)
+      )
+    `)
+    .eq('supplier_id', supplierId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+export async function submitOffer({ quoteId, supplierId, responderId, price, notes, estimatedLeadTime }) {
+  if (useE2E()) {
+    return e2eSubmitOffer({ quoteId, supplierId, responderId, price, notes, estimatedLeadTime });
+  }
   const { data, error } = await supabase
     .from('quote_offers')
     .insert({
       quote_id: quoteId,
       supplier_id: supplierId,
+      responder_id: responderId,
       price,
       notes,
+      estimated_lead_time: estimatedLeadTime,
     })
-    .select()
+    .select(`
+      *,
+      users!supplier_id(company_name, city, verified)
+    `)
     .single();
   if (error) throw error;
 
-  // Actualizar status de la cotizacion
   await supabase
     .from('quote_requests')
-    .update({ status: 'in_progress' })
+    .update({ status: 'in_review' })
     .eq('id', quoteId)
-    .eq('status', 'open');
+    .in('status', ['open', 'in_review']);
+
+  const { data: quoteRow, error: quoteError } = await supabase
+    .from('quote_requests')
+    .select('id, buyer_id, product_name')
+    .eq('id', quoteId)
+    .single();
+
+  if (quoteError) throw quoteError;
+
+  await createNotifications([
+    {
+      recipient_id: quoteRow.buyer_id,
+      actor_id: supplierId,
+      type: 'offer_received',
+      title: 'Nueva oferta recibida',
+      message: `Recibiste una oferta para ${quoteRow.product_name}.`,
+      entity_type: 'quote_offer',
+      entity_id: data.id,
+    },
+  ]);
 
   return data;
 }
@@ -221,23 +493,50 @@ export async function submitOffer({ quoteId, supplierId, price, notes }) {
 export async function getOffersForQuote(quoteId) {
   const { data, error } = await supabase
     .from('quote_offers')
-    .select('*, users!supplier_id(company_name, city, verified)')
+    .select(`
+      *,
+      users!supplier_id(company_name, city, verified)
+    `)
     .eq('quote_id', quoteId)
     .order('price', { ascending: true });
   if (error) throw error;
   return data;
 }
 
+export async function updateOfferPipelineStatus({ offerId, supplierId, pipelineStatus }) {
+  if (useE2E()) {
+    return e2eUpdateOfferPipelineStatus({ offerId, supplierId, pipelineStatus });
+  }
+  const { data, error } = await supabase
+    .from('quote_offers')
+    .update({ pipeline_status: pipelineStatus })
+    .eq('id', offerId)
+    .eq('supplier_id', supplierId)
+    .select(`
+      *,
+      quote_requests(
+        *,
+        categories(id, name, emoji),
+        users!buyer_id(company_name, city, rut, verified)
+      ),
+      users!supplier_id(company_name, city, verified)
+    `)
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
 export async function acceptOffer(offerId) {
+  if (useE2E()) return e2eAcceptOffer(offerId);
   const { data, error } = await supabase
     .from('quote_offers')
     .update({ status: 'accepted' })
     .eq('id', offerId)
-    .select('*, quote_requests(id)')
+    .select('*, quote_requests(id, buyer_id, product_name)')
     .single();
   if (error) throw error;
 
-  // Cerrar cotizacion y rechazar otras ofertas
   await supabase
     .from('quote_requests')
     .update({ status: 'closed' })
@@ -250,6 +549,172 @@ export async function acceptOffer(offerId) {
     .neq('id', offerId)
     .eq('status', 'pending');
 
+  await createNotifications([
+    {
+      recipient_id: data.supplier_id,
+      actor_id: data.quote_requests.buyer_id,
+      type: 'offer_accepted',
+      title: 'Tu oferta fue aceptada',
+      message: `Aceptaron tu oferta para ${data.quote_requests.product_name}.`,
+      entity_type: 'quote_offer',
+      entity_id: offerId,
+    },
+  ]);
+
+  return data;
+}
+
+export async function cancelQuoteRequest(quoteId) {
+  if (useE2E()) return e2eCancelQuoteRequest(quoteId);
+  const { data: impactedOffers, error: impactedOffersError } = await supabase
+    .from('quote_offers')
+    .select('id, supplier_id')
+    .eq('quote_id', quoteId)
+    .eq('status', 'pending');
+
+  if (impactedOffersError) throw impactedOffersError;
+
+  const { data, error } = await supabase
+    .from('quote_requests')
+    .update({ status: 'cancelled' })
+    .eq('id', quoteId)
+    .select()
+    .single();
+  if (error) throw error;
+
+  await supabase
+    .from('quote_offers')
+    .update({ status: 'rejected' })
+    .eq('quote_id', quoteId)
+    .eq('status', 'pending');
+
+  if (impactedOffers?.length) {
+    await createNotifications(
+      impactedOffers.map((offer) => ({
+        recipient_id: offer.supplier_id,
+        actor_id: data.buyer_id,
+        type: 'rfq_cancelled',
+        title: 'La RFQ fue cancelada',
+        message: `La solicitud para ${data.product_name} fue cancelada por el comprador.`,
+        entity_type: 'quote_request',
+        entity_id: quoteId,
+      })),
+    );
+  }
+
+  return data;
+}
+
+export async function getQuoteConversationForQuote(quoteRequestId, supplierUserId) {
+  if (useE2E()) return e2eGetQuoteConversationForQuote(quoteRequestId, supplierUserId);
+
+  const { data, error } = await supabase
+    .from('quote_conversations')
+    .select(QUOTE_CONVERSATION_SELECT)
+    .eq('quote_request_id', quoteRequestId)
+    .eq('supplier_user_id', supplierUserId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ?? null;
+}
+
+export async function getQuoteConversationById(conversationId) {
+  if (useE2E()) return e2eGetQuoteConversationById(conversationId);
+  return getQuoteConversationRecordById(conversationId);
+}
+
+export async function getQuoteConversationMessages(conversationId) {
+  if (useE2E()) return e2eGetQuoteConversationMessages(conversationId);
+
+  const { data, error } = await supabase
+    .from('quote_conversation_messages')
+    .select(QUOTE_CONVERSATION_MESSAGE_SELECT)
+    .eq('conversation_id', conversationId)
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function markQuoteConversationRead({ conversationId, userId }) {
+  if (useE2E()) return e2eMarkQuoteConversationRead({ conversationId, userId });
+
+  const conversation = await getQuoteConversationRecordById(conversationId);
+  if (!conversation) return null;
+
+  const updates = {};
+  const readAt = new Date().toISOString();
+
+  if (conversation.buyer_user_id === userId) {
+    updates.buyer_last_read_at = readAt;
+  }
+
+  if (conversation.supplier_user_id === userId) {
+    updates.supplier_last_read_at = readAt;
+  }
+
+  if (!Object.keys(updates).length) {
+    return null;
+  }
+
+  const { error } = await supabase
+    .from('quote_conversations')
+    .update(updates)
+    .eq('id', conversationId)
+    .select('id')
+    .maybeSingle();
+
+  if (error) throw error;
+  return getQuoteConversationRecordById(conversationId);
+}
+
+export async function sendQuoteConversationMessage({ conversationId, senderUserId, body }) {
+  if (useE2E()) return e2eSendQuoteConversationMessage({ conversationId, senderUserId, body });
+
+  const trimmedBody = String(body ?? '').trim();
+  if (!trimmedBody) {
+    throw new Error('Escribe un mensaje antes de enviarlo.');
+  }
+
+  const conversation = await getQuoteConversationRecordById(conversationId);
+  if (!conversation) {
+    throw new Error('No se encontro la conversacion seleccionada.');
+  }
+  if (conversation.status !== 'active') {
+    throw new Error('Esta conversacion ya no admite mensajes nuevos.');
+  }
+
+  const { data, error } = await supabase
+    .from('quote_conversation_messages')
+    .insert({
+      conversation_id: conversationId,
+      sender_user_id: senderUserId,
+      body: trimmedBody,
+    })
+    .select(QUOTE_CONVERSATION_MESSAGE_SELECT)
+    .single();
+
+  if (error) throw error;
+
+  const recipientId = senderUserId === conversation.buyer_user_id
+    ? conversation.supplier_user_id
+    : conversation.buyer_user_id;
+  const senderRoleLabel = senderUserId === conversation.buyer_user_id ? 'El comprador' : 'El proveedor';
+  const productName = takeSingle(conversation.quote_requests)?.product_name ?? 'tu cotizacion';
+
+  await createNotifications([
+    {
+      recipient_id: recipientId,
+      actor_id: senderUserId,
+      type: 'message_received',
+      title: 'Nuevo mensaje en una cotizacion',
+      message: `${senderRoleLabel} envio un mensaje sobre ${productName}.`,
+      entity_type: 'quote_conversation',
+      entity_id: conversationId,
+    },
+  ]);
+
   return data;
 }
 
@@ -258,6 +723,9 @@ export async function acceptOffer(offerId) {
 // ========================
 
 export async function createReview({ reviewerId, reviewedId, quoteOfferId, rating, comment }) {
+  if (useE2E()) {
+    return e2eCreateReview({ reviewerId, reviewedId, quoteOfferId, rating, comment });
+  }
   const { data, error } = await supabase
     .from('reviews')
     .insert({
@@ -274,13 +742,79 @@ export async function createReview({ reviewerId, reviewedId, quoteOfferId, ratin
 }
 
 export async function getReviewsForUser(userId) {
+  if (useE2E()) return e2eGetReviewsForUser(userId);
   const { data, error } = await supabase
     .from('reviews')
-    .select('*, users!reviewer_id(company_name)')
+    .select('*, users!reviewer_id(company_name, city, verified)')
     .eq('reviewed_id', userId)
     .order('created_at', { ascending: false });
   if (error) throw error;
   return data;
+}
+
+export async function getBuyerReviewOpportunities(buyerId) {
+  if (useE2E()) return e2eGetBuyerReviewOpportunities(buyerId);
+
+  const { data: offers, error } = await supabase
+    .from('quote_offers')
+    .select(`
+      id,
+      quote_id,
+      supplier_id,
+      price,
+      estimated_lead_time,
+      created_at,
+      quote_requests!inner(
+        id,
+        buyer_id,
+        product_name,
+        quantity,
+        unit,
+        delivery_date
+      ),
+      users!supplier_id(company_name, city, verified, verification_status)
+    `)
+    .eq('status', 'accepted')
+    .eq('quote_requests.buyer_id', buyerId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+
+  const offerIds = (offers ?? []).map((offer) => offer.id);
+  if (!offerIds.length) return [];
+
+  const { data: existingReviews, error: reviewsError } = await supabase
+    .from('reviews')
+    .select('quote_offer_id')
+    .eq('reviewer_id', buyerId)
+    .in('quote_offer_id', offerIds);
+
+  if (reviewsError) throw reviewsError;
+
+  const reviewedOfferIds = new Set((existingReviews ?? []).map((review) => review.quote_offer_id));
+
+  return (offers ?? [])
+    .filter((offer) => !reviewedOfferIds.has(offer.id))
+    .map((offer) => {
+      const supplier = takeSingle(offer.users);
+      const quote = takeSingle(offer.quote_requests);
+
+      return {
+        quoteOfferId: offer.id,
+        quoteId: offer.quote_id,
+        reviewedId: offer.supplier_id,
+        supplierName: supplier?.company_name ?? 'Proveedor',
+        supplierCity: supplier?.city ?? '',
+        supplierVerified: Boolean(supplier?.verified),
+        supplierVerificationStatus: supplier?.verification_status ?? 'pending',
+        productName: quote?.product_name ?? 'Producto',
+        quantity: Number(quote?.quantity ?? 0),
+        unit: quote?.unit ?? 'kg',
+        deliveryDate: quote?.delivery_date ?? null,
+        price: Number(offer.price ?? 0),
+        estimatedLeadTime: offer.estimated_lead_time ?? '',
+      };
+    });
 }
 
 // ========================
@@ -288,31 +822,93 @@ export async function getReviewsForUser(userId) {
 // ========================
 
 export async function toggleFavorite(buyerId, supplierId) {
-  const { data: existing } = await supabase
+  if (useE2E()) return e2eToggleFavorite(buyerId, supplierId);
+  const { data: existing, error: existingError } = await supabase
     .from('favorites')
-    .select()
+    .select('buyer_id, supplier_id')
     .eq('buyer_id', buyerId)
     .eq('supplier_id', supplierId)
-    .single();
+    .maybeSingle();
+
+  if (existingError) throw existingError;
 
   if (existing) {
-    await supabase
+    const { error } = await supabase
       .from('favorites')
       .delete()
       .eq('buyer_id', buyerId)
       .eq('supplier_id', supplierId);
+    if (error) throw error;
     return false; // removed
   }
 
-  await supabase.from('favorites').insert({ buyer_id: buyerId, supplier_id: supplierId });
+  const { error } = await supabase
+    .from('favorites')
+    .insert({ buyer_id: buyerId, supplier_id: supplierId });
+  if (error) throw error;
+
   return true; // added
 }
 
 export async function getFavorites(buyerId) {
+  if (useE2E()) return e2eGetFavorites(buyerId);
   const { data, error } = await supabase
     .from('favorites')
-    .select('*, users!supplier_id(id, company_name, city, verified)')
-    .eq('buyer_id', buyerId);
+    .select(`
+      created_at,
+      supplier_id,
+      users!supplier_id(
+        *,
+        supplier_profiles(*),
+        user_categories(scope, category_id, categories(id, name, emoji)),
+        products(*, categories(name, emoji)),
+        subscriptions(*, plans(*))
+      )
+    `)
+    .eq('buyer_id', buyerId)
+    .order('supplier_id', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+export async function getBuyerActivityEvents(buyerId, { types = [], limit = 50 } = {}) {
+  if (useE2E()) return e2eGetBuyerActivityEvents(buyerId, { types, limit });
+  if (!buyerId) return [];
+
+  let query = supabase
+    .from('buyer_activity_events')
+    .select('*')
+    .eq('buyer_id', buyerId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (types.length > 0) {
+    query = query.in('event_type', types);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function trackBuyerActivityEvent(payload) {
+  if (useE2E()) return e2eTrackBuyerActivityEvent(payload);
+
+  const { data, error } = await supabase
+    .from('buyer_activity_events')
+    .insert({
+      buyer_id: payload.buyerId,
+      event_type: payload.eventType,
+      product_id: payload.productId ?? null,
+      supplier_id: payload.supplierId ?? null,
+      quote_request_id: payload.quoteRequestId ?? null,
+      category_id: payload.categoryId ?? null,
+      search_term: payload.searchTerm ?? null,
+      metadata: payload.metadata ?? {},
+    })
+    .select('*')
+    .single();
+
   if (error) throw error;
   return data;
 }
@@ -352,33 +948,73 @@ export async function getSuppliers(filters = {}) {
 // ========================
 
 export async function getPriceAlerts(buyerId) {
-  // Obtener alertas de categorias/productos que el buyer sigue
-  const { data: subs } = await supabase
-    .from('price_alert_subscriptions')
-    .select('category_id, product_id')
-    .eq('buyer_id', buyerId);
+  if (useE2E()) return e2eGetPriceAlerts(buyerId);
+  if (!buyerId) return [];
 
-  if (!subs?.length) return [];
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 30);
 
-  const categoryIds = subs.filter(s => s.category_id).map(s => s.category_id);
-  const productIds = subs.filter(s => s.product_id).map(s => s.product_id);
-
-  let query = supabase
+  const { data, error } = await supabase
     .from('price_alerts')
-    .select('*, products(name, category_id, users!supplier_id(company_name))')
+    .select(`
+      *,
+      products(
+        id,
+        name,
+        category_id,
+        price_unit,
+        users!supplier_id(company_name),
+        categories(name, emoji)
+      )
+    `)
+    .gte('created_at', cutoff.toISOString())
     .order('created_at', { ascending: false })
-    .limit(20);
+    .limit(100);
 
-  if (productIds.length) {
-    query = query.in('product_id', productIds);
-  }
-
-  const { data, error } = await query;
   if (error) throw error;
-  return data;
+
+  return dedupeLatestPriceAlerts(data ?? []);
+}
+
+export async function getPriceAlertSubscriptions(buyerId) {
+  if (useE2E()) return e2eGetPriceAlertSubscriptions(buyerId);
+  const { data, error } = await supabase
+    .from('price_alert_subscriptions')
+    .select(`
+      *,
+      categories(id, name, emoji),
+      products(id, name, price_unit, categories(name, emoji))
+    `)
+    .eq('buyer_id', buyerId)
+    .order('id', { ascending: false });
+
+  if (error) throw error;
+  return data ?? [];
 }
 
 export async function subscribeToPriceAlert(buyerId, { categoryId, productId }) {
+  if (useE2E()) return e2eSubscribeToPriceAlert(buyerId, { categoryId, productId });
+  if (!categoryId && !productId) {
+    throw new Error('Debes seleccionar una categoria o un producto para la alerta.');
+  }
+
+  let existingQuery = supabase
+    .from('price_alert_subscriptions')
+    .select(`
+      *,
+      categories(id, name, emoji),
+      products(id, name, price_unit, categories(name, emoji))
+    `)
+    .eq('buyer_id', buyerId);
+
+  existingQuery = productId
+    ? existingQuery.eq('product_id', productId).is('category_id', null)
+    : existingQuery.eq('category_id', categoryId).is('product_id', null);
+
+  const { data: existing, error: existingError } = await existingQuery.maybeSingle();
+  if (existingError) throw existingError;
+  if (existing) return existing;
+
   const { data, error } = await supabase
     .from('price_alert_subscriptions')
     .insert({
@@ -386,10 +1022,68 @@ export async function subscribeToPriceAlert(buyerId, { categoryId, productId }) 
       category_id: categoryId || null,
       product_id: productId || null,
     })
-    .select()
+    .select(`
+      *,
+      categories(id, name, emoji),
+      products(id, name, price_unit, categories(name, emoji))
+    `)
     .single();
   if (error) throw error;
   return data;
+}
+
+export async function removePriceAlertSubscription(subscriptionId, buyerId) {
+  if (useE2E()) return e2eRemovePriceAlertSubscription(subscriptionId, buyerId);
+  const { error } = await supabase
+    .from('price_alert_subscriptions')
+    .delete()
+    .eq('id', subscriptionId)
+    .eq('buyer_id', buyerId);
+
+  if (error) throw error;
+}
+
+// ========================
+// NOTIFICACIONES
+// ========================
+
+export async function getNotifications(userId) {
+  if (useE2E()) return e2eGetNotifications(userId);
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('*')
+    .eq('recipient_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(30);
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function markNotificationRead(notificationId, userId) {
+  if (useE2E()) return e2eMarkNotificationRead(notificationId, userId);
+  const { data, error } = await supabase
+    .from('notifications')
+    .update({ read_at: new Date().toISOString() })
+    .eq('id', notificationId)
+    .eq('recipient_id', userId)
+    .is('read_at', null)
+    .select('*')
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function markAllNotificationsRead(userId) {
+  if (useE2E()) return e2eMarkAllNotificationsRead(userId);
+  const { error } = await supabase
+    .from('notifications')
+    .update({ read_at: new Date().toISOString() })
+    .eq('recipient_id', userId)
+    .is('read_at', null);
+
+  if (error) throw error;
 }
 
 // ========================
@@ -397,6 +1091,7 @@ export async function subscribeToPriceAlert(buyerId, { categoryId, productId }) 
 // ========================
 
 export async function getPlans() {
+  if (useE2E()) return e2eGetPlans();
   const { data, error } = await supabase
     .from('plans')
     .select('*')
@@ -417,24 +1112,151 @@ export async function getActiveSubscription(supplierId) {
 }
 
 export async function subscribeToPlan(supplierId, planId) {
+  if (useE2E()) return e2eSubscribeToPlan(supplierId, planId);
+  const currentSubscription = await getActiveSubscription(supplierId);
+  if (currentSubscription?.plan_id === planId) {
+    return currentSubscription;
+  }
+
   // Cancelar suscripcion activa
-  await supabase
+  const { error: cancelError } = await supabase
     .from('subscriptions')
-    .update({ status: 'cancelled' })
+    .update({ status: 'cancelled', billing_status: 'cancelled', cancelled_at: new Date().toISOString() })
     .eq('supplier_id', supplierId)
     .eq('status', 'active');
+  if (cancelError) throw cancelError;
+
+  await supabase
+    .from('subscriptions')
+    .update({ status: 'cancelled', billing_status: 'cancelled', cancelled_at: new Date().toISOString() })
+    .eq('supplier_id', supplierId)
+    .eq('status', 'pending_payment');
 
   const { data, error } = await supabase
     .from('subscriptions')
     .insert({
       supplier_id: supplierId,
       plan_id: planId,
+      billing_provider: 'internal',
+      billing_status: 'paid',
+      paid_at: new Date().toISOString(),
       expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
     })
     .select('*, plans(*)')
     .single();
   if (error) throw error;
   return data;
+}
+
+export async function requestFlowPlanActivation(supplierId, planId, billingCustomerEmail) {
+  if (useE2E()) return e2eRequestFlowPlanActivation(supplierId, planId, billingCustomerEmail);
+
+  const currentSubscription = await getActiveSubscription(supplierId);
+  if (currentSubscription?.plan_id === planId) {
+    return currentSubscription;
+  }
+
+  const { data: existingPending, error: existingPendingError } = await supabase
+    .from('subscriptions')
+    .select('*, plans(*)')
+    .eq('supplier_id', supplierId)
+    .eq('status', 'pending_payment')
+    .order('started_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (existingPendingError) throw existingPendingError;
+  if (existingPending?.plan_id === planId) return existingPending;
+
+  if (existingPending?.id) {
+    const { error: cancelPendingError } = await supabase
+      .from('subscriptions')
+      .update({ status: 'cancelled', billing_status: 'cancelled', cancelled_at: new Date().toISOString() })
+      .eq('id', existingPending.id);
+
+    if (cancelPendingError) throw cancelPendingError;
+  }
+
+  const now = Date.now();
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .insert({
+      supplier_id: supplierId,
+      plan_id: planId,
+      status: 'pending_payment',
+      billing_provider: 'flow',
+      billing_status: 'pending_checkout',
+      billing_reference: `flow-placeholder-${supplierId}-${now}`,
+      billing_customer_email: billingCustomerEmail || null,
+      expires_at: new Date(now + 3 * 24 * 60 * 60 * 1000).toISOString(),
+    })
+    .select('*, plans(*)')
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function getSupplierUsageSummary(supplierId) {
+  if (useE2E()) return e2eGetSupplierUsageSummary(supplierId);
+  const startOfMonth = new Date();
+  startOfMonth.setUTCDate(1);
+  startOfMonth.setUTCHours(0, 0, 0, 0);
+  const monthStartIso = startOfMonth.toISOString();
+
+  const { data: agents, error: agentsError } = await supabase
+    .from('ai_agents')
+    .select('id')
+    .eq('supplier_id', supplierId);
+
+  if (agentsError) throw agentsError;
+
+  const agentIds = (agents ?? []).map((agent) => agent.id);
+
+  const [
+    productsRes,
+    quoteResponsesRes,
+    conversationsRes,
+    voiceCallsRes,
+  ] = await Promise.all([
+    supabase
+      .from('products')
+      .select('id', { count: 'exact', head: true })
+      .eq('supplier_id', supplierId)
+      .in('status', ['active', 'low_stock']),
+    supabase
+      .from('quote_offers')
+      .select('id', { count: 'exact', head: true })
+      .eq('supplier_id', supplierId)
+      .gte('created_at', monthStartIso),
+    agentIds.length
+      ? supabase
+          .from('agent_conversations')
+          .select('id', { count: 'exact', head: true })
+          .in('agent_id', agentIds)
+          .gte('started_at', monthStartIso)
+      : Promise.resolve({ count: 0, error: null }),
+    agentIds.length
+      ? supabase
+          .from('agent_conversations')
+          .select('id', { count: 'exact', head: true })
+          .in('agent_id', agentIds)
+          .eq('channel', 'voice')
+          .gte('started_at', monthStartIso)
+      : Promise.resolve({ count: 0, error: null }),
+  ]);
+
+  if (productsRes.error) throw productsRes.error;
+  if (quoteResponsesRes.error) throw quoteResponsesRes.error;
+  if (conversationsRes.error) throw conversationsRes.error;
+  if (voiceCallsRes.error) throw voiceCallsRes.error;
+
+  return {
+    activeProducts: productsRes.count || 0,
+    quoteResponsesThisMonth: quoteResponsesRes.count || 0,
+    aiConversationsThisMonth: conversationsRes.count || 0,
+    voiceCallsThisMonth: voiceCallsRes.count || 0,
+  };
 }
 
 // ========================
@@ -486,6 +1308,7 @@ export async function getConversationMessages(conversationId) {
 // ========================
 
 export async function getCategories() {
+  if (useE2E()) return e2eGetCategories();
   const { data, error } = await supabase
     .from('categories')
     .select('*')
@@ -494,13 +1317,21 @@ export async function getCategories() {
   return data;
 }
 
-export async function setUserCategories(userId, categoryIds) {
-  // Borrar existentes y reinsertar
-  await supabase.from('user_categories').delete().eq('user_id', userId);
+export async function setUserCategories(userId, categoryIds, scope = 'supplier_catalog') {
+  // Mantiene buyer/supplier aislados para permitir organizaciones con ambos roles.
+  await supabase
+    .from('user_categories')
+    .delete()
+    .eq('user_id', userId)
+    .eq('scope', scope);
 
   if (categoryIds.length === 0) return [];
 
-  const rows = categoryIds.map(cid => ({ user_id: userId, category_id: cid }));
+  const rows = categoryIds.map((categoryId) => ({
+    user_id: userId,
+    category_id: categoryId,
+    scope,
+  }));
   const { data, error } = await supabase
     .from('user_categories')
     .insert(rows)
@@ -514,7 +1345,8 @@ export async function setUserCategories(userId, categoryIds) {
 // ========================
 
 export async function getSupplierStats(supplierId) {
-  const [quotesRes, reviewsRes, favoritesRes] = await Promise.all([
+  if (useE2E()) return e2eGetSupplierStats(supplierId);
+  const [quotesRes, reviewsRes, favoritesRes, reviewCountRes] = await Promise.allSettled([
     supabase
       .from('quote_offers')
       .select('id', { count: 'exact', head: true })
@@ -523,18 +1355,24 @@ export async function getSupplierStats(supplierId) {
     supabase.rpc('get_user_rating', { p_user_id: supplierId }),
     supabase
       .from('favorites')
-      .select('id', { count: 'exact', head: true })
+      .select('supplier_id', { count: 'exact', head: true })
       .eq('supplier_id', supplierId),
+    supabase
+      .from('reviews')
+      .select('id', { count: 'exact', head: true })
+      .eq('reviewed_id', supplierId),
   ]);
 
   return {
-    totalSales: quotesRes.count || 0,
-    rating: reviewsRes.data || 0,
-    recurringClients: favoritesRes.count || 0,
+    totalSales: quotesRes.status === 'fulfilled' ? (quotesRes.value.count || 0) : 0,
+    rating: reviewsRes.status === 'fulfilled' ? (reviewsRes.value.data || 0) : 0,
+    recurringClients: favoritesRes.status === 'fulfilled' ? (favoritesRes.value.count || 0) : 0,
+    totalReviews: reviewCountRes.status === 'fulfilled' ? (reviewCountRes.value.count || 0) : 0,
   };
 }
 
 export async function getBuyerStats(buyerId) {
+  if (useE2E()) return e2eGetBuyerStats(buyerId);
   const [quotesRes, reviewsRes, favoritesRes] = await Promise.all([
     supabase
       .from('quote_requests')
@@ -543,7 +1381,7 @@ export async function getBuyerStats(buyerId) {
     supabase.rpc('get_user_rating', { p_user_id: buyerId }),
     supabase
       .from('favorites')
-      .select('id', { count: 'exact', head: true })
+      .select('supplier_id', { count: 'exact', head: true })
       .eq('buyer_id', buyerId),
   ]);
 

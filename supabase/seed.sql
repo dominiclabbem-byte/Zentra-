@@ -1,0 +1,3 @@
+-- Seed local vacio por ahora.
+-- Mantiene `supabase db reset --local` funcional aun cuando todavia no
+-- queremos poblar datos extra para la suite de integración.

@@ -1,7 +1,10 @@
 import { Link } from 'react-router-dom';
-import BodegaLogo from './BodegaLogo';
+import mainLogo from '../assets/zentra_main_logo.png';
+import { getFooterLinks } from '../lib/navigation';
 
 export default function Footer() {
+  const footerLinks = getFooterLinks();
+
   return (
     <footer className="bg-[#060e1a] text-gray-400 mt-auto relative overflow-hidden">
       {/* Subtle top accent line */}
@@ -11,11 +14,17 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           {/* Brand */}
           <div>
-            <div className="flex items-center gap-2.5 mb-4">
-              <BodegaLogo size={36} />
-              <span className="font-bold text-xl text-white">
-                Zen<span className="text-[#2ECAD5]">tra</span>
-              </span>
+            <div className="flex items-center gap-1 mb-4">
+              <img
+                src={mainLogo}
+                alt="Zentra AI"
+                style={{ width: '120px', height: 'auto', objectFit: 'contain', filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.2))' }}
+              />
+              <div className="flex flex-col justify-center -ml-4">
+                <span className="text-3xl font-extrabold tracking-tight text-white">
+                  zentra<span className="text-emerald-400">.</span><span className="text-transparent bg-clip-text bg-gradient-to-r from-[#2ECAD5] to-blue-500">ai</span>
+                </span>
+              </div>
             </div>
             <p className="text-sm leading-relaxed text-gray-500">
               🍊 Conectamos proveedores de insumos gastronomicos con compradores en Chile.
@@ -27,10 +36,13 @@ export default function Footer() {
           <div>
             <h4 className="text-white font-semibold mb-4 text-sm uppercase tracking-wider">Plataforma</h4>
             <ul className="space-y-3 text-sm">
-              <li><Link to="/registro-comprador" className="hover:text-[#2ECAD5] transition-colors duration-200">🛒 Registro Comprador</Link></li>
-              <li><Link to="/registro-proveedor" className="hover:text-[#2ECAD5] transition-colors duration-200">🏪 Registro Proveedor</Link></li>
-              <li><Link to="/dashboard-comprador" className="hover:text-[#2ECAD5] transition-colors duration-200">📊 Dashboard Comprador</Link></li>
-              <li><Link to="/dashboard-proveedor" className="hover:text-[#2ECAD5] transition-colors duration-200">📦 Dashboard Proveedor</Link></li>
+              {footerLinks.map((link) => (
+                <li key={link.to}>
+                  <Link to={link.to} className="hover:text-[#2ECAD5] transition-colors duration-200">
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 

@@ -143,6 +143,108 @@ body {
   animation: rotateSlow 12s linear infinite;
 }
 
+/* Performance debug mode */
+body.perf-lite .backdrop-blur-sm,
+body.perf-lite .backdrop-blur-md,
+body.perf-lite .backdrop-blur-xl,
+body.perf-lite .glass,
+body.perf-lite .glass-dark {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.backdrop-blur-sm,
+.backdrop-blur-md,
+.backdrop-blur-xl,
+.glass,
+.glass-dark {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/*
+Previous modal/glass blur styles kept as reference for future visual experiments.
+Re-enable only if performance is acceptable on target devices/browsers.
+
+.backdrop-blur-sm,
+.glass,
+.glass-dark {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.backdrop-blur-md {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.backdrop-blur-xl {
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+*/
+
+body.perf-lite .blur-xl,
+body.perf-lite .blur-2xl,
+body.perf-lite .blur-\[60px\],
+body.perf-lite .blur-\[80px\],
+body.perf-lite .blur-\[90px\],
+body.perf-lite .blur-\[100px\],
+body.perf-lite .blur-\[120px\],
+body.perf-lite [class*="blur-"] {
+  filter: none !important;
+}
+
+.blur-xl,
+.blur-2xl,
+.blur-\[60px\],
+.blur-\[80px\],
+.blur-\[90px\],
+.blur-\[100px\],
+.blur-\[120px\],
+[class*="blur-"] {
+  filter: none !important;
+}
+
+/*
+Previous decorative blur reference:
+
+.blur-xl { filter: blur(24px); }
+.blur-2xl { filter: blur(40px); }
+.blur-\[60px\] { filter: blur(60px); }
+.blur-\[80px\] { filter: blur(80px); }
+.blur-\[90px\] { filter: blur(90px); }
+.blur-\[100px\] { filter: blur(100px); }
+.blur-\[120px\] { filter: blur(120px); }
+*/
+
+body.perf-lite .animate-fade-in,
+body.perf-lite .animate-fade-in-up,
+body.perf-lite .animate-slide-in-right,
+body.perf-lite .animate-pulse-glow,
+body.perf-lite .animate-float,
+body.perf-lite .animate-ping,
+body.perf-lite .animate-ping-slow,
+body.perf-lite .animate-rotate-slow,
+body.perf-lite .animate-bounce {
+  animation: none !important;
+}
+
+body.perf-lite *,
+body.perf-lite *::before,
+body.perf-lite *::after {
+  transition-duration: 0ms !important;
+}
+
+.modal-overlay {
+  will-change: opacity;
+}
+
+.modal-shell {
+  contain: layout paint style;
+  will-change: transform, opacity;
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;

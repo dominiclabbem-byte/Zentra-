@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import BodegaLogo from '../components/BodegaLogo';
 import mainLogo from '../assets/zentra_main_logo.png';
+import AuthChoiceModal from '../components/AuthChoiceModal';
+import { Avocado, Grapes, Orange, Strawberry } from '../components/FruitIllustrations';
 
 const valueProps = [
   {
@@ -34,6 +36,8 @@ const stats = [
 ];
 
 export default function Landing() {
+  const [authRole, setAuthRole] = useState(null);
+
   return (
     <div className="min-h-screen">
       {/* Hero */}
@@ -43,15 +47,18 @@ export default function Landing() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[#2ECAD5]/5 rounded-full blur-[120px]" />
         <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-indigo-500/5 rounded-full blur-[100px]" />
 
-        {/* Floating food emojis */}
-        <div className="absolute top-16 left-[8%] text-5xl animate-float opacity-20 select-none pointer-events-none" style={{ animationDelay: '0s' }}>🍓</div>
-        <div className="absolute top-36 right-[6%] text-4xl animate-float opacity-15 select-none pointer-events-none" style={{ animationDelay: '0.8s' }}>🥑</div>
-        <div className="absolute bottom-28 left-[12%] text-4xl animate-float opacity-15 select-none pointer-events-none" style={{ animationDelay: '1.5s' }}>🍊</div>
-        <div className="absolute bottom-16 right-[10%] text-5xl animate-float opacity-20 select-none pointer-events-none" style={{ animationDelay: '0.3s' }}>🫐</div>
-        <div className="absolute top-28 left-[22%] text-3xl animate-float opacity-10 select-none pointer-events-none" style={{ animationDelay: '1.2s' }}>🥦</div>
-        <div className="absolute bottom-36 right-[22%] text-3xl animate-float opacity-10 select-none pointer-events-none" style={{ animationDelay: '0.6s' }}>🍋</div>
-        <div className="absolute top-44 right-[18%] text-3xl animate-float opacity-10 select-none pointer-events-none" style={{ animationDelay: '2s' }}>🥝</div>
-        <div className="absolute bottom-44 left-[5%] text-3xl animate-float opacity-10 select-none pointer-events-none" style={{ animationDelay: '1.8s' }}>🍇</div>
+        <div className="absolute top-14 left-[6%] hidden xl:block opacity-35 pointer-events-none animate-float" style={{ animationDelay: '0s' }}>
+          <Strawberry className="w-20 h-20 drop-shadow-2xl" />
+        </div>
+        <div className="absolute top-28 right-[7%] hidden xl:block opacity-30 pointer-events-none animate-float" style={{ animationDelay: '0.9s' }}>
+          <Avocado className="w-20 h-20 drop-shadow-2xl" />
+        </div>
+        <div className="absolute bottom-20 left-[10%] hidden xl:block opacity-30 pointer-events-none animate-float" style={{ animationDelay: '1.5s' }}>
+          <Orange className="w-20 h-20 drop-shadow-2xl" />
+        </div>
+        <div className="absolute bottom-12 right-[10%] hidden xl:block opacity-30 pointer-events-none animate-float" style={{ animationDelay: '0.35s' }}>
+          <Grapes className="w-20 h-20 drop-shadow-2xl" />
+        </div>
 
         <div className="max-w-5xl mx-auto text-center relative z-10">
           <div className="inline-flex items-center gap-2 glass rounded-full px-5 py-2.5 mb-8 text-sm text-[#2ECAD5] font-medium animate-fade-in-up">
@@ -69,18 +76,27 @@ export default function Landing() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
             <Link
-              to="/registro-proveedor"
+              to="/marketplace"
+              className="glass hover:bg-white/10 text-white font-bold px-8 py-4 rounded-xl text-lg transition-all hover:scale-[1.02]"
+            >
+              🔎 Explorar Marketplace
+            </Link>
+            <button
+              type="button"
+              onClick={() => setAuthRole('proveedor')}
               className="bg-gradient-to-r from-emerald-400 to-blue-500 hover:from-emerald-500 hover:to-blue-600 text-[#0D1F3C] font-bold px-8 py-4 rounded-xl text-lg transition-all hover:scale-[1.02] shadow-xl shadow-emerald-400/20 hover:shadow-emerald-400/30"
             >
               🏪 Soy Proveedor
-            </Link>
-            <Link
-              to="/registro-comprador"
+            </button>
+            <button
+              type="button"
+              onClick={() => setAuthRole('comprador')}
               className="glass hover:bg-white/10 text-white font-bold px-8 py-4 rounded-xl text-lg transition-all hover:scale-[1.02]"
             >
               🛒 Soy Comprador
-            </Link>
+            </button>
           </div>
+          {authRole && <AuthChoiceModal role={authRole} onClose={() => setAuthRole(null)} />}
 
           {/* Stats bar */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-16 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
@@ -90,6 +106,22 @@ export default function Landing() {
                 <div className="text-xs text-gray-400 mt-1">{s.label}</div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="px-4 py-6 bg-[#f8fafc] border-y border-[#2ECAD5]/10">
+        <div className="max-w-6xl mx-auto rounded-2xl border border-[#2ECAD5]/15 bg-white px-6 py-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#2ECAD5]">Trust layer Zentra</div>
+            <p className="text-[#0D1F3C] font-semibold mt-1">
+              La reputacion visible del marketplace se construye con operaciones aceptadas, reseñas elegibles y verificacion comercial.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <span className="text-xs font-semibold bg-[#f0fdfa] text-[#0D1F3C] border border-[#2ECAD5]/20 px-3 py-1.5 rounded-full">Reseñas de operaciones reales</span>
+            <span className="text-xs font-semibold bg-[#f0fdfa] text-[#0D1F3C] border border-[#2ECAD5]/20 px-3 py-1.5 rounded-full">RUT y perfil verificado</span>
+            <span className="text-xs font-semibold bg-[#f0fdfa] text-[#0D1F3C] border border-[#2ECAD5]/20 px-3 py-1.5 rounded-full">Rating agregado en vivo</span>
           </div>
         </div>
       </section>
@@ -373,7 +405,7 @@ export default function Landing() {
               🏪 Registrar mi empresa
             </Link>
             <Link
-              to="/registro-comprador"
+              to="/marketplace"
               className="glass hover:bg-white/10 font-bold px-8 py-4 rounded-xl text-lg transition-all hover:scale-[1.02]"
             >
               🔍 Buscar proveedores
