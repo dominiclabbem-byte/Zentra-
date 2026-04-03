@@ -1,11 +1,26 @@
 <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect x="4" y="14" width="24" height="14" rx="3" fill="#0D1F3C"/>
-  <rect x="3" y="11.5" width="26" height="4" rx="2" fill="#2ECAD5"/>
-  <circle cx="16" cy="8" r="5.5" fill="#f97316"/>
-  <circle cx="13.5" cy="6" r="2" fill="#fb923c" opacity="0.5"/>
-  <path d="M16.5 2.5c2-0.5 4 0.5 4 2s-2 2.5-3.5 2c-0.5-0.2-0.5-0.8-0.5-1.2V2.5z" fill="#22c55e"/>
-  <line x1="6" y1="21.5" x2="26" y2="21.5" stroke="#2ECAD5" stroke-width="0.7" opacity="0.25"/>
-  <circle cx="11" cy="24.5" r="1" fill="#2ECAD5" opacity="0.5"/>
-  <circle cx="16" cy="24.5" r="1.2" fill="#2ECAD5" opacity="0.9"/>
-  <circle cx="21" cy="24.5" r="1" fill="#2ECAD5" opacity="0.5"/>
+  <defs>
+    <linearGradient id="zgrad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#5b8af0"/>
+      <stop offset="100%" stop-color="#00e5b0"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="1.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <!-- Z shape -->
+  <g filter="url(#glow)" stroke="url(#zgrad)" stroke-width="2.5" stroke-linecap="round">
+    <!-- top line -->
+    <line x1="7" y1="7" x2="25" y2="7"/>
+    <!-- diagonal -->
+    <line x1="25" y1="7" x2="7" y2="25"/>
+    <!-- bottom line -->
+    <line x1="7" y1="25" x2="25" y2="25"/>
+  </g>
+  <!-- corner dots -->
+  <circle cx="7" cy="7" r="2.5" fill="#5b8af0" filter="url(#glow)"/>
+  <circle cx="25" cy="7" r="2.5" fill="#2ECAD5" filter="url(#glow)"/>
+  <circle cx="7" cy="25" r="2.5" fill="#2ECAD5" filter="url(#glow)"/>
+  <circle cx="25" cy="25" r="2.5" fill="#00e5b0" filter="url(#glow)"/>
 </svg>

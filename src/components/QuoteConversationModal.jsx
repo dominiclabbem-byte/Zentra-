@@ -83,7 +83,7 @@ export default function QuoteConversationModal({
             </svg>
           </button>
           <div className="pr-10">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#2ECAD5]">Conversacion RFQ</div>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#2ECAD5]">Solicitud de Cotización</div>
             <h2 className="text-xl font-extrabold mt-2">{conversation?.quote?.productName ?? 'Cotizacion'}</h2>
             <p className="text-sm text-white/75 mt-1">
               {participantName ?? 'Participante'} / {conversation?.quote?.quantityLabel ?? 'Sin cantidad'} / Entrega {conversation?.quote?.deliveryDateLabel ?? 'Sin fecha'}
@@ -101,7 +101,7 @@ export default function QuoteConversationModal({
           </div>
           {isClosed && (
             <div className="mt-3 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-              Esta conversacion quedo en solo lectura porque la RFQ ya fue cerrada o cancelada.
+              Esta conversacion quedo en solo lectura porque la Solicitud de Cotización ya fue cerrada o cancelada.
             </div>
           )}
         </div>
@@ -140,7 +140,7 @@ export default function QuoteConversationModal({
             value={draft}
             disabled={isSending || isClosed}
             onChange={(event) => setDraft(event.target.value)}
-            placeholder={isClosed ? 'La conversacion esta cerrada.' : 'Escribe un mensaje sobre esta RFQ...'}
+            placeholder={isClosed ? 'La conversacion esta cerrada.' : 'Escribe un mensaje sobre esta Solicitud de Cotización...'}
             className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all disabled:bg-gray-50 disabled:text-gray-400"
           />
           <div className="mt-4 flex justify-end">

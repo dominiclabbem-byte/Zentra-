@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import AuthChoiceModal from '../components/AuthChoiceModal';
 import Toast from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -13,8 +14,9 @@ import { mapProductRecordToCard } from '../lib/productAdapters';
 import { getProducts, getSupplierProfile, getSupplierStats } from '../services/database';
 
 export default function Marketplace() {
-  const { categories: categoryOptions } = useAuth();
+  const { categories: categoryOptions, currentUser } = useAuth();
   const [toast, setToast] = useState(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [catalogProducts, setCatalogProducts] = useState([]);
   const [supplierInsights, setSupplierInsights] = useState({});
@@ -336,20 +338,22 @@ export default function Marketplace() {
             <p className="text-lg text-slate-300 mt-4 max-w-2xl leading-relaxed">
               Explora precios visibles, categorias activas y fichas publicas de proveedores sin entrar al dashboard.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 mt-8">
-              <Link
-                to="/registro-comprador"
-                className="bg-gradient-to-r from-emerald-400 to-blue-500 text-[#0D1F3C] font-bold px-6 py-3 rounded-xl transition-all hover:scale-[1.02] shadow-xl shadow-emerald-400/20 text-center"
-              >
-                Crear cuenta comprador
-              </Link>
-              <Link
-                to="/registro-proveedor"
-                className="border border-white/10 bg-white/5 hover:bg-white/10 text-white font-bold px-6 py-3 rounded-xl transition-all text-center"
-              >
-                Publicar mi catalogo
-              </Link>
-            </div>
+            {!currentUser && (
+              <div className="flex flex-col sm:flex-row gap-3 mt-8">
+                <Link
+                  to="/ingresar?role=comprador"
+                  className="bg-gradient-to-r from-emerald-400 to-blue-500 text-[#0D1F3C] font-bold px-6 py-3 rounded-xl transition-all hover:scale-[1.02] shadow-xl shadow-emerald-400/20 text-center"
+                >
+                  Quiero Comprar
+                </Link>
+                <Link
+                  to="/ingresar?role=proveedor"
+                  className="border border-white/10 bg-white/5 hover:bg-white/10 text-white font-bold px-6 py-3 rounded-xl transition-all text-center"
+                >
+                  Quiero Vender
+                </Link>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-10">
@@ -489,6 +493,20 @@ export default function Marketplace() {
                         </span>
                       </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (currentUser) {
+                          openSupplierFromProduct(product);
+                        } else {
+                          setShowAuthModal(true);
+                        }
+                      }}
+                      className="mt-3 w-full bg-gradient-to-r from-[#0D1F3C] to-[#1a3260] hover:from-[#1a3260] hover:to-[#0D1F3C] text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-all hover:scale-[1.02] shadow-md"
+                    >
+                      Cotizar
+                    </button>
                   </div>
                 </button>
                 );
@@ -507,6 +525,7 @@ export default function Marketplace() {
           )}
         </div>
       </section>
+      {showAuthModal && <AuthChoiceModal role="comprador" onClose={() => setShowAuthModal(false)} />}
     </div>
   );
 }

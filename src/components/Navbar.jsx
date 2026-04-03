@@ -72,24 +72,19 @@ export default function Navbar() {
     <nav className="bg-[#0a1628]/95 backdrop-blur-xl text-white shadow-[0_1px_0_rgba(46,202,213,0.1)] sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <Link to="/" className="flex items-center gap-1 flex-shrink-0 group">
-            <div className="transition-all hover:scale-105">
-              <img
-                src={mainLogo}
-                alt="Zentra AI"
-                style={{
-                  width: '120px',
-                  height: 'auto',
-                  objectFit: 'contain',
-                  filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.2))',
-                }}
-              />
-            </div>
-            <div className="flex flex-col justify-center -ml-4">
-              <span className="text-3xl font-extrabold tracking-tight">
-                zentra<span className="text-emerald-400">.</span><span className="text-transparent bg-clip-text bg-gradient-to-r from-[#2ECAD5] to-blue-500">ai</span>
-              </span>
-            </div>
+          <Link to="/" className="flex items-center flex-shrink-0 group transition-all hover:scale-105">
+            <img
+              src={mainLogo}
+              alt="Z"
+              style={{
+                height: '58px',
+                width: 'auto',
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.2))',
+                marginTop: '4px',
+              }}
+            />
+            <span className="text-3xl font-extrabold tracking-tight -ml-4 text-transparent bg-clip-text bg-gradient-to-r from-[#5b8af0] to-[#00e5b0]">entra</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-1">

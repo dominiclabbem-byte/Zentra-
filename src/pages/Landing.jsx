@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import mainLogo from '../assets/zentra_main_logo.png';
 import AuthChoiceModal from '../components/AuthChoiceModal';
 import { Avocado, Grapes, Orange, Strawberry } from '../components/FruitIllustrations';
+import { useAuth } from '../context/AuthContext';
 
 const valueProps = [
   {
@@ -37,6 +38,17 @@ const stats = [
 
 export default function Landing() {
   const [authRole, setAuthRole] = useState(null);
+  const { currentUser } = useAuth();
+  const navigate = useNavigate();
+
+  const handleRoleClick = (role) => {
+    if (currentUser) {
+      if (role === 'proveedor') navigate('/dashboard-proveedor');
+      else navigate('/dashboard-comprador', { state: { activeTab: 'dashboard' } });
+    } else {
+      setAuthRole(role);
+    }
+  };
 
   return (
     <div className="min-h-screen">
@@ -47,17 +59,17 @@ export default function Landing() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[#2ECAD5]/5 rounded-full blur-[120px]" />
         <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-indigo-500/5 rounded-full blur-[100px]" />
 
-        <div className="absolute top-14 left-[6%] hidden xl:block opacity-35 pointer-events-none animate-float" style={{ animationDelay: '0s' }}>
-          <Strawberry className="w-20 h-20 drop-shadow-2xl" />
+        <div className="absolute top-14 left-[6%] hidden xl:block opacity-50 pointer-events-none animate-float select-none" style={{ animationDelay: '0s', fontSize: '72px' }}>
+          🌾
         </div>
-        <div className="absolute top-28 right-[7%] hidden xl:block opacity-30 pointer-events-none animate-float" style={{ animationDelay: '0.9s' }}>
-          <Avocado className="w-20 h-20 drop-shadow-2xl" />
+        <div className="absolute top-28 right-[7%] hidden xl:block opacity-20 pointer-events-none animate-float select-none" style={{ animationDelay: '0.9s', fontSize: '56px' }}>
+          🥩
         </div>
-        <div className="absolute bottom-20 left-[10%] hidden xl:block opacity-30 pointer-events-none animate-float" style={{ animationDelay: '1.5s' }}>
-          <Orange className="w-20 h-20 drop-shadow-2xl" />
+        <div className="absolute bottom-20 left-[10%] hidden xl:block opacity-20 pointer-events-none animate-float select-none" style={{ animationDelay: '1.5s', fontSize: '52px' }}>
+          🧀
         </div>
-        <div className="absolute bottom-12 right-[10%] hidden xl:block opacity-30 pointer-events-none animate-float" style={{ animationDelay: '0.35s' }}>
-          <Grapes className="w-20 h-20 drop-shadow-2xl" />
+        <div className="absolute bottom-12 right-[10%] hidden xl:block opacity-20 pointer-events-none animate-float select-none" style={{ animationDelay: '0.35s', fontSize: '52px' }}>
+          🫒
         </div>
 
         <div className="max-w-5xl mx-auto text-center relative z-10">
@@ -83,14 +95,14 @@ export default function Landing() {
             </Link>
             <button
               type="button"
-              onClick={() => setAuthRole('proveedor')}
+              onClick={() => handleRoleClick('proveedor')}
               className="bg-gradient-to-r from-emerald-400 to-blue-500 hover:from-emerald-500 hover:to-blue-600 text-[#0D1F3C] font-bold px-8 py-4 rounded-xl text-lg transition-all hover:scale-[1.02] shadow-xl shadow-emerald-400/20 hover:shadow-emerald-400/30"
             >
               🏪 Soy Proveedor
             </button>
             <button
               type="button"
-              onClick={() => setAuthRole('comprador')}
+              onClick={() => handleRoleClick('comprador')}
               className="glass hover:bg-white/10 text-white font-bold px-8 py-4 rounded-xl text-lg transition-all hover:scale-[1.02]"
             >
               🛒 Soy Comprador
@@ -110,18 +122,33 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="px-4 py-6 bg-[#f8fafc] border-y border-[#2ECAD5]/10">
-        <div className="max-w-6xl mx-auto rounded-2xl border border-[#2ECAD5]/15 bg-white px-6 py-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#2ECAD5]">Trust layer Zentra</div>
-            <p className="text-[#0D1F3C] font-semibold mt-1">
-              La reputacion visible del marketplace se construye con operaciones aceptadas, reseñas elegibles y verificacion comercial.
-            </p>
+      {/* How it works */}
+      <section className="py-20 px-4 bg-[#f8fafc] bg-grid">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl md:text-4xl font-extrabold text-[#0D1F3C] mb-3">Como funciona? 🤔</h2>
+            <p className="text-gray-500 text-lg">Simple y rapido en 3 pasos</p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <span className="text-xs font-semibold bg-[#f0fdfa] text-[#0D1F3C] border border-[#2ECAD5]/20 px-3 py-1.5 rounded-full">Reseñas de operaciones reales</span>
-            <span className="text-xs font-semibold bg-[#f0fdfa] text-[#0D1F3C] border border-[#2ECAD5]/20 px-3 py-1.5 rounded-full">RUT y perfil verificado</span>
-            <span className="text-xs font-semibold bg-[#f0fdfa] text-[#0D1F3C] border border-[#2ECAD5]/20 px-3 py-1.5 rounded-full">Rating agregado en vivo</span>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              { step: '1', emoji: '📝', title: 'Registrate gratis', desc: 'Crea tu perfil como comprador o proveedor en menos de 2 minutos.' },
+              { step: '2', emoji: '📦', title: 'Publica o recibe', desc: 'Compradores publican sus necesidades y proveedores responden con ofertas.' },
+              { step: '3', emoji: '🤝', title: 'Cierra el trato', desc: 'Compara precios, elige la mejor oferta y coordina la entrega.' },
+            ].map((item) => (
+              <div key={item.step} className="text-center group">
+                <div className="relative w-20 h-20 mx-auto mb-6">
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#2ECAD5]/20 to-transparent rounded-2xl rotate-6 group-hover:rotate-12 transition-transform" />
+                  <div className="relative w-20 h-20 bg-[#0D1F3C] rounded-2xl flex items-center justify-center text-3xl">
+                    {item.emoji}
+                  </div>
+                  <div className="absolute -top-2 -right-2 w-7 h-7 bg-gradient-to-r from-emerald-400 to-blue-500 rounded-lg flex items-center justify-center text-[#0D1F3C] font-bold text-xs shadow-lg">
+                    {item.step}
+                  </div>
+                </div>
+                <h3 className="text-lg font-bold text-[#0D1F3C] mb-2">{item.title}</h3>
+                <p className="text-gray-500 text-sm leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -310,34 +337,19 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* How it works */}
-      <section className="py-20 px-4 bg-[#f8fafc] bg-grid">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-14">
-            <span className="inline-block text-[#2ECAD5] text-sm font-semibold uppercase tracking-widest mb-3">Proceso</span>
-            <h2 className="text-3xl md:text-4xl font-extrabold text-[#0D1F3C] mb-3">Como funciona? 🤔</h2>
-            <p className="text-gray-500 text-lg">Simple y rapido en 3 pasos</p>
+      {/* Trust layer */}
+      <section className="px-4 py-6 bg-[#f8fafc] border-y border-[#2ECAD5]/10">
+        <div className="max-w-6xl mx-auto rounded-2xl border border-[#2ECAD5]/15 bg-white px-6 py-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#2ECAD5]">Trust layer Zentra</div>
+            <p className="text-[#0D1F3C] font-semibold mt-1">
+              La reputacion visible del marketplace se construye con operaciones aceptadas, reseñas elegibles y verificacion comercial.
+            </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { step: '1', emoji: '📝', title: 'Registrate gratis', desc: 'Crea tu perfil como comprador o proveedor en menos de 2 minutos.' },
-              { step: '2', emoji: '📦', title: 'Publica o recibe', desc: 'Compradores publican sus necesidades y proveedores responden con ofertas.' },
-              { step: '3', emoji: '🤝', title: 'Cierra el trato', desc: 'Compara precios, elige la mejor oferta y coordina la entrega.' },
-            ].map((item) => (
-              <div key={item.step} className="text-center group">
-                <div className="relative w-20 h-20 mx-auto mb-6">
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#2ECAD5]/20 to-transparent rounded-2xl rotate-6 group-hover:rotate-12 transition-transform" />
-                  <div className="relative w-20 h-20 bg-[#0D1F3C] rounded-2xl flex items-center justify-center text-3xl">
-                    {item.emoji}
-                  </div>
-                  <div className="absolute -top-2 -right-2 w-7 h-7 bg-gradient-to-r from-emerald-400 to-blue-500 rounded-lg flex items-center justify-center text-[#0D1F3C] font-bold text-xs shadow-lg">
-                    {item.step}
-                  </div>
-                </div>
-                <h3 className="text-lg font-bold text-[#0D1F3C] mb-2">{item.title}</h3>
-                <p className="text-gray-500 text-sm leading-relaxed">{item.desc}</p>
-              </div>
-            ))}
+          <div className="flex flex-wrap gap-2">
+            <span className="text-xs font-semibold bg-[#f0fdfa] text-[#0D1F3C] border border-[#2ECAD5]/20 px-3 py-1.5 rounded-full">Reseñas de operaciones reales</span>
+            <span className="text-xs font-semibold bg-[#f0fdfa] text-[#0D1F3C] border border-[#2ECAD5]/20 px-3 py-1.5 rounded-full">RUT y perfil verificado</span>
+            <span className="text-xs font-semibold bg-[#f0fdfa] text-[#0D1F3C] border border-[#2ECAD5]/20 px-3 py-1.5 rounded-full">Rating agregado en vivo</span>
           </div>
         </div>
       </section>

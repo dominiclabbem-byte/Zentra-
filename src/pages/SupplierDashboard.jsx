@@ -559,7 +559,7 @@ export default function SupplierDashboard() {
         : await getQuoteConversationForQuote(quoteId, currentUser.id);
 
       if (!conversationRecord) {
-        setToast({ message: 'Todavia no existe una conversacion disponible para esta RFQ.', type: 'error' });
+        setToast({ message: 'Todavia no existe una conversacion disponible para esta Solicitud de Cotización.', type: 'error' });
         return null;
       }
 
@@ -672,7 +672,7 @@ export default function SupplierDashboard() {
       return;
     }
     if (!entitlements.canRespondToQuotes) {
-      setToast({ message: 'Tu plan actual llego al limite mensual de respuestas RFQ. Actualiza el plan para seguir cotizando.', type: 'error' });
+      setToast({ message: 'Tu plan actual llego al limite mensual de respuestas. Actualiza el plan para seguir cotizando.', type: 'error' });
       setActiveTab('plan');
       return;
     }
@@ -938,7 +938,7 @@ export default function SupplierDashboard() {
     },
     {
       id: 'quotes',
-      label: 'Quote Inbox',
+      label: 'Cotizaciones',
       active: activeTab === 'quotes',
       onClick: () => setActiveTab('quotes'),
       badge: workspaceSummary.openRelevantQuotes,
@@ -995,7 +995,7 @@ export default function SupplierDashboard() {
           <form onSubmit={handleOfferSubmit} className="space-y-4">
             <div>
               <label htmlFor="offer-price" className="block text-sm font-medium text-gray-700 mb-1.5">
-                Precio ofertado (CLP) <span className="text-red-500">*</span>
+                Nueva Propuesta de Precio (CLP) <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-medium text-sm">$</span>
@@ -1677,7 +1677,7 @@ export default function SupplierDashboard() {
                       <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                     </svg>
                   )},
-                  { label: 'RFQs creadas', value: viewingBuyer.totalOrders, sub: '', icon: (
+                  { label: 'Solicitudes de Cotización', value: viewingBuyer.totalOrders, sub: '', icon: (
                     <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
                     </svg>
@@ -1755,7 +1755,7 @@ export default function SupplierDashboard() {
               </div>
 
               <div>
-                <h4 className="text-sm font-bold text-[#0D1F3C] mb-3">RFQ actual</h4>
+                <h4 className="text-sm font-bold text-[#0D1F3C] mb-3">Solicitud de Cotización actual</h4>
                 <div className="bg-white rounded-xl border border-gray-100 p-4 space-y-3">
                   <div className="flex justify-between gap-3">
                     <span className="text-sm text-gray-400">Producto</span>
@@ -2019,7 +2019,7 @@ export default function SupplierDashboard() {
           <div className="space-y-8 animate-fade-in">
             <div className="grid grid-cols-2 xl:grid-cols-5 gap-4">
               {[
-                { label: 'RFQs abiertas', value: workspaceSummary.openRelevantQuotes, color: 'text-[#0D1F3C]' },
+                { label: 'Solicitudes de Cotización', value: workspaceSummary.openRelevantQuotes, color: 'text-[#0D1F3C]' },
                 { label: 'Ofertas enviadas', value: workspaceSummary.submittedOffers, color: 'text-[#2ECAD5]' },
                 { label: 'Ofertas aceptadas', value: workspaceSummary.acceptedOffers, color: 'text-emerald-500' },
                 { label: 'Win rate', value: workspaceSummary.winRateLabel, color: 'text-indigo-500' },
@@ -2034,13 +2034,13 @@ export default function SupplierDashboard() {
 
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-extrabold text-[#0D1F3C]">Inbox de RFQs</h2>
+                <h2 className="text-xl font-extrabold text-[#0D1F3C]">Solicitudes de Cotización</h2>
                 <span className="text-xs text-gray-400 bg-gray-100 px-3 py-1 rounded-full font-medium">{openQuotes.length} solicitudes abiertas</span>
               </div>
 
               {quotesLoading ? (
                 <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center text-sm text-gray-400">
-                  Cargando RFQs...
+                  Cargando Solicitudes de Cotización...
                 </div>
               ) : openQuotes.length > 0 ? (
                 <>
@@ -2116,7 +2116,7 @@ export default function SupplierDashboard() {
                                       onClick={() => openQuoteOfferModal(quote)}
                                       className="bg-gradient-to-r from-emerald-400 to-blue-500 hover:shadow-lg hover:shadow-emerald-400/20 text-[#0D1F3C] font-bold text-sm px-4 py-2 rounded-lg transition-all"
                                     >
-                                      Cotizar
+                                      Ver Cotización
                                     </button>
                                   ) : (
                                     <button
@@ -2193,7 +2193,7 @@ export default function SupplierDashboard() {
                 </>
               ) : (
                 <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
-                  <h3 className="text-lg font-bold text-[#0D1F3C]">No hay RFQs abiertas ahora mismo</h3>
+                  <h3 className="text-lg font-bold text-[#0D1F3C]">No hay Solicitudes de Cotización abiertas ahora mismo</h3>
                   <p className="text-sm text-gray-400 mt-2">Cuando un comprador publique una necesidad, aparecerá en este inbox.</p>
                 </div>
               )}
@@ -2219,7 +2219,7 @@ export default function SupplierDashboard() {
                       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                         <div>
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="text-base font-bold text-[#0D1F3C]">{offer.quote?.productName || 'RFQ'}</h3>
+                            <h3 className="text-base font-bold text-[#0D1F3C]">{offer.quote?.productName || 'Solicitud de Oferta'}</h3>
                             <span className={`text-[10px] font-semibold px-3 py-1 rounded-full ${offer.statusClass}`}>
                               {offer.statusLabel}
                             </span>
@@ -2271,7 +2271,7 @@ export default function SupplierDashboard() {
               ) : (
                 <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
                   <h3 className="text-lg font-bold text-[#0D1F3C]">Todavia no envias ofertas</h3>
-                  <p className="text-sm text-gray-400 mt-2">Abre una RFQ del inbox y responde con precio, notas y lead time.</p>
+                  <p className="text-sm text-gray-400 mt-2">Abre una Solicitud de Cotización y responde con precio, notas y lead time.</p>
                 </div>
               )}
             </div>
@@ -2500,7 +2500,7 @@ export default function SupplierDashboard() {
                       <div className="grid grid-cols-3 gap-3 text-center min-w-[280px]">
                         <div className="rounded-2xl bg-[#f8fafc] px-4 py-3">
                           <div className="text-xl font-extrabold text-[#0D1F3C]">{buyer.openRfqs}</div>
-                          <div className="text-[10px] text-gray-400 uppercase tracking-wide mt-1">RFQs abiertas</div>
+                          <div className="text-[10px] text-gray-400 uppercase tracking-wide mt-1">Solicitudes abiertas</div>
                         </div>
                         <div className="rounded-2xl bg-[#f8fafc] px-4 py-3">
                           <div className="text-xl font-extrabold text-[#2ECAD5]">{buyer.submittedOffers}</div>
@@ -2518,7 +2518,7 @@ export default function SupplierDashboard() {
             ) : (
               <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
                 <h3 className="text-lg font-bold text-[#0D1F3C]">Todavia no tienes relaciones buyer activas</h3>
-                <p className="text-sm text-gray-400 mt-2">A medida que respondas RFQs relevantes y cierres ofertas, este espacio se convierte en tu cartera comercial.</p>
+                <p className="text-sm text-gray-400 mt-2">A medida que respondas Solicitudes de Cotización relevantes y cierres ofertas, este espacio se convierte en tu cartera comercial.</p>
               </div>
             )}
           </div>
@@ -2575,9 +2575,9 @@ export default function SupplierDashboard() {
                     <div className="text-xs text-gray-400 mt-1">{formatLimitLabel(entitlements.productLimit, 'productos')}</div>
                   </div>
                   <div className="rounded-2xl bg-[#f8fafc] px-4 py-4">
-                    <div className="text-xs font-semibold uppercase tracking-wide text-gray-400">RFQs respondidas</div>
+                    <div className="text-xs font-semibold uppercase tracking-wide text-gray-400">Cotizaciones respondidas</div>
                     <div className="text-2xl font-extrabold text-emerald-500 mt-1">{usageSummary.quoteResponsesThisMonth}</div>
-                    <div className="text-xs text-gray-400 mt-1">{formatLimitLabel(entitlements.quoteResponseLimit, 'RFQs')}</div>
+                    <div className="text-xs text-gray-400 mt-1">{formatLimitLabel(entitlements.quoteResponseLimit, 'cotizaciones')}</div>
                   </div>
                   <div className="rounded-2xl bg-[#f8fafc] px-4 py-4">
                     <div className="text-xs font-semibold uppercase tracking-wide text-gray-400">Conversaciones IA</div>
@@ -2655,7 +2655,7 @@ export default function SupplierDashboard() {
                         <div className="text-sm font-bold text-[#0D1F3C] mt-1">{plan.maxActiveProducts ?? 'Ilimitado'}</div>
                       </div>
                       <div className="rounded-xl bg-[#f8fafc] px-3 py-2">
-                        <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">RFQs / mes</div>
+                        <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Cotizaciones / mes</div>
                         <div className="text-sm font-bold text-[#0D1F3C] mt-1">{plan.maxQuoteResponsesPerMonth ?? 'Ilimitado'}</div>
                       </div>
                     </div>
@@ -2729,7 +2729,7 @@ export default function SupplierDashboard() {
                 </div>
                 <h3 className="text-2xl font-extrabold text-[#0D1F3C] mb-3">Límite mensual de IA alcanzado</h3>
                 <p className="text-gray-500 mb-6 leading-relaxed">
-                  Ya consumiste las conversaciones IA disponibles para este ciclo. Puedes seguir usando RFQ y catálogo, o cambiar de plan para ampliar el cupo.
+                  Ya consumiste las conversaciones IA disponibles para este ciclo. Puedes seguir usando Solicitudes de Cotización y catálogo, o cambiar de plan para ampliar el cupo.
                 </p>
                 <button
                   type="button"

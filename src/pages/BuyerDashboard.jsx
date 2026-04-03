@@ -193,7 +193,7 @@ export default function BuyerDashboard() {
 
   const [toast, setToast] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [activeTab, setActiveTab] = useState('catalog');
+  const [activeTab, setActiveTab] = useState(() => location.state?.activeTab ?? 'catalog');
   const [catalogFilter, setCatalogFilter] = useState('Todos');
   const [catalogSearch, setCatalogSearch] = useState('');
   const [catalogLoading, setCatalogLoading] = useState(false);
@@ -1301,7 +1301,7 @@ export default function BuyerDashboard() {
           </div>
         ) : (
           <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
-            <h3 className="text-lg font-bold text-[#0D1F3C]">Aun no creas tu primera RFQ</h3>
+            <h3 className="text-lg font-bold text-[#0D1F3C]">Aun no creas tu primera Solicitud de Cotización</h3>
             <p className="text-sm text-gray-400 mt-2">Publica una necesidad de compra y empieza a comparar ofertas reales.</p>
             <button
               type="button"
@@ -1589,7 +1589,7 @@ export default function BuyerDashboard() {
 
             <div className="px-6 pb-6 relative">
               <div className="w-20 h-20 bg-gradient-to-br from-[#0D1F3C] to-[#1a3260] rounded-2xl flex items-center justify-center text-[#2ECAD5] text-2xl font-extrabold border-4 border-white shadow-lg -mt-10 relative z-10">
-                RFQ
+                SC
               </div>
               <div className="mt-4 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                 <div>
@@ -1610,7 +1610,7 @@ export default function BuyerDashboard() {
                     disabled={quoteActionId === selectedQuote.id}
                     className="border border-rose-200 text-rose-600 font-semibold px-5 py-2.5 rounded-xl hover:bg-rose-50 transition-all text-sm disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    {quoteActionId === selectedQuote.id ? 'Cancelando...' : 'Cancelar RFQ'}
+                    {quoteActionId === selectedQuote.id ? 'Cancelando...' : 'Cancelar Solicitud'}
                   </button>
                 )}
               </div>
@@ -2345,7 +2345,7 @@ export default function BuyerDashboard() {
                       </span>
                       <h2 className="text-2xl font-extrabold mt-2">Sugerencias basadas en tu actividad</h2>
                       <p className="text-sm text-slate-300 mt-2 max-w-3xl">
-                        Priorizamos RFQs previas, busquedas recientes, proveedores guardados y senales comerciales.
+                        Priorizamos Solicitudes de Cotización previas, busquedas recientes, proveedores guardados y senales comerciales.
                         La cercania geografica quedara para una fase posterior cuando tengamos direccion confirmada en mapa y coordenadas.
                       </p>
                     </div>
@@ -2442,7 +2442,7 @@ export default function BuyerDashboard() {
             {/* Stats row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { label: 'RFQs creadas', value: buyerStats.totalOrders || buyerQuotes.length, sub: 'totales', icon: (
+                { label: 'Solicitudes de Cotización', value: buyerStats.totalOrders || buyerQuotes.length, sub: 'totales', icon: (
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
                   </svg>
@@ -2609,7 +2609,7 @@ export default function BuyerDashboard() {
                 </div>
               ) : (
                 <div className="bg-[#f8fafc] rounded-xl p-6 text-center text-sm text-gray-400">
-                  Aun no aceptas ofertas. Cuando cierres tu primera RFQ, aparecerá aqui.
+                  Aun no aceptas ofertas. Cuando cierres tu primera Solicitud de Cotización, aparecerá aqui.
                 </div>
               )}
             </div>
