@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import BodegaLogo from '../components/BodegaLogo';
 import mainLogo from '../assets/zentra_main_logo.png';
 import AuthChoiceModal from '../components/AuthChoiceModal';
 import { Avocado, Grapes, Orange, Strawberry } from '../components/FruitIllustrations';
