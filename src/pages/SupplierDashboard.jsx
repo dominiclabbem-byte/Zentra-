@@ -1041,7 +1041,7 @@ export default function SupplierDashboard() {
             </div>
             <div>
               <label htmlFor="offer-lead-time" className="block text-sm font-medium text-gray-700 mb-1.5">
-                Lead time estimado
+                Tiempo estimado de entrega
               </label>
               <input
                 id="offer-lead-time"
@@ -2258,7 +2258,7 @@ export default function SupplierDashboard() {
                           <p className="text-sm text-gray-500 mt-1">
                             {offer.buyerName || 'Comprador'} / {offer.quote?.quantityLabel || 'Sin cantidad'} / {offer.quote?.deliveryDateLabel || 'Sin fecha'}
                           </p>
-                          <p className="text-sm text-gray-400 mt-1">Lead time: {offer.estimatedLeadTime}</p>
+                          <p className="text-sm text-gray-400 mt-1">Entrega estimada: {offer.estimatedLeadTime}</p>
                           <p className="text-sm text-gray-600 mt-3">{offer.notes || 'Sin notas adicionales.'}</p>
                         </div>
                         <div className="lg:text-right">
@@ -2299,7 +2299,7 @@ export default function SupplierDashboard() {
               ) : (
                 <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
                   <h3 className="text-lg font-bold text-[#0D1F3C]">Todavia no envias ofertas</h3>
-                  <p className="text-sm text-gray-400 mt-2">Abre una Solicitud de Cotización y responde con precio, notas y lead time.</p>
+                  <p className="text-sm text-gray-400 mt-2">Abre una Solicitud de Cotización y responde con precio, notas y tiempo de entrega.</p>
                 </div>
               )}
             </div>

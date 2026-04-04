@@ -1272,7 +1272,7 @@ export default function BuyerDashboard() {
                       <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-600">Oferta aceptada</div>
                       <div className="text-sm font-bold text-[#0D1F3C] mt-1">{acceptedOffer.supplierName}</div>
                       <div className="text-xs text-gray-500 mt-1">
-                        {acceptedOffer.priceLabel} / Lead time {acceptedOffer.estimatedLeadTime}
+                        {acceptedOffer.priceLabel} / Entrega estimada: {acceptedOffer.estimatedLeadTime}
                       </div>
                     </div>
                   )}
@@ -1664,7 +1664,7 @@ export default function BuyerDashboard() {
 
                           <div className="lg:text-right lg:min-w-[220px]">
                             <div className="text-2xl font-extrabold text-[#0D1F3C]">{offer.priceLabel}</div>
-                            <div className="text-sm text-gray-400 mt-1">Lead time: {offer.estimatedLeadTime}</div>
+                            <div className="text-sm text-gray-400 mt-1">Entrega estimada: {offer.estimatedLeadTime}</div>
                             <div className="flex items-center gap-2 lg:justify-end mt-2">
                               <span className="text-[11px] font-semibold bg-[#f8fafc] text-[#0D1F3C] border border-gray-100 px-2.5 py-1 rounded-lg">
                                 Rating {Number(offer.supplierRating ?? 0).toFixed(1)}
@@ -2333,6 +2333,53 @@ export default function BuyerDashboard() {
                 </button>
               ))}
             </div>
+
+            {(() => {
+              const relevantAlerts = buyerAlerts.filter((a) => a.productId).slice(0, 5);
+              if (relevantAlerts.length === 0) return null;
+              return (
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0a1628] to-[#0d2040] border border-[#2ECAD5]/20 px-6 py-5">
+                  <div className="absolute inset-0 bg-grid opacity-10" />
+                  <div className="absolute top-0 right-0 w-64 h-full bg-gradient-to-l from-[#2ECAD5]/5 to-transparent" />
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="w-2 h-2 bg-[#2ECAD5] rounded-full animate-pulse" />
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-[#2ECAD5]">Movimientos de mercado en tus seguimientos</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {relevantAlerts.map((alert) => {
+                        const isDown = alert.change === 'down';
+                        const pct = alert.previousPrice && alert.currentPrice
+                          ? Math.abs(((parseFloat(alert.currentPrice.replace(/[^0-9]/g, '')) - parseFloat(alert.previousPrice.replace(/[^0-9]/g, ''))) / parseFloat(alert.previousPrice.replace(/[^0-9]/g, ''))) * 100).toFixed(1)
+                          : null;
+                        return (
+                          <div key={alert.id} className={`rounded-xl border px-4 py-3 flex items-start justify-between gap-3 ${isDown ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-rose-500/5 border-rose-500/20'}`}>
+                            <div className="min-w-0">
+                              <div className="text-sm font-bold text-white truncate">{alert.productName}</div>
+                              <div className="text-[11px] text-gray-400 mt-0.5 truncate">{alert.supplierName}{alert.categoryName ? ` · ${alert.categoryName}` : ''}</div>
+                              <div className="flex items-center gap-2 mt-2">
+                                <span className="text-xs text-gray-500 line-through">{alert.previousPrice}</span>
+                                <span className={`text-sm font-extrabold ${isDown ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                  {isDown ? '↓' : '↑'} {alert.currentPrice}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex-shrink-0 text-right">
+                              <div className={`text-lg font-black ${isDown ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                {isDown ? '-' : '+'}{pct}%
+                              </div>
+                              <div className={`text-[10px] font-semibold mt-0.5 ${isDown ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                {isDown ? 'Bajó' : 'Subió'}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {showRecommendedCatalog && recommendedCatalogProducts.length > 0 && (
               <section className="bg-gradient-to-br from-[#0D1F3C] to-[#102746] rounded-3xl p-6 text-white overflow-hidden relative">

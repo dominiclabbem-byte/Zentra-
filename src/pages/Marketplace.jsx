@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AuthChoiceModal from '../components/AuthChoiceModal';
 import Toast from '../components/Toast';
@@ -96,7 +96,40 @@ export default function Marketplace() {
 
   const supplierOptions = ['Todos', ...new Set(catalogProducts.map((product) => product.supplierName).filter(Boolean))];
   const categoryFilters = ['Todos', ...categoryOptions.map((category) => category.name)];
-  const filteredProducts = catalogProducts.filter((product) => {
+
+  const catalogPriceSignalMap = useMemo(() => {
+    const map = new Map();
+    priceAlerts.forEach((alert) => {
+      if (!alert.product_id) return;
+      const existing = map.get(alert.product_id);
+      if (!existing || new Date(alert.created_at) > new Date(existing.created_at)) {
+        const isDown = alert.direction === 'down';
+        map.set(alert.product_id, {
+          change: alert.direction ?? 'down',
+          currentPrice: `$${Number(alert.new_price).toLocaleString('es-CL')}`,
+          previousPrice: `$${Number(alert.old_price).toLocaleString('es-CL')}`,
+          impactLabel: isDown ? 'Mejor oportunidad' : 'Precio al alza',
+          signalLabel: isDown ? 'Precio a la baja' : 'Precio al alza',
+          dateLabel: new Date(alert.created_at).toLocaleDateString('es-CL'),
+          createdAt: alert.created_at,
+        });
+      }
+    });
+    return map;
+  }, [priceAlerts]);
+
+  const trackedAlertTargets = useMemo(() => ({
+    productIds: new Set(alertSubscriptions.filter((s) => s.product_id).map((s) => s.product_id)),
+    categoryIds: new Set(alertSubscriptions.filter((s) => !s.product_id && s.category_id).map((s) => s.category_id)),
+  }), [alertSubscriptions]);
+
+  const catalogProductsWithSignals = useMemo(() => catalogProducts.map((product) => ({
+    ...product,
+    recentPriceAlert: catalogPriceSignalMap.get(product.id) ?? null,
+    hasTrackedPriceAlert: trackedAlertTargets.productIds.has(product.id) || trackedAlertTargets.categoryIds.has(product.categoryId),
+  })), [catalogPriceSignalMap, catalogProducts, trackedAlertTargets]);
+
+  const filteredProducts = catalogProductsWithSignals.filter((product) => {
     const matchesCategory = categoryFilter === 'Todos' || product.category === categoryFilter;
     const matchesSupplier = supplierFilter === 'Todos' || product.supplierName === supplierFilter;
     const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -516,72 +549,84 @@ export default function Marketplace() {
               Cargando marketplace...
             </div>
           ) : filteredProducts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredProducts.map((product) => {
-                const supplierInsight = supplierInsights[product.supplierId];
-
-                return (
-                <button
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {filteredProducts.map((product) => (
+                <div
                   key={product.id}
-                  type="button"
+                  className="bg-white rounded-2xl border border-gray-100 overflow-hidden card-premium cursor-pointer group"
                   onClick={() => openSupplierFromProduct(product)}
-                  className="bg-white rounded-2xl border border-gray-100 overflow-hidden card-premium text-left group"
                 >
-                  <div className={`relative h-52 ${product.customImage ? '' : `bg-gradient-to-br ${product.gradient}`} overflow-hidden`}>
+                  <div className={`relative h-40 bg-gradient-to-br ${product.gradient} overflow-hidden`}>
                     {product.customImage ? (
                       <img src={product.customImage} alt={product.imageAlt} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     ) : (
                       <>
                         <div className="absolute inset-0 opacity-20">
-                          <div className="absolute top-4 left-4 w-24 h-24 bg-white/30 rounded-full blur-xl" />
-                          <div className="absolute bottom-6 right-6 w-28 h-28 bg-white/20 rounded-full blur-2xl" />
+                          <div className="absolute top-3 left-3 w-16 h-16 bg-white/30 rounded-full blur-xl" />
+                          <div className="absolute bottom-4 right-4 w-20 h-20 bg-white/20 rounded-full blur-2xl" />
                         </div>
-                        <div className="absolute inset-0 flex items-center justify-center text-7xl">
-                          {product.emoji}
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="text-5xl filter drop-shadow-lg transform group-hover:scale-110 transition-transform duration-500">
+                            {product.emoji}
+                          </div>
                         </div>
                       </>
                     )}
-
-                    <div className="absolute top-3 left-3 bg-black/35 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-full">
-                      {product.category}
+                    <div className="absolute top-2 left-2 flex flex-col items-start gap-1.5">
+                      {product.hasTrackedPriceAlert && (
+                        <div className="text-[9px] font-bold bg-white/90 text-[#0D1F3C] px-2 py-0.5 rounded-full shadow-sm">
+                          Alerta activa
+                        </div>
+                      )}
+                      {product.recentPriceAlert && (
+                        <div className={`text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm ${
+                          product.recentPriceAlert.change === 'down'
+                            ? 'bg-emerald-400/95 text-emerald-950'
+                            : 'bg-rose-400/95 text-rose-950'
+                        }`}>
+                          {product.recentPriceAlert.signalLabel}
+                        </div>
+                      )}
                     </div>
-
                     {product.status === 'low_stock' && (
-                      <div className="absolute top-3 right-3 text-[10px] font-bold bg-amber-400/90 text-amber-900 px-2.5 py-1 rounded-full">
+                      <div className="absolute top-2 right-2 text-[9px] font-bold bg-amber-400/90 text-amber-900 px-2 py-0.5 rounded-full">
                         Stock bajo
                       </div>
                     )}
                   </div>
 
-                  <div className="p-5">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <h3 className="text-lg font-extrabold text-[#0D1F3C] truncate">{product.name}</h3>
-                        <p className="text-sm text-gray-400 mt-1">{product.stock}</p>
-                      </div>
-                      <span className="text-lg font-extrabold text-[#0D1F3C] whitespace-nowrap">{product.price}</span>
+                  <div className="p-3.5">
+                    <h3 className="text-sm font-bold text-[#0D1F3C] truncate">{product.name}</h3>
+                    <p className="text-xs text-gray-400 mt-0.5">{product.category}</p>
+                    <div className="flex items-center justify-between mt-3">
+                      <span className="text-base font-extrabold text-[#0D1F3C]">{product.price}</span>
                     </div>
-
-                    <p className="text-sm text-gray-500 leading-relaxed mt-3 min-h-[42px]">{product.description || 'Producto publicado en el marketplace de Zentra.'}</p>
-
-                    <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold text-[#0D1F3C] truncate">{product.supplierName || 'Proveedor Zentra'}</p>
-                        <p className="text-[11px] text-gray-400">
-                          {[supplierInsight?.city, supplierInsight?.categories?.slice(0, 2).join(' / ')].filter(Boolean).join(' / ') || 'Ver ficha publica del proveedor'}
+                    {product.recentPriceAlert && (
+                      <div className="mt-2 rounded-xl border border-gray-100 bg-[#f8fafc] px-3 py-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[11px] font-semibold text-[#0D1F3C]">{product.recentPriceAlert.impactLabel}</span>
+                          <span className={`text-[10px] font-bold ${
+                            product.recentPriceAlert.change === 'down' ? 'text-emerald-600' : 'text-rose-600'
+                          }`}>
+                            {product.recentPriceAlert.change === 'down' ? '↓' : '↑'} {product.recentPriceAlert.currentPrice}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-gray-400 mt-1">
+                          Antes {product.recentPriceAlert.previousPrice} · {product.recentPriceAlert.dateLabel}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {supplierInsight?.verified && (
-                          <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-0.5 rounded-full">
-                            Verificado
-                          </span>
-                        )}
-                        <span className="text-sm font-bold text-[#2ECAD5] group-hover:translate-x-0.5 transition-transform">
-                          {supplierInsight ? Number(supplierInsight.rating || 0).toFixed(1) : 'Abrir'}
-                        </span>
+                    )}
+                    {product.supplierName && (
+                      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-50">
+                        <div className="w-6 h-6 bg-gradient-to-br from-[#0D1F3C] to-[#1a3260] rounded-md flex items-center justify-center text-[#2ECAD5] text-[8px] font-bold flex-shrink-0">
+                          {product.supplierName.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[11px] font-semibold text-gray-600 truncate">{product.supplierName}</p>
+                          <span className="text-[10px] text-gray-400">Ver proveedor</span>
+                        </div>
                       </div>
-                    </div>
+                    )}
                     <button
                       type="button"
                       onClick={(e) => {
@@ -597,9 +642,8 @@ export default function Marketplace() {
                       Cotizar
                     </button>
                   </div>
-                </button>
-                );
-              })}
+                </div>
+              ))}
             </div>
           ) : (
             <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">

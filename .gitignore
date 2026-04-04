@@ -31,3 +31,5 @@ test-results
 .vercel
 .env*.local
 supabase/.temp
+
+.vercel
