@@ -14,17 +14,13 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           {/* Brand */}
           <div>
-            <div className="flex items-center gap-1 mb-4">
+            <div className="flex items-center mb-4">
               <img
                 src={mainLogo}
-                alt="Zentra AI"
-                style={{ width: '120px', height: 'auto', objectFit: 'contain', filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.2))' }}
+                alt="Z"
+                style={{ height: '58px', width: 'auto', objectFit: 'contain', filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.2))', marginTop: '4px' }}
               />
-              <div className="flex flex-col justify-center -ml-4">
-                <span className="text-3xl font-extrabold tracking-tight text-white">
-                  zentra<span className="text-emerald-400">.</span><span className="text-transparent bg-clip-text bg-gradient-to-r from-[#2ECAD5] to-blue-500">ai</span>
-                </span>
-              </div>
+              <span className="text-3xl font-extrabold tracking-tight -ml-4 text-transparent bg-clip-text bg-gradient-to-r from-[#5b8af0] to-[#00e5b0]">entra</span>
             </div>
             <p className="text-sm leading-relaxed text-gray-500">
               🍊 Conectamos proveedores de insumos gastronomicos con compradores en Chile.

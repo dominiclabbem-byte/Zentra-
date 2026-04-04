@@ -1,4 +1,4 @@
-const OPENROUTER_API_KEY = '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';
+const OPENROUTER_API_KEY = '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';
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 export async function generateProductImage(prompt) {
