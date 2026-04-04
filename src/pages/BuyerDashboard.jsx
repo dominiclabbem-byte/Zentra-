@@ -1267,6 +1267,15 @@ export default function BuyerDashboard() {
                   <p className="text-sm text-gray-500">{quote.quantityLabel}</p>
                   <p className="text-xs text-gray-400 mt-1">{quote.categoryName} / Entrega {quote.deliveryDateLabel}</p>
                   <p className="text-xs text-gray-400 mt-2">{quote.createdAtLabel}</p>
+                  {!acceptedOffer && quote.offers.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {quote.offers.map((offer) => offer.supplierName).filter(Boolean).map((name) => (
+                        <span key={name} className="text-[10px] font-semibold bg-[#f2f7fb] text-[#0D1F3C] border border-[#dce9f2] px-2 py-0.5 rounded-full">
+                          🏪 {name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   {acceptedOffer && (
                     <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 px-3.5 py-3">
                       <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-600">Oferta aceptada</div>
@@ -1359,11 +1368,13 @@ export default function BuyerDashboard() {
                       {quote.offerCount} {quote.offerCount === 1 ? 'oferta recibida' : 'ofertas recibidas'}
                       {acceptedOffer ? ` / Mejor cierre ${acceptedOffer.priceLabel}` : ''}
                     </p>
-                    {acceptedOffer?.supplierName && (
-                      <p className="text-xs font-semibold text-[#0D1F3C] mt-0.5">
-                        🏪 {acceptedOffer.supplierName}
+                    {acceptedOffer?.supplierName ? (
+                      <p className="text-xs font-semibold text-[#0D1F3C] mt-0.5">🏪 {acceptedOffer.supplierName}</p>
+                    ) : quote.offers.length > 0 ? (
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        🏪 {quote.offers.map((o) => o.supplierName).filter(Boolean).join(', ')}
                       </p>
-                    )}
+                    ) : null}
                   </div>
                   <button
                     type="button"
