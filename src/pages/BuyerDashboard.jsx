@@ -1359,6 +1359,11 @@ export default function BuyerDashboard() {
                       {quote.offerCount} {quote.offerCount === 1 ? 'oferta recibida' : 'ofertas recibidas'}
                       {acceptedOffer ? ` / Mejor cierre ${acceptedOffer.priceLabel}` : ''}
                     </p>
+                    {acceptedOffer?.supplierName && (
+                      <p className="text-xs font-semibold text-[#0D1F3C] mt-0.5">
+                        🏪 {acceptedOffer.supplierName}
+                      </p>
+                    )}
                   </div>
                   <button
                     type="button"
