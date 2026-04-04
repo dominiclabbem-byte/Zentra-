@@ -1400,7 +1400,7 @@ export default function BuyerDashboard() {
   const headerTabs = [
     {
       id: 'catalog',
-      label: 'Catalogo',
+      label: 'Marketplace',
       active: activeTab === 'catalog',
       onClick: () => setActiveTab('catalog'),
       icon: (
@@ -2697,7 +2697,7 @@ export default function BuyerDashboard() {
               </form>
 
               <div className="bg-white rounded-2xl border border-gray-100 p-6 card-premium">
-                <h2 className="text-xl font-extrabold text-[#0D1F3C]">Suscripciones activas</h2>
+                <h2 className="text-xl font-extrabold text-[#0D1F3C]">Seguimientos Activos</h2>
                 <p className="text-sm text-gray-400 mt-1 mb-5">Controla que señales de precio quieres seguir.</p>
                 {alertSubscriptions.length > 0 ? (
                   <div className="space-y-3">

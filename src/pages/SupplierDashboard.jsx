@@ -235,6 +235,34 @@ export default function SupplierDashboard() {
       return;
     }
 
+    const CATEGORY_KEYWORDS = {
+      'Frutas y verduras': ['palta', 'avocado', 'tomate', 'lechuga', 'zanahoria', 'cebolla', 'ajo', 'pepino', 'pimiento', 'pera', 'manzana', 'naranja', 'limon', 'frutilla', 'uva', 'sandia', 'melon', 'durazno', 'ciruela', 'kiwi', 'platano', 'banana', 'frambuesa', 'arandano', 'papaya', 'mango', 'piña', 'ananas', 'brocoli', 'coliflor', 'espinaca', 'acelga', 'repollo', 'zapallo', 'calabaza', 'betarraga', 'apio', 'puerro', 'espárrago', 'esparrago', 'choclo', 'maiz fresco', 'poroto verde', 'arveja fresca', 'champiñon', 'champinon', 'hongos', 'perejil', 'cilantro', 'albahaca', 'menta'],
+      'Carnes y cecinas': ['pollo', 'vacuno', 'cerdo', 'cordero', 'pavo', 'jamon', 'salchicha', 'longaniza', 'chorizo', 'mortadela', 'filete', 'lomo', 'costilla', 'paleta', 'pechuga', 'muslo', 'carne', 'asado', 'osobuco', 'plateada', 'malaya', 'tocino', 'panceta', 'salame', 'salami', 'prieta', 'morcilla', 'chicharron', 'res', 'bife', 'matambre'],
+      'Lacteos': ['leche', 'queso', 'yogurt', 'yogur', 'mantequilla', 'crema', 'nata', 'quesillo', 'ricota', 'ricotta', 'mozzarella', 'gouda', 'cheddar', 'camembert', 'brie', 'mantecoso', 'chanco', 'gauda', 'suero', 'kefir', 'butter'],
+      'Harinas y cereales': ['harina', 'arroz', 'avena', 'semola', 'trigo', 'cebada', 'maiz', 'quinoa', 'amaranto', 'centeno', 'mijo', 'salvado', 'granola', 'muesli', 'corn flakes', 'cereal', 'polenta', 'cuscus', 'cous cous'],
+      'Aceites y grasas': ['aceite', 'manteca', 'margarina', 'oliva', 'canola', 'girasol', 'maravilla', 'vegetal', 'ghee', 'coco oil', 'aceite de coco'],
+      'Abarrotes': ['azucar', 'sal', 'vinagre', 'salsa', 'conserva', 'pasta', 'fideos', 'tallarines', 'spaghetti', 'macarron', 'pure de tomate', 'tomate en lata', 'atun', 'sardina', 'mermelada', 'miel', 'cafe', 'te ', 'yerba', 'chocolate', 'cacao', 'vainilla', 'polvo de hornear', 'levadura', 'bicarbonato', 'gelatina', 'almidón', 'almidon', 'maicena', 'galleta', 'crackers'],
+      'Especias y condimentos': ['oregano', 'comino', 'pimienta', 'paprika', 'curry', 'mostaza', 'ketchup', 'mayonesa', 'aji', 'merkén', 'merken', 'curcuma', 'canela', 'clavo', 'nuez moscada', 'laurel', 'tomillo', 'romero', 'estragón', 'estragon', 'cardamomo', 'anís', 'anis', 'hinojo', 'jengibre', 'condimento', 'aliño', 'aliño'],
+      'Frutos secos': ['nuez', 'almendra', 'mani', 'maní', 'pistache', 'pistacho', 'anacardo', 'castaña', 'castana', 'macadamia', 'pecan', 'nogal', 'avellana', 'pine nut', 'pinon', 'semilla', 'chia', 'linaza', 'sesamo', 'pepita'],
+      'Legumbres': ['lenteja', 'garbanzo', 'poroto', 'arveja', 'haba', 'soja', 'soya', 'frijol', 'chicharo', 'lupino', 'lupino'],
+      'Congelados IQF': ['congelado', 'iqf', 'frozen', 'precocido', 'nugget', 'croqueta', 'empanado', 'rebozado'],
+    };
+
+    const productNameNormalized = productForm.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const selectedCategoryName = categoryRecord.name;
+
+    for (const [correctCategory, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+      if (correctCategory === selectedCategoryName) continue;
+      const matched = keywords.find((kw) => productNameNormalized.includes(kw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')));
+      if (matched) {
+        setToast({
+          message: `"${productForm.name}" parece pertenecer a la categoría "${correctCategory}", no a "${selectedCategoryName}". Por favor verifica la categoría antes de publicar.`,
+          type: 'error',
+        });
+        return;
+      }
+    }
+
     const payload = {
       supplier_id: currentUser.id,
       category_id: categoryRecord.id,

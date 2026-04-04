@@ -11,7 +11,7 @@ import {
   normalizeUserRecord,
 } from '../lib/profileAdapters';
 import { mapProductRecordToCard } from '../lib/productAdapters';
-import { getProducts, getSupplierProfile, getSupplierStats } from '../services/database';
+import { getProducts, getPriceAlerts, getPriceAlertSubscriptions, getSupplierProfile, getSupplierStats } from '../services/database';
 
 export default function Marketplace() {
   const { categories: categoryOptions, currentUser } = useAuth();
@@ -24,6 +24,8 @@ export default function Marketplace() {
   const [supplierFilter, setSupplierFilter] = useState('Todos');
   const [searchTerm, setSearchTerm] = useState('');
   const [viewingSupplier, setViewingSupplier] = useState(null);
+  const [alertSubscriptions, setAlertSubscriptions] = useState([]);
+  const [priceAlerts, setPriceAlerts] = useState([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -80,6 +82,17 @@ export default function Marketplace() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    Promise.all([
+      getPriceAlertSubscriptions(currentUser.id),
+      getPriceAlerts(currentUser.id),
+    ]).then(([subs, alerts]) => {
+      setAlertSubscriptions(subs);
+      setPriceAlerts(alerts);
+    }).catch(() => {});
+  }, [currentUser?.id]);
 
   const supplierOptions = ['Todos', ...new Set(catalogProducts.map((product) => product.supplierName).filter(Boolean))];
   const categoryFilters = ['Todos', ...categoryOptions.map((category) => category.name)];
@@ -419,6 +432,82 @@ export default function Marketplace() {
           </div>
         </div>
       </section>
+
+      {currentUser && alertSubscriptions.length > 0 && (() => {
+        const trackedProductIds = new Set(
+          alertSubscriptions.map((s) => {
+            const p = s.products && (Array.isArray(s.products) ? s.products[0] : s.products);
+            return p?.id;
+          }).filter(Boolean)
+        );
+        const trackedCategoryNames = new Set(
+          alertSubscriptions.map((s) => {
+            const c = s.categories && (Array.isArray(s.categories) ? s.categories[0] : s.categories);
+            return c?.name;
+          }).filter(Boolean)
+        );
+
+        const relevantAlerts = priceAlerts.filter((a) => {
+          const product = a.products && (Array.isArray(a.products) ? a.products[0] : a.products);
+          const category = product?.categories && (Array.isArray(product.categories) ? product.categories[0] : product.categories);
+          return trackedProductIds.has(a.product_id) || trackedCategoryNames.has(category?.name);
+        }).slice(0, 5);
+
+        const formatCLP = (v) => v != null ? `$${Number(v).toLocaleString('es-CL')}` : '-';
+
+        if (relevantAlerts.length === 0) return null;
+
+        return (
+          <section className="px-4 pt-8 pb-0">
+            <div className="max-w-6xl mx-auto">
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0a1628] to-[#0d2040] border border-[#2ECAD5]/20 px-6 py-5">
+                <div className="absolute inset-0 bg-grid opacity-10" />
+                <div className="absolute top-0 right-0 w-64 h-full bg-gradient-to-l from-[#2ECAD5]/5 to-transparent" />
+                <div className="relative z-10">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-2 h-2 bg-[#2ECAD5] rounded-full animate-pulse" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-[#2ECAD5]">Movimientos de mercado en tus seguimientos</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {relevantAlerts.map((alert) => {
+                      const product = alert.products && (Array.isArray(alert.products) ? alert.products[0] : alert.products);
+                      const supplier = product?.users && (Array.isArray(product.users) ? product.users[0] : product.users);
+                      const category = product?.categories && (Array.isArray(product.categories) ? product.categories[0] : product.categories);
+                      const isDown = alert.direction === 'down';
+                      const pct = alert.old_price > 0
+                        ? Math.abs(((alert.new_price - alert.old_price) / alert.old_price) * 100).toFixed(1)
+                        : null;
+
+                      return (
+                        <div key={alert.id} className={`rounded-xl border px-4 py-3 flex items-start justify-between gap-3 ${isDown ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-rose-500/5 border-rose-500/20'}`}>
+                          <div className="min-w-0">
+                            <div className="text-sm font-bold text-white truncate">{product?.name ?? 'Producto'}</div>
+                            <div className="text-[11px] text-gray-400 mt-0.5 truncate">{supplier?.company_name ?? ''}{category?.name ? ` · ${category.name}` : ''}</div>
+                            <div className="flex items-center gap-2 mt-2">
+                              <span className="text-xs text-gray-500 line-through">{formatCLP(alert.old_price)}</span>
+                              <span className={`text-sm font-extrabold ${isDown ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                {isDown ? '↓' : '↑'} {formatCLP(alert.new_price)}
+                              </span>
+                            </div>
+                          </div>
+                          <div className={`flex-shrink-0 text-right`}>
+                            <div className={`text-lg font-black ${isDown ? 'text-emerald-400' : 'text-rose-400'}`}>
+                              {isDown ? '-' : '+'}{pct}%
+                            </div>
+                            <div className={`text-[10px] font-semibold mt-0.5 ${isDown ? 'text-emerald-500' : 'text-rose-500'}`}>
+                              {isDown ? 'Bajó' : 'Subió'}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        );
+      })()}
 
       <section className="px-4 py-10">
         <div className="max-w-6xl mx-auto">
