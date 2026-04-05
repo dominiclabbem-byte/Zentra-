@@ -203,10 +203,17 @@ export default function SupplierDashboard() {
       setToast({ message: 'Escribe una descripción para generar la imagen', type: 'error' });
       return;
     }
+    if (productForm.imagePreviews.length >= 4) {
+      setToast({ message: 'Has alcanzado el límite de 4 imágenes por producto', type: 'error' });
+      return;
+    }
     setAiLoading(true);
     try {
       const imageData = await generateProductImage(aiPrompt.trim());
-      setProductForm((prev) => ({ ...prev, image: null, imagePreview: imageData }));
+      setProductForm((prev) => ({
+        ...prev,
+        imagePreviews: [...prev.imagePreviews, imageData]
+      }));
       setToast({ message: 'Imagen generada exitosamente', type: 'success' });
     } catch (err) {
       setToast({ message: err.message, type: 'error' });
@@ -216,6 +223,10 @@ export default function SupplierDashboard() {
   };
 
   const handleProductImage = (e) => {
+    if (productForm.imagePreviews.length >= 4) {
+      setToast({ message: 'Has alcanzado el límite de 4 imágenes por producto', type: 'error' });
+      return;
+    }
     const file = e.target.files[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
@@ -228,13 +239,21 @@ export default function SupplierDashboard() {
     }
     const reader = new FileReader();
     reader.onload = (ev) => {
-      setProductForm((prev) => ({ ...prev, image: file, imagePreview: ev.target.result }));
+      setProductForm((prev) => ({ 
+        ...prev, 
+        images: [...prev.images, file], 
+        imagePreviews: [...prev.imagePreviews, ev.target.result] 
+      }));
     };
     reader.readAsDataURL(file);
   };
 
-  const removeProductImage = () => {
-    setProductForm((prev) => ({ ...prev, image: null, imagePreview: null }));
+  const removeProductImage = (index) => {
+    setProductForm((prev) => {
+      const newPreviews = [...prev.imagePreviews];
+      newPreviews.splice(index, 1);
+      return { ...prev, imagePreviews: newPreviews };
+    });
   };
 
   const handleSaveProduct = async (e) => {
@@ -260,7 +279,7 @@ export default function SupplierDashboard() {
       'Lacteos': ['leche', 'queso', 'yogurt', 'yogur', 'mantequilla', 'crema', 'nata', 'quesillo', 'ricota', 'ricotta', 'mozzarella', 'gouda', 'cheddar', 'camembert', 'brie', 'mantecoso', 'chanco', 'gauda', 'suero', 'kefir', 'butter'],
       'Harinas y cereales': ['harina', 'arroz', 'avena', 'semola', 'trigo', 'cebada', 'maiz', 'quinoa', 'amaranto', 'centeno', 'mijo', 'salvado', 'granola', 'muesli', 'corn flakes', 'cereal', 'polenta', 'cuscus', 'cous cous'],
       'Aceites y grasas': ['aceite', 'manteca', 'margarina', 'oliva', 'canola', 'girasol', 'maravilla', 'vegetal', 'ghee', 'coco oil', 'aceite de coco'],
-      'Abarrotes': ['azucar', 'sal', 'vinagre', 'salsa', 'conserva', 'pasta', 'fideos', 'tallarines', 'spaghetti', 'macarron', 'pure de tomate', 'tomate en lata', 'atun', 'sardina', 'mermelada', 'miel', 'cafe', 'te ', 'yerba', 'chocolate', 'cacao', 'vainilla', 'polvo de hornear', 'levadura', 'bicarbonato', 'gelatina', 'almidón', 'almidon', 'maicena', 'galleta', 'crackers'],
+      'Abarrotes': ['azucar', 'sal', 'vinagre', 'salsa', 'conserva', 'pasta', 'fideos', 'tallarines', 'spaghetti', 'macarron', 'pure de tomate', 'tomate en lata', 'atun', 'sardina', 'mermelada', 'miel', 'cafe', 'te', 'yerba', 'chocolate', 'cacao', 'vainilla', 'polvo de hornear', 'levadura', 'bicarbonato', 'gelatina', 'almidón', 'almidon', 'maicena', 'galleta', 'crackers'],
       'Especias y condimentos': ['oregano', 'comino', 'pimienta', 'paprika', 'curry', 'mostaza', 'ketchup', 'mayonesa', 'aji', 'merkén', 'merken', 'curcuma', 'canela', 'clavo', 'nuez moscada', 'laurel', 'tomillo', 'romero', 'estragón', 'estragon', 'cardamomo', 'anís', 'anis', 'hinojo', 'jengibre', 'condimento', 'aliño', 'aliño'],
       'Frutos secos': ['nuez', 'almendra', 'mani', 'maní', 'pistache', 'pistacho', 'anacardo', 'castaña', 'castana', 'macadamia', 'pecan', 'nogal', 'avellana', 'pine nut', 'pinon', 'semilla', 'chia', 'linaza', 'sesamo', 'pepita'],
       'Legumbres': ['lenteja', 'garbanzo', 'poroto', 'arveja', 'haba', 'soja', 'soya', 'frijol', 'chicharo', 'lupino', 'lupino'],
@@ -272,7 +291,10 @@ export default function SupplierDashboard() {
 
     for (const [correctCategory, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
       if (correctCategory === selectedCategoryName) continue;
-      const matched = keywords.find((kw) => productNameNormalized.includes(kw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')));
+      const matched = keywords.find((kw) => {
+        const kwNormalized = kw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+        return new RegExp(`\\b${kwNormalized}\\b`).test(productNameNormalized);
+      });
       if (matched) {
         setToast({
           message: `"${productForm.name}" parece pertenecer a la categoría "${correctCategory}", no a "${selectedCategoryName}". Por favor verifica la categoría antes de publicar.`,
@@ -292,7 +314,8 @@ export default function SupplierDashboard() {
       stock: Number(productForm.stock),
       stock_unit: productForm.stockUnit,
       status: deriveProductStatus(productForm.stock),
-      image_url: productForm.imagePreview || null,
+      image_url: productForm.imagePreviews?.[0] || null,
+      image_urls: productForm.imagePreviews || [],
     };
 
     setIsSavingProduct(true);
@@ -1535,42 +1558,38 @@ export default function SupplierDashboard() {
                 </button>
               </div>
 
-              {/* Preview of existing image */}
-              {productForm.imagePreview ? (
-                <div className="relative rounded-xl overflow-hidden border border-gray-200 mb-3">
-                  <img
-                    src={productForm.imagePreview}
-                    alt="Vista previa"
-                    className="w-full h-40 object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => { removeProductImage(); setAiPrompt(''); }}
-                    className="absolute top-2 right-2 w-7 h-7 bg-black/50 backdrop-blur-md text-white rounded-lg flex items-center justify-center hover:bg-black/70 transition-all"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                  {productForm.image && (
-                    <div className="absolute bottom-2 left-2 bg-black/40 backdrop-blur-md text-white text-[10px] font-medium px-2 py-0.5 rounded-full">
-                      {(productForm.image.size / 1024).toFixed(0)} KB
+              {/* Previews of existing images */}
+              {productForm.imagePreviews && productForm.imagePreviews.length > 0 && (
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  {productForm.imagePreviews.map((preview, idx) => (
+                    <div key={idx} className="relative rounded-xl overflow-hidden border border-gray-200">
+                      <img
+                        src={preview}
+                        alt={`Vista previa ${idx + 1}`}
+                        className="w-full h-32 object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeProductImage(idx)}
+                        className="absolute top-2 right-2 w-7 h-7 bg-black/50 backdrop-blur-md text-white rounded-lg flex items-center justify-center hover:bg-black/70 transition-all"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
                     </div>
-                  )}
-                  {!productForm.image && (
-                    <div className="absolute bottom-2 left-2 bg-purple-600/80 backdrop-blur-md text-white text-[10px] font-medium px-2 py-0.5 rounded-full">
-                      ✨ Generada con IA
-                    </div>
-                  )}
+                  ))}
                 </div>
-              ) : imageMode === 'upload' ? (
-                /* Upload mode */
-                <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-[#2ECAD5] hover:bg-[#2ECAD5]/5 transition-all group">
+              )}
+
+              {/* Upload mode */}
+              {productForm.imagePreviews.length < 4 && imageMode === 'upload' && (
+                <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-[#2ECAD5] hover:bg-[#2ECAD5]/5 transition-all group mb-3">
                   <div className="flex flex-col items-center justify-center pt-2 pb-3">
                     <svg className="w-8 h-8 text-gray-300 group-hover:text-[#2ECAD5] transition-colors mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21zm14.25-15.75a1.125 1.125 0 11-2.25 0 1.125 1.125 0 012.25 0z" />
                     </svg>
-                    <p className="text-sm font-medium text-gray-400 group-hover:text-gray-600">Subir foto del producto</p>
+                    <p className="text-sm font-medium text-gray-400 group-hover:text-gray-600">Subir foto del producto ({productForm.imagePreviews.length}/4)</p>
                     <p className="text-[10px] text-gray-300 mt-1">JPG, PNG o WebP (max. 5MB)</p>
                   </div>
                   <input
@@ -1580,7 +1599,9 @@ export default function SupplierDashboard() {
                     className="hidden"
                   />
                 </label>
-              ) : (
+              )}
+              {/* AI Generate mode */}
+              {productForm.imagePreviews.length < 4 && imageMode === 'generate' && (
                 /* AI Generate mode */
                 <div className="border-2 border-dashed border-purple-200 rounded-xl p-4 bg-purple-50/50 space-y-3">
                   <p className="text-xs text-purple-600 font-medium">
@@ -1640,8 +1661,8 @@ export default function SupplierDashboard() {
             <div className="bg-[#f8fafc] rounded-xl p-4">
               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Vista previa</p>
               <div className="flex items-center gap-3">
-                {productForm.imagePreview ? (
-                  <img src={productForm.imagePreview} alt="Preview" className="w-12 h-12 rounded-xl object-cover" />
+                {productForm.imagePreviews?.[0] ? (
+                  <img src={productForm.imagePreviews[0]} alt="Preview" className="w-12 h-12 rounded-xl object-cover" />
                 ) : (
                   <div className={`w-12 h-12 bg-gradient-to-br ${productGradients[products.length % productGradients.length]} rounded-xl flex items-center justify-center text-2xl`}>
                     {productEmojis[productForm.category] || '🍽️'}
@@ -2437,7 +2458,7 @@ export default function SupplierDashboard() {
                     )}
                     {/* Badge */}
                     <div className="absolute top-3 left-3 bg-black/30 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5">
-                      {product.customImage ? (
+                      {product.imageUrls?.length > 0 ? (
                         <>
                           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />

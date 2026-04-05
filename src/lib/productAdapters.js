@@ -54,8 +54,8 @@ export function createEmptyProductForm(defaultCategory = 'Otros') {
     stock: '',
     stockUnit: 'kg',
     description: '',
-    image: null,
-    imagePreview: null,
+    images: [],
+    imagePreviews: [],
   };
 }
 
@@ -68,8 +68,8 @@ export function buildProductFormFromCard(product) {
     stock: product.stockValue,
     stockUnit: product.stockUnit,
     description: product.description,
-    image: null,
-    imagePreview: product.customImage,
+    images: [],
+    imagePreviews: product.imageUrls || [],
   };
 }
 
@@ -100,6 +100,7 @@ export function mapProductRecordToCard(record) {
     emoji: categoryRelation?.emoji ?? PRODUCT_EMOJIS[categoryName] ?? '🍽️',
     imageAlt: record.name,
     customImage: record.image_url ?? null,
+    imageUrls: record.image_urls?.length ? record.image_urls : (record.image_url ? [record.image_url] : []),
     createdAt: record.created_at ?? null,
   };
 }

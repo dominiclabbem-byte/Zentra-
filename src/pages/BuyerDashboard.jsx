@@ -739,8 +739,8 @@ export default function BuyerDashboard() {
       onClick={() => openSupplierFromProduct(product)}
     >
       <div className={`relative h-40 bg-gradient-to-br ${product.gradient} overflow-hidden`}>
-        {product.customImage ? (
-          <img src={product.customImage} alt={product.imageAlt} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+        {product.imageUrls?.[0] ? (
+          <img src={product.imageUrls[0]} alt={product.imageAlt} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
         ) : (
           <>
             <div className="absolute inset-0 opacity-20">
@@ -2267,9 +2267,9 @@ export default function BuyerDashboard() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {viewingSupplier.products.map((product) => (
                       <div key={product.id} className="bg-white rounded-xl border border-gray-100 overflow-hidden card-premium">
-                        <div className={`h-28 ${product.customImage ? '' : `bg-gradient-to-br ${product.gradient}`} relative overflow-hidden`}>
-                          {product.customImage ? (
-                            <img src={product.customImage} alt={product.imageAlt} className="w-full h-full object-cover" />
+                        <div className={`h-28 ${product.imageUrls?.[0] ? '' : `bg-gradient-to-br ${product.gradient}`} relative overflow-hidden`}>
+                          {product.imageUrls?.[0] ? (
+                            <img src={product.imageUrls[0]} alt={product.imageAlt} className="w-full h-full object-cover" />
                           ) : (
                             <div className="absolute inset-0 flex items-center justify-center">
                               <span className="text-4xl">{product.emoji}</span>
