@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Toast from '../components/Toast';
 import Modal from '../components/Modal';
+import StatDetailModal from '../components/StatDetailModal';
 import QuoteConversationModal from '../components/QuoteConversationModal';
 import DashboardPageHeader from '../components/DashboardPageHeader';
 import { salesAgents } from '../data/mockData';
@@ -150,6 +151,7 @@ export default function SupplierDashboard() {
   const [supplierStats, setSupplierStats] = useState({ rating: 0, totalSales: 0, recurringClients: 0, totalReviews: 0 });
   const [supplierReviews, setSupplierReviews] = useState([]);
   const [insightsLoading, setInsightsLoading] = useState(false);
+  const [statDetail, setStatDetail] = useState(null);
   const [usageSummary, setUsageSummary] = useState({
     activeProducts: 0,
     quoteResponsesThisMonth: 0,
@@ -1019,6 +1021,16 @@ export default function SupplierDashboard() {
     <div className="min-h-screen bg-[#f8fafc] bg-grid">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
+      {statDetail && (
+        <StatDetailModal
+          title={statDetail.title}
+          value={statDetail.value}
+          items={statDetail.items}
+          emptyText={statDetail.emptyText}
+          onClose={() => setStatDetail(null)}
+        />
+      )}
+
       {voiceCallActive && selectedAgent && (
         <VoiceCall
           agent={selectedAgent}
@@ -1035,7 +1047,12 @@ export default function SupplierDashboard() {
             <p><span className="font-medium text-gray-400 text-xs uppercase tracking-wide">Producto</span><br /><span className="text-[#0D1F3C]">{quoteModal.productName}</span></p>
             <p><span className="font-medium text-gray-400 text-xs uppercase tracking-wide">Cantidad</span><br /><span className="text-[#0D1F3C]">{quoteModal.quantityLabel}</span></p>
             <p><span className="font-medium text-gray-400 text-xs uppercase tracking-wide">Entrega</span><br /><span className="text-[#0D1F3C]">{quoteModal.deliveryDateLabel}</span></p>
-            <p><span className="font-medium text-gray-400 text-xs uppercase tracking-wide">Notas</span><br /><span className="text-[#0D1F3C]">{quoteModal.notes || 'Sin notas adicionales'}</span></p>
+            {quoteModal.notes && (
+              <div className="mt-2 pt-2 border-t border-gray-200">
+                <span className="font-medium text-gray-400 text-xs uppercase tracking-wide">Notas</span>
+                <p className="text-[#0D1F3C] text-base font-semibold mt-1 leading-snug">{quoteModal.notes}</p>
+              </div>
+            )}
           </div>
           <form onSubmit={handleOfferSubmit} className="space-y-4">
             <div>
@@ -1070,16 +1087,16 @@ export default function SupplierDashboard() {
               />
             </div>
             <div>
-              <label htmlFor="offer-notes" className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label htmlFor="offer-notes" className="block text-base font-semibold text-gray-800 mb-1.5">
                 Notas adicionales
               </label>
               <textarea
                 id="offer-notes"
-                rows={3}
+                rows={5}
                 placeholder="Ej: Disponibilidad inmediata. Entrega en 48hrs. Incluye flete a Santiago."
                 value={offerForm.notes}
                 onChange={(e) => setOfferForm({ ...offerForm, notes: e.target.value })}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 resize-none transition-all"
+                className="w-full border-2 border-[#2ECAD5]/40 rounded-xl px-4 py-3 text-base focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 resize-none transition-all"
               />
             </div>
             <div className="flex gap-3 pt-1">
@@ -1900,29 +1917,29 @@ export default function SupplierDashboard() {
             {/* Stats row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { label: 'Valoracion', value: insightsLoading ? '--' : supplierRatingLabel, sub: `/ 5.0 · ${supplierStats.totalReviews || 0} resenas`, icon: (
+                { label: 'Valoracion', value: insightsLoading ? '--' : supplierRatingLabel, sub: `/ 5.0 · ${supplierStats.totalReviews || 0} resenas`, items: supplierReviews.map(r => ({ label: r.reviewerName || 'Comprador', value: `${r.rating}/5`, sub: r.comment || '' })), emptyText: 'Aun no tienes reseñas', icon: (
                   <svg className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                   </svg>
                 )},
-                { label: 'Ofertas aceptadas', value: workspaceSummary.acceptedOffers, sub: `${workspaceSummary.submittedOffers} enviadas`, icon: (
+                { label: 'Ofertas aceptadas', value: workspaceSummary.acceptedOffers, sub: `${workspaceSummary.submittedOffers} enviadas`, items: supplierOffers.filter(o => o.status === 'accepted').map(o => ({ label: o.quote?.productName || 'Producto', value: o.priceLabel, sub: `${o.buyerName} · ${o.createdAtLabel}` })), emptyText: 'Sin ofertas aceptadas aun', icon: (
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
                   </svg>
                 )},
-                { label: 'Tasa de respuesta', value: workspaceSummary.responseRateLabel, sub: `${workspaceSummary.opportunityCount} oportunidades`, icon: (
+                { label: 'Tasa de respuesta', value: workspaceSummary.responseRateLabel, sub: `${workspaceSummary.opportunityCount} oportunidades`, items: [{ label: 'Ofertas enviadas', value: String(workspaceSummary.submittedOffers) }, { label: 'Total oportunidades', value: String(workspaceSummary.opportunityCount) }, { label: 'Tasa calculada', value: workspaceSummary.responseRateLabel }], emptyText: 'Sin datos aun', icon: (
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 )},
-                { label: 'Clientes recurrentes', value: supplierStats.recurringClients, sub: `${workspaceSummary.activeBuyers} compradores activos`, icon: (
+                { label: 'Clientes recurrentes', value: supplierStats.recurringClients, sub: `${workspaceSummary.activeBuyers} compradores activos`, items: buyerRelationships.map(b => ({ label: b.buyerName, value: `${b.acceptedOffers} aceptadas`, sub: b.buyerCity || '' })), emptyText: 'Sin compradores aun', icon: (
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
                   </svg>
                 )},
               ].map((s) => (
-                <div key={s.label} className="bg-white rounded-2xl border border-gray-100 p-5 card-premium">
-                  <div className="w-9 h-9 bg-[#f8fafc] rounded-xl flex items-center justify-center text-gray-400 mb-3">
+                <button key={s.label} type="button" onClick={() => setStatDetail({ title: s.label, value: `${s.value}${s.sub ? ' ' + s.sub : ''}`, items: s.items, emptyText: s.emptyText })} className="bg-white rounded-2xl border border-gray-100 p-5 card-premium text-left hover:border-[#2ECAD5]/40 hover:shadow-md transition-all group">
+                  <div className="w-9 h-9 bg-[#f8fafc] rounded-xl flex items-center justify-center text-gray-400 mb-3 group-hover:bg-[#2ECAD5]/10 group-hover:text-[#2ECAD5] transition-colors">
                     {s.icon}
                   </div>
                   <div className="flex items-baseline gap-1.5">
@@ -1930,7 +1947,7 @@ export default function SupplierDashboard() {
                     <span className="text-xs text-gray-400">{s.sub}</span>
                   </div>
                   <div className="text-xs text-gray-400 mt-1">{s.label}</div>
-                </div>
+                </button>
               ))}
             </div>
 
@@ -2074,16 +2091,16 @@ export default function SupplierDashboard() {
           <div className="space-y-8 animate-fade-in">
             <div className="grid grid-cols-2 xl:grid-cols-5 gap-4">
               {[
-                { label: 'Solicitudes de Cotización', value: workspaceSummary.openRelevantQuotes, color: 'text-[#0D1F3C]' },
-                { label: 'Ofertas enviadas', value: workspaceSummary.submittedOffers, color: 'text-[#2ECAD5]' },
-                { label: 'Ofertas aceptadas', value: workspaceSummary.acceptedOffers, color: 'text-emerald-500' },
-                { label: 'Win rate', value: workspaceSummary.winRateLabel, color: 'text-indigo-500' },
-                { label: 'Tasa de respuesta', value: workspaceSummary.responseRateLabel, color: 'text-amber-500' },
+                { label: 'Solicitudes de Cotización', value: workspaceSummary.openRelevantQuotes, color: 'text-[#0D1F3C]', items: openQuotes.map(q => ({ label: q.productName, value: q.statusLabel, sub: `${q.buyerName} · ${q.quantityLabel}` })), emptyText: 'Sin solicitudes abiertas' },
+                { label: 'Ofertas enviadas', value: workspaceSummary.submittedOffers, color: 'text-[#2ECAD5]', items: supplierOffers.map(o => ({ label: o.quote?.productName || 'Producto', value: o.priceLabel, sub: `${o.buyerName} · ${o.statusLabel}` })), emptyText: 'Sin ofertas enviadas aun' },
+                { label: 'Ofertas aceptadas', value: workspaceSummary.acceptedOffers, color: 'text-emerald-500', items: supplierOffers.filter(o => o.status === 'accepted').map(o => ({ label: o.quote?.productName || 'Producto', value: o.priceLabel, sub: `${o.buyerName} · ${o.createdAtLabel}` })), emptyText: 'Sin ofertas aceptadas aun' },
+                { label: 'Win rate', value: workspaceSummary.winRateLabel, color: 'text-indigo-500', items: [{ label: 'Ofertas aceptadas', value: String(workspaceSummary.acceptedOffers) }, { label: 'Ofertas enviadas', value: String(workspaceSummary.submittedOffers) }, { label: 'Win rate calculado', value: workspaceSummary.winRateLabel }], emptyText: 'Sin datos aun' },
+                { label: 'Tasa de respuesta', value: workspaceSummary.responseRateLabel, color: 'text-amber-500', items: [{ label: 'Ofertas enviadas', value: String(workspaceSummary.submittedOffers) }, { label: 'Oportunidades totales', value: String(workspaceSummary.opportunityCount) }, { label: 'Tasa calculada', value: workspaceSummary.responseRateLabel }], emptyText: 'Sin datos aun' },
               ].map((stat) => (
-                <div key={stat.label} className="bg-white rounded-2xl border border-gray-100 p-6 card-premium">
+                <button key={stat.label} type="button" onClick={() => setStatDetail({ title: stat.label, value: stat.value, items: stat.items, emptyText: stat.emptyText })} className="bg-white rounded-2xl border border-gray-100 p-6 card-premium text-left hover:border-[#2ECAD5]/40 hover:shadow-md transition-all group">
                   <div className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-2">{stat.label}</div>
                   <div className={`text-3xl font-extrabold ${stat.color}`}>{stat.value}</div>
-                </div>
+                </button>
               ))}
             </div>
 
@@ -2339,15 +2356,15 @@ export default function SupplierDashboard() {
             {/* Product stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { label: 'Productos activos', value: products.filter(p => p.status === 'active').length, color: 'text-emerald-500' },
-                { label: 'Stock bajo', value: products.filter(p => p.status === 'low_stock').length, color: 'text-amber-500' },
-                { label: 'Categorias', value: [...new Set(products.map(p => p.category))].length, color: 'text-[#2ECAD5]' },
-                { label: 'Total productos', value: products.length, color: 'text-[#0D1F3C]' },
+                { label: 'Productos activos', value: products.filter(p => p.status === 'active').length, color: 'text-emerald-500', items: products.filter(p => p.status === 'active').map(p => ({ label: p.name, value: p.priceLabel || '', sub: p.category || '' })), emptyText: 'Sin productos activos' },
+                { label: 'Stock bajo', value: products.filter(p => p.status === 'low_stock').length, color: 'text-amber-500', items: products.filter(p => p.status === 'low_stock').map(p => ({ label: p.name, value: p.priceLabel || '', sub: p.category || '' })), emptyText: 'Sin productos con stock bajo' },
+                { label: 'Categorias', value: [...new Set(products.map(p => p.category))].length, color: 'text-[#2ECAD5]', items: [...new Set(products.map(p => p.category))].filter(Boolean).map(cat => ({ label: cat, value: `${products.filter(p => p.category === cat).length} productos` })), emptyText: 'Sin categorias' },
+                { label: 'Total productos', value: products.length, color: 'text-[#0D1F3C]', items: products.map(p => ({ label: p.name, value: p.priceLabel || '', sub: p.category || '' })), emptyText: 'Sin productos en el catalogo' },
               ].map((s) => (
-                <div key={s.label} className="bg-white rounded-2xl border border-gray-100 p-5 card-premium">
+                <button key={s.label} type="button" onClick={() => setStatDetail({ title: s.label, value: s.value, items: s.items, emptyText: s.emptyText })} className="bg-white rounded-2xl border border-gray-100 p-5 card-premium text-left hover:border-[#2ECAD5]/40 hover:shadow-md transition-all group">
                   <div className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-2">{s.label}</div>
                   <div className={`text-2xl font-extrabold ${s.color}`}>{s.value}</div>
-                </div>
+                </button>
               ))}
             </div>
 
@@ -2492,15 +2509,15 @@ export default function SupplierDashboard() {
           <div className="space-y-8 animate-fade-in">
             <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
               {[
-                { label: 'Compradores activos', value: workspaceSummary.activeBuyers, color: 'text-[#0D1F3C]' },
-                { label: 'Clientes ganados', value: buyerRelationships.filter((buyer) => buyer.acceptedOffers > 0).length, color: 'text-emerald-500' },
-                { label: 'Seguimientos abiertos', value: buyerRelationships.filter((buyer) => buyer.pendingOffers > 0).length, color: 'text-amber-500' },
-                { label: 'Favoritos buyer-side', value: supplierStats.recurringClients, color: 'text-[#2ECAD5]' },
+                { label: 'Compradores activos', value: workspaceSummary.activeBuyers, color: 'text-[#0D1F3C]', items: buyerRelationships.map(b => ({ label: b.buyerName, value: `${b.submittedOffers} ofertas`, sub: b.buyerCity || '' })), emptyText: 'Sin compradores activos' },
+                { label: 'Clientes ganados', value: buyerRelationships.filter((buyer) => buyer.acceptedOffers > 0).length, color: 'text-emerald-500', items: buyerRelationships.filter(b => b.acceptedOffers > 0).map(b => ({ label: b.buyerName, value: `${b.acceptedOffers} aceptadas`, sub: b.buyerCity || '' })), emptyText: 'Aun no ganaste clientes' },
+                { label: 'Seguimientos abiertos', value: buyerRelationships.filter((buyer) => buyer.pendingOffers > 0).length, color: 'text-amber-500', items: buyerRelationships.filter(b => b.pendingOffers > 0).map(b => ({ label: b.buyerName, value: `${b.pendingOffers} pendientes`, sub: b.buyerCity || '' })), emptyText: 'Sin seguimientos abiertos' },
+                { label: 'Favoritos buyer-side', value: supplierStats.recurringClients, color: 'text-[#2ECAD5]', items: [], emptyText: 'Sin datos disponibles' },
               ].map((stat) => (
-                <div key={stat.label} className="bg-white rounded-2xl border border-gray-100 p-6 card-premium">
+                <button key={stat.label} type="button" onClick={() => setStatDetail({ title: stat.label, value: stat.value, items: stat.items, emptyText: stat.emptyText })} className="bg-white rounded-2xl border border-gray-100 p-6 card-premium text-left hover:border-[#2ECAD5]/40 hover:shadow-md transition-all group">
                   <div className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-2">{stat.label}</div>
                   <div className={`text-3xl font-extrabold ${stat.color}`}>{stat.value}</div>
-                </div>
+                </button>
               ))}
             </div>
 
@@ -2800,15 +2817,15 @@ export default function SupplierDashboard() {
                 {/* Agent stats */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   {[
-                    { label: 'Agentes activos', value: salesAgents.filter(a => a.status === 'active').length, color: 'text-emerald-500' },
-                    { label: 'Conversaciones hoy', value: salesAgents.reduce((acc, a) => acc + a.conversationsToday, 0), color: 'text-[#0D1F3C]' },
-                    { label: 'Conversiones semana', value: salesAgents.reduce((acc, a) => acc + a.conversionsThisWeek, 0), color: 'text-[#2ECAD5]' },
-                    { label: 'Satisfaccion promedio', value: '93%', color: 'text-amber-500' },
+                    { label: 'Agentes activos', value: salesAgents.filter(a => a.status === 'active').length, color: 'text-emerald-500', items: salesAgents.filter(a => a.status === 'active').map(a => ({ label: a.name, sub: a.description || '' })), emptyText: 'Sin agentes activos' },
+                    { label: 'Conversaciones hoy', value: salesAgents.reduce((acc, a) => acc + a.conversationsToday, 0), color: 'text-[#0D1F3C]', items: salesAgents.map(a => ({ label: a.name, value: `${a.conversationsToday} hoy` })), emptyText: 'Sin conversaciones hoy' },
+                    { label: 'Conversiones semana', value: salesAgents.reduce((acc, a) => acc + a.conversionsThisWeek, 0), color: 'text-[#2ECAD5]', items: salesAgents.map(a => ({ label: a.name, value: `${a.conversionsThisWeek} esta semana` })), emptyText: 'Sin conversiones esta semana' },
+                    { label: 'Satisfaccion promedio', value: '93%', color: 'text-amber-500', items: [], emptyText: 'Sin datos de satisfaccion' },
                   ].map((s) => (
-                    <div key={s.label} className="bg-white rounded-2xl border border-gray-100 p-5 card-premium">
+                    <button key={s.label} type="button" onClick={() => setStatDetail({ title: s.label, value: s.value, items: s.items, emptyText: s.emptyText })} className="bg-white rounded-2xl border border-gray-100 p-5 card-premium text-left hover:border-[#2ECAD5]/40 hover:shadow-md transition-all group">
                       <div className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-2">{s.label}</div>
                       <div className={`text-2xl font-extrabold ${s.color}`}>{s.value}</div>
-                    </div>
+                    </button>
                   ))}
                 </div>
 

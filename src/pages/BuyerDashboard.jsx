@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Toast from '../components/Toast';
 import Modal from '../components/Modal';
+import StatDetailModal from '../components/StatDetailModal';
 import QuoteConversationModal from '../components/QuoteConversationModal';
 import DashboardPageHeader from '../components/DashboardPageHeader';
 import { useAuth } from '../context/AuthContext';
@@ -222,6 +223,7 @@ export default function BuyerDashboard() {
   const [alertSubscriptions, setAlertSubscriptions] = useState([]);
   const [buyerAlerts, setBuyerAlerts] = useState([]);
   const [alertsLoading, setAlertsLoading] = useState(false);
+  const [statDetail, setStatDetail] = useState(null);
   const [favoriteActionId, setFavoriteActionId] = useState('');
   const [subscriptionActionId, setSubscriptionActionId] = useState('');
   const [isSavingAlertSubscription, setIsSavingAlertSubscription] = useState(false);
@@ -1225,34 +1227,58 @@ export default function BuyerDashboard() {
     <div className="space-y-8 animate-fade-in">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: 'Cotizaciones activas', value: activeQuotes.length, icon: (
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-            </svg>
-          )},
-          { label: 'Ofertas recibidas', value: totalOffersReceived, icon: (
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-            </svg>
-          )},
-          { label: 'Proveedores ofertando', value: activeSuppliers, icon: (
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-            </svg>
-          )},
-          { label: 'Cotizaciones cerradas', value: closedQuotes, icon: (
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m6 2.25a9 9 0 11-18 0 9 9 0 0118 0Z" />
-            </svg>
-          )},
+          {
+            label: 'Cotizaciones activas',
+            value: activeQuotes.length,
+            items: buyerQuotes.filter(q => ['open','in_review'].includes(q.status)).map(q => ({ label: q.productName, value: q.statusLabel, sub: `${q.quantityLabel} · ${q.createdAtLabel}` })),
+            emptyText: 'No hay cotizaciones activas',
+            icon: (
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+              </svg>
+            ),
+          },
+          {
+            label: 'Ofertas recibidas',
+            value: totalOffersReceived,
+            items: buyerQuotes.filter(q => q.offers.length > 0).map(q => ({ label: q.productName, value: `${q.offers.length} oferta${q.offers.length !== 1 ? 's' : ''}`, sub: q.offers.map(o => o.supplierName).filter(Boolean).join(', ') })),
+            emptyText: 'Aun no recibiste ofertas',
+            icon: (
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+              </svg>
+            ),
+          },
+          {
+            label: 'Proveedores ofertando',
+            value: activeSuppliers,
+            items: [...new Map(buyerQuotes.flatMap(q => q.offers).filter(o => o.supplierId && o.supplierName).map(o => [o.supplierId, o])).values()].map(o => ({ label: o.supplierName, sub: o.supplierCity || '' })),
+            emptyText: 'Ningún proveedor ha ofertado aun',
+            icon: (
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+              </svg>
+            ),
+          },
+          {
+            label: 'Cotizaciones cerradas',
+            value: closedQuotes,
+            items: buyerQuotes.filter(q => q.status === 'closed').map(q => ({ label: q.productName, value: q.statusLabel, sub: q.createdAtLabel })),
+            emptyText: 'No hay cotizaciones cerradas',
+            icon: (
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m6 2.25a9 9 0 11-18 0 9 9 0 0118 0Z" />
+              </svg>
+            ),
+          },
         ].map((s) => (
-          <div key={s.label} className="bg-white rounded-2xl border border-gray-100 p-5 card-premium">
-            <div className="w-9 h-9 bg-[#f8fafc] rounded-xl flex items-center justify-center text-gray-400 mb-3">
+          <button key={s.label} type="button" onClick={() => setStatDetail({ title: s.label, value: s.value, items: s.items, emptyText: s.emptyText })} className="bg-white rounded-2xl border border-gray-100 p-5 card-premium text-left hover:border-[#2ECAD5]/40 hover:shadow-md transition-all group">
+            <div className="w-9 h-9 bg-[#f8fafc] rounded-xl flex items-center justify-center text-gray-400 mb-3 group-hover:bg-[#2ECAD5]/10 group-hover:text-[#2ECAD5] transition-colors">
               {s.icon}
             </div>
             <div className="text-2xl font-extrabold text-[#0D1F3C]">{s.value}</div>
             <div className="text-xs text-gray-400 mt-1">{s.label}</div>
-          </div>
+          </button>
         ))}
       </div>
 
@@ -1425,6 +1451,7 @@ export default function BuyerDashboard() {
     quoteActionId,
     quoteHistory,
     quotesLoading,
+    setStatDetail,
     totalOffersReceived,
     unreadBuyerOfferNotifications,
   ]);
@@ -1495,6 +1522,16 @@ export default function BuyerDashboard() {
   return (
     <div className="min-h-screen bg-[#f8fafc] bg-grid">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
+      {statDetail && (
+        <StatDetailModal
+          title={statDetail.title}
+          value={statDetail.value}
+          items={statDetail.items}
+          emptyText={statDetail.emptyText}
+          onClose={() => setStatDetail(null)}
+        />
+      )}
 
       {showModal && (
         <Modal title="Nueva Cotizacion" onClose={() => setShowModal(false)}>
@@ -2531,29 +2568,29 @@ export default function BuyerDashboard() {
             {/* Stats row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { label: 'Solicitudes de Cotización', value: buyerStats.totalOrders || buyerQuotes.length, sub: 'totales', icon: (
+                { label: 'Solicitudes de Cotización', value: buyerStats.totalOrders || buyerQuotes.length, sub: 'totales', items: buyerQuotes.map(q => ({ label: q.productName, value: q.statusLabel, sub: `${q.quantityLabel} · ${q.createdAtLabel}` })), emptyText: 'Sin cotizaciones aun', icon: (
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
                   </svg>
                 )},
-                { label: 'Proveedores favoritos', value: favoriteSuppliers.length, sub: 'guardados', icon: (
+                { label: 'Proveedores favoritos', value: favoriteSuppliers.length, sub: 'guardados', items: favoriteSuppliers.map(s => ({ label: s.companyName || s.name || 'Proveedor', sub: s.city || '' })), emptyText: 'No tienes favoritos guardados', icon: (
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
                   </svg>
                 )},
-                { label: 'Ofertas aceptadas', value: acceptedOffers.length, sub: 'cerradas', icon: (
+                { label: 'Ofertas aceptadas', value: acceptedOffers.length, sub: 'cerradas', items: acceptedOffers.map(o => ({ label: o.quoteProductName, value: o.priceLabel, sub: `${o.supplierName} · ${o.quoteQuantityLabel}` })), emptyText: 'Sin ofertas aceptadas aun', icon: (
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m6 2.25a9 9 0 11-18 0 9 9 0 0118 0Z" />
                   </svg>
                 )},
-                { label: 'Valoracion como comprador', value: Number(buyerStats.rating || 0).toFixed(1), sub: '/ 5.0', icon: (
+                { label: 'Valoracion como comprador', value: Number(buyerStats.rating || 0).toFixed(1), sub: '/ 5.0', items: [], emptyText: 'Aun no tienes valoraciones', icon: (
                   <svg className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                   </svg>
                 )},
               ].map((s) => (
-                <div key={s.label} className="bg-white rounded-2xl border border-gray-100 p-5 card-premium">
-                  <div className="w-9 h-9 bg-[#f8fafc] rounded-xl flex items-center justify-center text-gray-400 mb-3">
+                <button key={s.label} type="button" onClick={() => setStatDetail({ title: s.label, value: `${s.value}${s.sub ? ' ' + s.sub : ''}`, items: s.items, emptyText: s.emptyText })} className="bg-white rounded-2xl border border-gray-100 p-5 card-premium text-left hover:border-[#2ECAD5]/40 hover:shadow-md transition-all group">
+                  <div className="w-9 h-9 bg-[#f8fafc] rounded-xl flex items-center justify-center text-gray-400 mb-3 group-hover:bg-[#2ECAD5]/10 group-hover:text-[#2ECAD5] transition-colors">
                     {s.icon}
                   </div>
                   <div className="flex items-baseline gap-1.5">
@@ -2561,7 +2598,7 @@ export default function BuyerDashboard() {
                     <span className="text-xs text-gray-400">{s.sub}</span>
                   </div>
                   <div className="text-xs text-gray-400 mt-1">{s.label}</div>
-                </div>
+                </button>
               ))}
             </div>
 
