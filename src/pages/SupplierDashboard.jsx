@@ -44,6 +44,7 @@ import {
 } from '../lib/planEntitlements';
 import {
   createProduct,
+  createReview,
   deleteProduct,
   getBuyerProfile,
   getBuyerStats,
@@ -54,6 +55,7 @@ import {
   getRelevantQuoteRequestsForSupplier,
   getProducts,
   getReviewsForUser,
+  getSupplierReviewOpportunities,
   getSupplierStats,
   getSupplierUsageSummary,
   markQuoteConversationRead,
@@ -163,6 +165,16 @@ export default function SupplierDashboard() {
   const [isPreparingBilling, setIsPreparingBilling] = useState(false);
   const [highlightedQuoteId, setHighlightedQuoteId] = useState('');
   const [highlightedOfferId, setHighlightedOfferId] = useState('');
+  const [supplierReviewOpportunities, setSupplierReviewOpportunities] = useState([]);
+  const [supplierReviewForm, setSupplierReviewForm] = useState({
+    quoteOfferId: '',
+    reviewedId: '',
+    buyerName: '',
+    productName: '',
+    rating: 5,
+    comment: '',
+  });
+  const [isSubmittingSupplierReview, setIsSubmittingSupplierReview] = useState(false);
 
   const [imageMode, setImageMode] = useState('upload'); // 'upload' | 'generate'
   const [aiPrompt, setAiPrompt] = useState('');
@@ -463,19 +475,22 @@ export default function SupplierDashboard() {
     if (!currentUser?.id) {
       setSupplierStats({ rating: 0, totalSales: 0, recurringClients: 0, totalReviews: 0 });
       setSupplierReviews([]);
+      setSupplierReviewOpportunities([]);
       return;
     }
 
     setInsightsLoading(true);
 
     try {
-      const [stats, reviews] = await Promise.all([
+      const [stats, reviews, reviewOpps] = await Promise.all([
         getSupplierStats(currentUser.id),
         getReviewsForUser(currentUser.id),
+        getSupplierReviewOpportunities(currentUser.id),
       ]);
 
       setSupplierStats(stats);
       setSupplierReviews(reviews ?? []);
+      setSupplierReviewOpportunities(reviewOpps ?? []);
     } catch (error) {
       setToast({ message: error.message || 'No se pudieron cargar los insights del proveedor.', type: 'error' });
     } finally {
@@ -600,6 +615,56 @@ export default function SupplierDashboard() {
       }
     } catch (error) {
       setToast({ message: error.message || 'No se pudo eliminar el producto.', type: 'error' });
+    }
+  };
+
+  const openSupplierReviewModal = useCallback((opportunity) => {
+    setSupplierReviewForm({
+      quoteOfferId: opportunity.quoteOfferId,
+      reviewedId: opportunity.reviewedId,
+      buyerName: opportunity.buyerName,
+      productName: opportunity.productName,
+      rating: 5,
+      comment: '',
+    });
+  }, []);
+
+  const closeSupplierReviewModal = useCallback(() => {
+    setSupplierReviewForm({
+      quoteOfferId: '',
+      reviewedId: '',
+      buyerName: '',
+      productName: '',
+      rating: 5,
+      comment: '',
+    });
+  }, []);
+
+  const handleSupplierReviewSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!currentUser?.id || !supplierReviewForm.quoteOfferId || !supplierReviewForm.reviewedId) {
+      setToast({ message: 'No se pudo preparar la reseña.', type: 'error' });
+      return;
+    }
+
+    setIsSubmittingSupplierReview(true);
+
+    try {
+      await createReview({
+        reviewerId: currentUser.id,
+        reviewedId: supplierReviewForm.reviewedId,
+        quoteOfferId: supplierReviewForm.quoteOfferId,
+        rating: Number(supplierReviewForm.rating),
+        comment: supplierReviewForm.comment.trim(),
+      });
+      await loadSupplierInsights();
+      closeSupplierReviewModal();
+      setToast({ message: `Reseña publicada para ${supplierReviewForm.buyerName}.`, type: 'success' });
+    } catch (error) {
+      setToast({ message: error.message || 'No se pudo publicar la reseña.', type: 'error' });
+    } finally {
+      setIsSubmittingSupplierReview(false);
     }
   };
 
@@ -1252,6 +1317,68 @@ export default function SupplierDashboard() {
               </button>
             </div>
           </div>
+        </Modal>
+      )}
+      {supplierReviewForm.quoteOfferId && (
+        <Modal title="Dejar reseña" onClose={closeSupplierReviewModal}>
+          <form onSubmit={handleSupplierReviewSubmit} className="space-y-5">
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3">
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-600">Venta verificada</div>
+              <div className="text-sm font-bold text-[#0D1F3C] mt-1">{supplierReviewForm.buyerName}</div>
+              <p className="text-sm text-gray-600 mt-1">
+                Comparte como fue la venta de {supplierReviewForm.productName} para fortalecer la confianza del marketplace.
+              </p>
+            </div>
+
+            <div>
+              <label htmlFor="supplier-review-rating" className="block text-sm font-medium text-gray-700 mb-1.5">
+                Calificacion <span className="text-red-500">*</span>
+              </label>
+              <select
+                id="supplier-review-rating"
+                value={supplierReviewForm.rating}
+                onChange={(event) => setSupplierReviewForm((current) => ({ ...current, rating: Number(event.target.value) }))}
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] bg-white transition-all"
+              >
+                {[5, 4, 3, 2, 1].map((value) => (
+                  <option key={value} value={value}>{value} estrella{value > 1 ? 's' : ''}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="supplier-review-comment" className="block text-sm font-medium text-gray-700 mb-1.5">
+                Comentario <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                id="supplier-review-comment"
+                rows={4}
+                required
+                minLength={12}
+                placeholder="Ej: rapido en el pago, buena comunicacion, comprador recomendado..."
+                value={supplierReviewForm.comment}
+                onChange={(event) => setSupplierReviewForm((current) => ({ ...current, comment: event.target.value }))}
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 resize-none transition-all"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={closeSupplierReviewModal}
+                className="flex-1 border border-gray-200 text-gray-600 font-medium py-3 rounded-xl hover:bg-gray-50 transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmittingSupplierReview}
+                className="flex-1 bg-gradient-to-r from-[#0D1F3C] to-[#1a3260] text-white font-bold py-3 rounded-xl hover:shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isSubmittingSupplierReview ? 'Publicando...' : 'Publicar reseña'}
+              </button>
+            </div>
+          </form>
         </Modal>
       )}
 
@@ -2124,6 +2251,44 @@ export default function SupplierDashboard() {
                 </button>
               ))}
             </div>
+
+            {supplierReviewOpportunities.length > 0 && (
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <h2 className="text-xl font-extrabold text-[#0D1F3C]">Reseñas pendientes</h2>
+                  <span className="text-[10px] font-bold bg-amber-400 text-amber-900 px-2.5 py-1 rounded-full animate-pulse">
+                    {supplierReviewOpportunities.length} pendiente{supplierReviewOpportunities.length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {supplierReviewOpportunities.map((opportunity) => (
+                    <div key={opportunity.quoteOfferId} className="bg-white rounded-2xl border border-amber-100 p-5 card-premium">
+                      <div className="flex items-start gap-3 mb-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-amber-100 to-amber-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                          <svg className="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+                          </svg>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-[#0D1F3C] truncate">{opportunity.buyerName}</p>
+                          <p className="text-xs text-gray-400 truncate">{opportunity.productName}</p>
+                        </div>
+                      </div>
+                      <div className="text-[10px] font-semibold text-amber-600 bg-amber-50 rounded-lg px-2.5 py-1.5 mb-3">
+                        ✅ Venta verificada — Evalúa al comprador
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => openSupplierReviewModal(opportunity)}
+                        className="w-full bg-gradient-to-r from-amber-400 to-orange-400 text-white font-bold text-sm py-2.5 rounded-xl hover:shadow-lg hover:shadow-amber-400/20 transition-all"
+                      >
+                        Dejar reseña
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div>
               <div className="flex items-center justify-between mb-4">

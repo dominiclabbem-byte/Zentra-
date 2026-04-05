@@ -843,6 +843,65 @@ export async function getBuyerReviewOpportunities(buyerId) {
     });
 }
 
+export async function getSupplierReviewOpportunities(supplierId) {
+  const { data: offers, error } = await supabase
+    .from('quote_offers')
+    .select(`
+      id,
+      quote_id,
+      price,
+      estimated_lead_time,
+      created_at,
+      quote_requests!inner(
+        id,
+        buyer_id,
+        product_name,
+        quantity,
+        unit,
+        delivery_date,
+        users!buyer_id(company_name, city, verified)
+      )
+    `)
+    .eq('status', 'accepted')
+    .eq('supplier_id', supplierId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+
+  const offerIds = (offers ?? []).map((offer) => offer.id);
+  if (!offerIds.length) return [];
+
+  const { data: existingReviews, error: reviewsError } = await supabase
+    .from('reviews')
+    .select('quote_offer_id')
+    .eq('reviewer_id', supplierId)
+    .in('quote_offer_id', offerIds);
+
+  if (reviewsError) throw reviewsError;
+
+  const reviewedOfferIds = new Set((existingReviews ?? []).map((review) => review.quote_offer_id));
+
+  return (offers ?? [])
+    .filter((offer) => !reviewedOfferIds.has(offer.id))
+    .map((offer) => {
+      const quote = takeSingle(offer.quote_requests);
+      const buyer = takeSingle(quote?.users);
+
+      return {
+        quoteOfferId: offer.id,
+        quoteId: offer.quote_id,
+        reviewedId: quote?.buyer_id ?? '',
+        buyerName: buyer?.company_name ?? 'Comprador',
+        buyerCity: buyer?.city ?? '',
+        buyerVerified: Boolean(buyer?.verified),
+        productName: quote?.product_name ?? 'Producto',
+        quantity: Number(quote?.quantity ?? 0),
+        unit: quote?.unit ?? 'kg',
+        price: Number(offer.price ?? 0),
+      };
+    });
+}
+
 // ========================
 // FAVORITOS
 // ========================
