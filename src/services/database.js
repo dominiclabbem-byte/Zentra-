@@ -221,6 +221,32 @@ export async function updateUser(userId, updates) {
   return data;
 }
 
+export async function uploadAvatar(userId, file) {
+  // Compress to max 200x200 and store as base64 in avatar_url
+  const base64 = await new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const MAX = 200;
+      let { width, height } = img;
+      const ratio = Math.min(MAX / width, MAX / height);
+      width = Math.round(width * ratio);
+      height = Math.round(height * ratio);
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL('image/jpeg', 0.8));
+    };
+    img.onerror = () => reject(new Error('No se pudo leer la imagen'));
+    img.src = url;
+  });
+
+  await updateUser(userId, { avatar_url: base64 });
+  return base64;
+}
+
 export async function enableBuyerRole(userId, buyerData) {
   // Activar rol comprador para un proveedor (modo distribuidor)
   await supabase.from('users').update({ is_buyer: true }).eq('id', userId);

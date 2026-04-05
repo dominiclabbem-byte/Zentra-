@@ -41,6 +41,7 @@ import {
   subscribeToPriceAlert,
   trackBuyerActivityEvent,
   toggleFavorite,
+  uploadAvatar,
 } from '../services/database';
 import { mapQuoteConversationMessageRecord, mapQuoteConversationRecord } from '../lib/conversationAdapters';
 import { mapProductRecordToCard } from '../lib/productAdapters';
@@ -186,6 +187,7 @@ export default function BuyerDashboard() {
     categories: categoryOptions,
     notifications = [],
     saveBuyerProfile,
+    refreshCurrentUser,
   } = useAuth();
   const liveBuyerProfile = currentUser ? buildBuyerProfileView(currentUser) : initialBuyerProfile;
   const buyerProfile = liveBuyerProfile;
@@ -583,6 +585,20 @@ export default function BuyerDashboard() {
       setToast({ message: error.message || 'No se pudo crear la cotizacion.', type: 'error' });
     } finally {
       setIsSubmittingQuote(false);
+    }
+  };
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !currentUser?.id) return;
+    try {
+      await uploadAvatar(currentUser.id, file);
+      await refreshCurrentUser();
+      setToast({ message: 'Foto de perfil actualizada', type: 'success' });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('Avatar error:', err);
+      setToast({ message: err?.message || 'No se pudo subir la foto', type: 'error' });
     }
   };
 
@@ -1267,7 +1283,7 @@ export default function BuyerDashboard() {
                   <p className="text-sm text-gray-500">{quote.quantityLabel}</p>
                   <p className="text-xs text-gray-400 mt-1">{quote.categoryName} / Entrega {quote.deliveryDateLabel}</p>
                   <p className="text-xs text-gray-400 mt-2">{quote.createdAtLabel}</p>
-                  {!acceptedOffer && quote.offers.length > 0 && (
+                  {quote.offers.length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-1.5">
                       {quote.offers.map((offer) => offer.supplierName).filter(Boolean).map((name) => (
                         <span key={name} className="text-[10px] font-semibold bg-[#f2f7fb] text-[#0D1F3C] border border-[#dce9f2] px-2 py-0.5 rounded-full">
@@ -2471,9 +2487,19 @@ export default function BuyerDashboard() {
               </div>
               <div className="px-6 pb-6 relative">
                 {/* Avatar */}
-                <div className="w-24 h-24 bg-gradient-to-br from-[#0D1F3C] to-[#1a3260] rounded-2xl flex items-center justify-center text-[#2ECAD5] text-3xl font-extrabold border-4 border-white shadow-lg -mt-12 relative z-10">
-                  {buyerProfile.initials}
-                </div>
+                <label className="w-24 h-24 rounded-2xl -mt-12 relative z-10 cursor-pointer group block">
+                  {currentUser?.avatar_url
+                    ? <img src={currentUser.avatar_url} alt="Avatar" className="w-24 h-24 rounded-2xl object-cover border-4 border-white shadow-lg" />
+                    : <div className="w-24 h-24 bg-gradient-to-br from-[#0D1F3C] to-[#1a3260] rounded-2xl flex items-center justify-center text-[#2ECAD5] text-3xl font-extrabold border-4 border-white shadow-lg">{buyerProfile.initials}</div>
+                  }
+                  <div className="absolute inset-0 bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </div>
+                  <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+                </label>
                 <div className="mt-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                   <div>
                     <h2 className="text-2xl font-extrabold text-[#0D1F3C]">{buyerProfile.companyName}</h2>

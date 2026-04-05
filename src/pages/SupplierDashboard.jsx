@@ -9,6 +9,7 @@ import { chatWithAgent } from '../services/claudeApi';
 import { speakText as ttsSpeak, stopSpeaking as ttsStop } from '../services/ttsService';
 import VoiceCall from '../components/VoiceCall';
 import { generateProductImage } from '../services/imageGenerator';
+import AgentCharacter from '../components/AgentCharacter';
 import { useAuth } from '../context/AuthContext';
 import {
   buildBuyerProfileView,
@@ -59,6 +60,7 @@ import {
   submitOffer,
   updateProduct,
   updateOfferPipelineStatus,
+  uploadAvatar,
 } from '../services/database';
 import { mapQuoteConversationMessageRecord, mapQuoteConversationRecord } from '../lib/conversationAdapters';
 
@@ -87,6 +89,7 @@ export default function SupplierDashboard() {
     changeSupplierPlan,
     requestSupplierPlanBilling,
     saveSupplierProfile,
+    refreshCurrentUser,
   } = useAuth();
   const defaultProductCategory = categoryOptions[0]?.name ?? 'Otros';
   const liveProfile = currentUser ? buildSupplierProfileView(currentUser) : initialProfile;
@@ -103,6 +106,20 @@ export default function SupplierDashboard() {
     [notifications],
   );
   const [toast, setToast] = useState(null);
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !currentUser?.id) return;
+    try {
+      await uploadAvatar(currentUser.id, file);
+      await refreshCurrentUser();
+      setToast({ message: 'Foto de perfil actualizada', type: 'success' });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('Avatar error:', err);
+      setToast({ message: err?.message || 'No se pudo subir la foto', type: 'error' });
+    }
+  };
   const [quoteModal, setQuoteModal] = useState(null);
   const [activeConversation, setActiveConversation] = useState(null);
   const [conversationMessages, setConversationMessages] = useState([]);
@@ -1841,9 +1858,19 @@ export default function SupplierDashboard() {
               </div>
               <div className="px-6 pb-6 relative">
                 {/* Avatar */}
-                <div className="w-24 h-24 bg-gradient-to-br from-emerald-400 to-blue-500 rounded-2xl flex items-center justify-center text-white text-3xl font-extrabold border-4 border-white shadow-lg -mt-12 relative z-10">
-                  {profile.companyName.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()}
-                </div>
+                <label className="w-24 h-24 rounded-2xl -mt-12 relative z-10 cursor-pointer group block">
+                  {currentUser?.avatar_url
+                    ? <img src={currentUser.avatar_url} alt="Avatar" className="w-24 h-24 rounded-2xl object-cover border-4 border-white shadow-lg" />
+                    : <div className="w-24 h-24 bg-gradient-to-br from-emerald-400 to-blue-500 rounded-2xl flex items-center justify-center text-white text-3xl font-extrabold border-4 border-white shadow-lg">{profile.companyName.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()}</div>
+                  }
+                  <div className="absolute inset-0 bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </div>
+                  <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+                </label>
                 <div className="mt-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                   <div>
                     <h2 className="text-2xl font-extrabold text-[#0D1F3C]">{profile.companyName}</h2>
@@ -2800,12 +2827,8 @@ export default function SupplierDashboard() {
                         }`}
                       >
                         <div className="flex items-center gap-3 mb-3">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${
-                            agent.status === 'active'
-                              ? 'bg-gradient-to-br from-emerald-400 to-blue-500 text-white'
-                              : 'bg-gray-200 text-gray-500'
-                          }`}>
-                            {agent.avatar}
+                          <div className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden bg-white border border-gray-100">
+                            <AgentCharacter name={agent.name} size={36} />
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
@@ -2849,12 +2872,8 @@ export default function SupplierDashboard() {
                         {/* Agent header */}
                         <div className="border-b border-gray-100 px-6 py-4 flex items-center justify-between bg-[#f8fafc]">
                           <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${
-                              selectedAgent.status === 'active'
-                                ? 'bg-gradient-to-br from-emerald-400 to-blue-500 text-white'
-                                : 'bg-gray-200 text-gray-500'
-                            }`}>
-                              {selectedAgent.avatar}
+                            <div className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden bg-white border border-gray-100">
+                              <AgentCharacter name={selectedAgent.name} size={36} />
                             </div>
                             <div>
                               <div className="font-bold text-[#0D1F3C] text-sm">{selectedAgent.name}</div>
