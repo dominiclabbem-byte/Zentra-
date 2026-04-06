@@ -1456,6 +1456,38 @@ export async function getSupplierStats(supplierId) {
   };
 }
 
+export async function getSupplierStatsBulk(supplierIds) {
+  if (!supplierIds.length) return {};
+  const [reviewsRes, reviewCountRes] = await Promise.all([
+    supabase.rpc('get_users_rating_bulk', { p_user_ids: supplierIds }).select(),
+    supabase
+      .from('reviews')
+      .select('reviewed_id')
+      .in('reviewed_id', supplierIds),
+  ]);
+
+  const ratings = {};
+  if (reviewsRes.data) {
+    for (const row of reviewsRes.data) {
+      ratings[row.user_id] = { rating: row.rating ?? 0 };
+    }
+  }
+
+  const reviewCounts = {};
+  if (reviewCountRes.data) {
+    for (const row of reviewCountRes.data) {
+      reviewCounts[row.reviewed_id] = (reviewCounts[row.reviewed_id] || 0) + 1;
+    }
+  }
+
+  return Object.fromEntries(
+    supplierIds.map((id) => [id, {
+      rating: ratings[id]?.rating ?? 0,
+      totalReviews: reviewCounts[id] ?? 0,
+    }])
+  );
+}
+
 export async function getBuyerStats(buyerId) {
   if (useE2E()) return e2eGetBuyerStats(buyerId);
   const [quotesRes, reviewsRes, favoritesRes] = await Promise.all([

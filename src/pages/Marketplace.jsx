@@ -10,6 +10,7 @@ import {
   getPlanKey,
   normalizeUserRecord,
 } from '../lib/profileAdapters';
+
 import { mapProductRecordToCard } from '../lib/productAdapters';
 import { getProducts, getPriceAlerts, getPriceAlertSubscriptions, getSupplierProfile, getSupplierStats } from '../services/database';
 
@@ -36,34 +37,9 @@ export default function Marketplace() {
       try {
         const data = await getProducts();
         const cards = data.map((product) => mapProductRecordToCard(product));
-        const supplierIds = [...new Set(cards.map((product) => product.supplierId).filter(Boolean))];
-        const insights = await Promise.all(
-          supplierIds.map(async (supplierId) => {
-            try {
-              const [supplierRaw, supplierStats] = await Promise.all([
-                getSupplierProfile(supplierId),
-                getSupplierStats(supplierId),
-              ]);
-              const supplierRecord = normalizeUserRecord(supplierRaw);
-              const supplierView = buildSupplierProfileView(supplierRecord);
-
-              return [supplierId, {
-                city: supplierView.city,
-                verified: Boolean(supplierRecord?.verified),
-                verificationStatus: supplierRecord?.verification_status ?? 'pending',
-                rating: Number(supplierStats?.rating ?? 0),
-                totalReviews: supplierStats?.totalReviews ?? 0,
-                categories: supplierView.categories,
-              }];
-            } catch {
-              return [supplierId, null];
-            }
-          }),
-        );
 
         if (!cancelled) {
           setCatalogProducts(cards);
-          setSupplierInsights(Object.fromEntries(insights.filter(([, value]) => value)));
         }
       } catch (error) {
         if (!cancelled) {
