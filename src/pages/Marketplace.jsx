@@ -35,7 +35,7 @@ export default function Marketplace() {
       setCatalogLoading(true);
 
       try {
-        const data = await getProducts();
+        const data = await getProducts({ lite: true });
         const cards = data.map((product) => mapProductRecordToCard(product));
 
         if (!cancelled) {
