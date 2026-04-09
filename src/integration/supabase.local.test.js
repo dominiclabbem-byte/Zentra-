@@ -347,6 +347,145 @@ describe('Supabase local integration', () => {
     expect(unchangedNotification.read_at).toBeNull();
   });
 
+  it('permite encolar deliveries externos para el destinatario y bloquea su lectura desde terceros', async () => {
+    const password = 'SuperSecreta123';
+    const actorUser = await createConfirmedUser({
+      email: `actor.${randomUUID()}@zentra.local`,
+      password,
+      metadata: {
+        company_name: 'Actor Delivery',
+        rut: createRut('actor-delivery'),
+        city: 'Santiago',
+        is_buyer: true,
+        is_supplier: false,
+      },
+    });
+    const recipientUser = await createConfirmedUser({
+      email: `recipient.${randomUUID()}@zentra.local`,
+      password,
+      metadata: {
+        company_name: 'Recipient Delivery',
+        rut: createRut('recipient-delivery'),
+        city: 'Valparaiso',
+        phone: '+56911111111',
+        is_buyer: false,
+        is_supplier: true,
+      },
+    });
+    const outsiderUser = await createConfirmedUser({
+      email: `outsider.${randomUUID()}@zentra.local`,
+      password,
+      metadata: {
+        company_name: 'Outsider Delivery',
+        rut: createRut('outsider-delivery'),
+        city: 'Concepcion',
+        is_buyer: true,
+        is_supplier: false,
+      },
+    });
+
+    const actorPublicUser = await waitForPublicUser(actorUser.id);
+    const recipientPublicUser = await waitForPublicUser(recipientUser.id);
+    const actorClient = await signInWithPassword(actorUser.email, password);
+    const recipientClient = await signInWithPassword(recipientUser.email, password);
+    const outsiderClient = await signInWithPassword(outsiderUser.email, password);
+
+    const { data: createdDelivery, error: createDeliveryError } = await actorClient
+      .from('notification_deliveries')
+      .insert({
+        recipient_id: recipientPublicUser.id,
+        actor_id: actorPublicUser.id,
+        source_type: 'notification',
+        channel: 'email',
+        destination: recipientPublicUser.email,
+        template_key: 'message_received:email',
+        title: 'Nuevo mensaje',
+        message: 'Tienes un mensaje nuevo.',
+        payload: { source: 'test' },
+      })
+      .select('*')
+      .single();
+
+    expect(createDeliveryError).toBeNull();
+    expect(createdDelivery.destination).toBe(recipientPublicUser.email);
+
+    const { data: recipientDeliveries, error: recipientDeliveriesError } = await recipientClient
+      .from('notification_deliveries')
+      .select('*')
+      .eq('id', createdDelivery.id);
+
+    expect(recipientDeliveriesError).toBeNull();
+    expect(recipientDeliveries).toHaveLength(1);
+
+    const { data: outsiderDeliveries, error: outsiderDeliveriesError } = await outsiderClient
+      .from('notification_deliveries')
+      .select('*')
+      .eq('id', createdDelivery.id);
+
+    expect(outsiderDeliveriesError).toBeNull();
+    expect(outsiderDeliveries).toHaveLength(0);
+  });
+
+  it('permite que un supplier cree y edite sus productos bajo RLS real', async () => {
+    const password = 'SuperSecreta123';
+    const supplierUser = await createConfirmedUser({
+      email: `supplier.${randomUUID()}@zentra.local`,
+      password,
+      metadata: {
+        company_name: 'Supplier Products',
+        rut: createRut('supplier-products'),
+        city: 'Santiago',
+        is_buyer: false,
+        is_supplier: true,
+      },
+    });
+
+    const supplierPublicUser = await waitForPublicUser(supplierUser.id);
+    const supplierClient = await signInWithPassword(supplierUser.email, password);
+    const categoryId = await getAnyCategoryId();
+
+    const { data: createdProduct, error: createProductError } = await supplierClient
+      .from('products')
+      .insert({
+        supplier_id: supplierPublicUser.id,
+        category_id: categoryId,
+        name: `Producto ${randomUUID().slice(0, 8)}`,
+        description: 'Creado bajo RLS real',
+        price: 1200,
+        price_unit: 'kg',
+        stock: 40,
+        stock_unit: 'kg',
+        status: 'active',
+        image_url: 'https://example.com/producto.jpg',
+        image_urls: ['https://example.com/producto.jpg', 'https://example.com/producto-2.jpg'],
+      })
+      .select('*')
+      .single();
+
+    expect(createProductError).toBeNull();
+    expect(createdProduct.supplier_id).toBe(supplierPublicUser.id);
+    expect(createdProduct.image_urls).toEqual([
+      'https://example.com/producto.jpg',
+      'https://example.com/producto-2.jpg',
+    ]);
+
+    const { data: updatedProduct, error: updateProductError } = await supplierClient
+      .from('products')
+      .update({
+        stock: 15,
+        status: 'low_stock',
+        image_urls: ['https://example.com/producto-actualizado.jpg'],
+      })
+      .eq('id', createdProduct.id)
+      .select('*')
+      .single();
+
+    expect(updateProductError).toBeNull();
+    expect(updatedProduct.stock).toBe(15);
+    expect(updatedProduct.status).toBe('low_stock');
+    expect(updatedProduct.image_urls).toEqual(['https://example.com/producto-actualizado.jpg']);
+  });
+
   it('permite registrar actividad buyer propia y bloquea su lectura desde otro usuario', async () => {
     const password = 'SuperSecreta123';
     const buyerUser = await createConfirmedUser({

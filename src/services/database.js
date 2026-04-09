@@ -142,7 +142,96 @@ async function createNotifications(rows) {
     .insert(rows);
 
   if (error) throw error;
+
+  try {
+    await queueNotificationDeliveries(rows);
+  } catch (deliveryError) {
+    // eslint-disable-next-line no-console
+    console.error('No se pudo encolar el delivery externo de notificaciones', deliveryError);
+  }
+
   return rows;
+}
+
+function normalizeSmsDestination(userRecord) {
+  return userRecord?.whatsapp || userRecord?.phone || null;
+}
+
+function buildDeliveryPayload(row, recipient) {
+  return {
+    recipientEmail: recipient.email ?? null,
+    recipientPhone: recipient.phone ?? null,
+    recipientWhatsApp: recipient.whatsapp ?? null,
+    type: row.type,
+    title: row.title,
+    message: row.message,
+    entityType: row.entity_type ?? null,
+    entityId: row.entity_id ?? null,
+  };
+}
+
+async function queueNotificationDeliveries(rows) {
+  const recipientIds = [...new Set(rows.map((row) => row.recipient_id).filter(Boolean))];
+  if (!recipientIds.length) return [];
+
+  const { data: recipients, error } = await supabase
+    .from('users')
+    .select('id, email, phone, whatsapp')
+    .in('id', recipientIds);
+
+  if (error) throw error;
+
+  const recipientsById = new Map((recipients ?? []).map((recipient) => [recipient.id, recipient]));
+  const deliveries = [];
+
+  rows.forEach((row) => {
+    const recipient = recipientsById.get(row.recipient_id);
+    if (!recipient) return;
+
+    if (recipient.email) {
+      deliveries.push({
+        recipient_id: row.recipient_id,
+        actor_id: row.actor_id ?? null,
+        source_type: 'notification',
+        source_id: row.entity_id ?? null,
+        channel: 'email',
+        destination: recipient.email,
+        template_key: `${row.type}:email`,
+        title: row.title,
+        message: row.message,
+        entity_type: row.entity_type ?? null,
+        entity_id: row.entity_id ?? null,
+        payload: buildDeliveryPayload(row, recipient),
+      });
+    }
+
+    const smsDestination = normalizeSmsDestination(recipient);
+    if (smsDestination) {
+      deliveries.push({
+        recipient_id: row.recipient_id,
+        actor_id: row.actor_id ?? null,
+        source_type: 'notification',
+        source_id: row.entity_id ?? null,
+        channel: 'sms',
+        destination: smsDestination,
+        template_key: `${row.type}:sms`,
+        title: row.title,
+        message: row.message,
+        entity_type: row.entity_type ?? null,
+        entity_id: row.entity_id ?? null,
+        payload: buildDeliveryPayload(row, recipient),
+      });
+    }
+  });
+
+  if (!deliveries.length) return [];
+
+  const { error: deliveriesError } = await supabase
+    .from('notification_deliveries')
+    .insert(deliveries);
+
+  if (deliveriesError) throw deliveriesError;
+  return deliveries;
 }
 
 async function getQuoteConversationRecordById(conversationId) {
@@ -299,8 +388,20 @@ export async function getBuyerProfile(userId) {
 // ========================
 
 // Columnas pesadas (base64) excluidas en modo lite para el marketplace público
-const PRODUCTS_LITE_SELECT = 'id, supplier_id, category_id, name, price, price_unit, stock, stock_unit, status, image_url, created_at, categories(name, emoji), users!supplier_id(company_name, city, verified, verification_status)';
+const PRODUCTS_LITE_SELECT = 'id, supplier_id, category_id, name, price, price_unit, stock, stock_unit, status, image_url, image_urls, created_at, categories(name, emoji), users!supplier_id(company_name, city, verified, verification_status)';
 const PRODUCTS_FULL_SELECT = '*, categories(name, emoji), users!supplier_id(company_name, city, verified, verification_status)';
+
+function sanitizeProductPayload(product) {
+  const normalizedImageUrls = Array.isArray(product.image_urls)
+    ? product.image_urls.filter(Boolean).slice(0, 4)
+    : [];
+
+  return {
+    ...product,
+    image_urls: normalizedImageUrls,
+    image_url: product.image_url ?? normalizedImageUrls[0] ?? null,
+  };
+}
 
 export async function getProducts(filters = {}) {
   if (useE2E()) return e2eGetProducts(filters);
@@ -328,21 +429,23 @@ export async function getProducts(filters = {}) {
 }
 
 export async function createProduct(product) {
+  const payload = sanitizeProductPayload(product);
   const { data, error } = await supabase
     .from('products')
-    .insert(product)
-    .select()
+    .insert(payload)
+    .select(PRODUCTS_FULL_SELECT)
     .single();
   if (error) throw error;
   return data;
 }
 
 export async function updateProduct(productId, updates) {
+  const payload = sanitizeProductPayload(updates);
   const { data, error } = await supabase
     .from('products')
-    .update(updates)
+    .update(payload)
     .eq('id', productId)
-    .select()
+    .select(PRODUCTS_FULL_SELECT)
     .single();
   if (error) throw error;
   return data;

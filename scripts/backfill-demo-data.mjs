@@ -366,6 +366,8 @@ async function purgeDemoData({ userIds, buyerIds, supplierIds }) {
 
   await deleteWhereIn('notifications', 'recipient_id', userIds);
   await deleteWhereIn('notifications', 'actor_id', userIds);
+  await deleteWhereIn('notification_deliveries', 'recipient_id', userIds);
+  await deleteWhereIn('notification_deliveries', 'actor_id', userIds);
   await deleteWhereIn('buyer_activity_events', 'buyer_id', buyerIds);
   await deleteWhereIn('quote_conversation_messages', 'conversation_id', demoQuoteConversationIds);
   await deleteWhereIn('quote_conversations', 'id', demoQuoteConversationIds);

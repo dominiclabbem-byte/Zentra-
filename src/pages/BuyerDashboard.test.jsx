@@ -105,7 +105,9 @@ describe('BuyerDashboard', () => {
 
     renderWithRouter(<BuyerDashboard />);
 
-    expect(await screen.findByText('Harina premium')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getAllByText('Harina premium').length).toBeGreaterThan(0);
+    });
     expect(screen.getByText('Alerta activa')).toBeInTheDocument();
     expect(screen.getByText('Precio a la baja')).toBeInTheDocument();
     expect(screen.getByText(/Antes \$1\.350/i)).toBeInTheDocument();
@@ -143,23 +145,27 @@ describe('BuyerDashboard', () => {
       }));
     });
 
-    await user.click(screen.getAllByText('Harina premium')[0]);
+    await user.click(screen.getAllByText('Harina premium').at(-1));
 
     await waitFor(() => {
-      expect(mockDatabase.trackBuyerActivityEvent).toHaveBeenCalledWith(expect.objectContaining({
-        buyerId: 'buyer-1',
-        eventType: 'product_view',
-        productId: 'prod-1',
-        supplierId: 'supplier-1',
-      }));
+      expect(
+        mockDatabase.trackBuyerActivityEvent.mock.calls.some(([payload]) => (
+          payload?.buyerId === 'buyer-1'
+          && payload?.eventType === 'product_view'
+          && payload?.productId === 'prod-1'
+          && payload?.supplierId === 'supplier-1'
+        )),
+      ).toBe(true);
     });
 
     await waitFor(() => {
-      expect(mockDatabase.trackBuyerActivityEvent).toHaveBeenCalledWith(expect.objectContaining({
-        buyerId: 'buyer-1',
-        eventType: 'supplier_view',
-        supplierId: 'supplier-1',
-      }));
+      expect(
+        mockDatabase.trackBuyerActivityEvent.mock.calls.some(([payload]) => (
+          payload?.buyerId === 'buyer-1'
+          && payload?.eventType === 'supplier_view'
+          && payload?.supplierId === 'supplier-1'
+        )),
+      ).toBe(true);
     });
   });
 
@@ -254,7 +260,7 @@ describe('BuyerDashboard', () => {
     await user.click(screen.getByRole('button', { name: 'Ver ofertas' }));
     await user.click(await screen.findByRole('button', { name: 'Abrir conversacion' }));
 
-    expect(await screen.findByText('Conversacion RFQ')).toBeInTheDocument();
+    expect(await screen.findByText('Solicitud de Cotización')).toBeInTheDocument();
     expect(screen.getByText(/Podemos entregar en 48 horas/i)).toBeInTheDocument();
 
     await user.type(screen.getByLabelText('Mensaje'), 'Necesito confirmar horario de recepcion.');

@@ -21,6 +21,7 @@ const mockDatabase = vi.hoisted(() => ({
   getQuoteConversationForQuote: vi.fn(),
   getQuoteConversationMessages: vi.fn(),
   getRelevantQuoteRequestsForSupplier: vi.fn(),
+  getSupplierReviewOpportunities: vi.fn(),
   getProducts: vi.fn(),
   getReviewsForUser: vi.fn(),
   getSupplierStats: vi.fn(),
@@ -64,6 +65,7 @@ describe('SupplierDashboard', () => {
       totalReviews: 2,
     });
     mockDatabase.getReviewsForUser.mockResolvedValue(seed.reviews);
+    mockDatabase.getSupplierReviewOpportunities.mockResolvedValue([]);
     mockDatabase.getSupplierUsageSummary.mockResolvedValue({
       activeProducts: 2,
       quoteResponsesThisMonth: 2,
@@ -116,7 +118,7 @@ describe('SupplierDashboard', () => {
     await user.click(screen.getByRole('button', { name: /Plan/ }));
     expect(await screen.findByText('Workspace activo')).toBeInTheDocument();
     expect(screen.getByText('Agents IA')).toBeInTheDocument();
-    expect(screen.getByText('RFQs respondidas')).toBeInTheDocument();
+    expect(screen.getByText('Cotizaciones respondidas')).toBeInTheDocument();
   });
 
   it('permite actualizar pipeline interno de una oferta pendiente', async () => {
@@ -162,10 +164,10 @@ describe('SupplierDashboard', () => {
 
     const quoteButtons = await screen.findAllByRole('button', { name: 'Cotizar' });
     await user.click(quoteButtons[0]);
-    await screen.findByText('Precio ofertado (CLP)');
+    await screen.findByLabelText(/Nueva Propuesta de Precio/i);
 
-    await user.type(screen.getByLabelText(/Precio ofertado/i), '1320');
-    await user.type(screen.getByLabelText(/Lead time estimado/i), '48 horas');
+    await user.type(screen.getByLabelText(/Nueva Propuesta de Precio/i), '1320');
+    await user.type(screen.getByLabelText(/Tiempo estimado de entrega/i), '48 horas');
     await user.type(screen.getByLabelText(/Notas adicionales/i), 'Incluye entrega en frio');
     await user.click(screen.getByRole('button', { name: 'Enviar oferta' }));
 
@@ -191,7 +193,7 @@ describe('SupplierDashboard', () => {
     const openConversationButtons = await screen.findAllByRole('button', { name: 'Abrir conversacion' });
     await user.click(openConversationButtons[0]);
 
-    expect(await screen.findByText('Conversacion RFQ')).toBeInTheDocument();
+    expect(await screen.findByText('Solicitud de Cotización')).toBeInTheDocument();
     expect(screen.getByText(/Podemos entregar en 48 horas/i)).toBeInTheDocument();
 
     await user.type(screen.getByLabelText('Mensaje'), 'Podemos mover la entrega a primera hora.');

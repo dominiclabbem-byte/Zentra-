@@ -1,12 +1,19 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { renderWithRouter } from '../test/renderWithRouter';
 import Landing from './Landing';
+
+const mockUseAuth = vi.hoisted(() => vi.fn());
+
+vi.mock('../context/AuthContext', () => ({
+  useAuth: () => mockUseAuth(),
+}));
 
 describe('Landing', () => {
   it('abre y cierra el modal de autenticacion para proveedor', async () => {
     const user = userEvent.setup();
+    mockUseAuth.mockReturnValue({ currentUser: null });
 
     renderWithRouter(<Landing />);
 
