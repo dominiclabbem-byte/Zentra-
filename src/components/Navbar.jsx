@@ -84,7 +84,7 @@ export default function Navbar() {
                 marginTop: '4px',
               }}
             />
-            <span className="text-3xl font-extrabold tracking-tight -ml-4 text-transparent bg-clip-text bg-gradient-to-r from-[#5b8af0] to-[#00e5b0] [background-size:200%_auto] [animation:shimmer_3s_linear_infinite]">entra</span>
+            <span className="text-3xl font-extrabold tracking-tight -ml-4 text-transparent bg-clip-text bg-gradient-to-r from-[#5b8af0] to-[#00e5b0]">entra</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-1">

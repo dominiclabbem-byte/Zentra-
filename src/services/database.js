@@ -387,27 +387,11 @@ export async function getBuyerProfile(userId) {
 // PRODUCTS
 // ========================
 
-// Columnas pesadas (base64) excluidas en modo lite para el marketplace público
-const PRODUCTS_LITE_SELECT = 'id, supplier_id, category_id, name, price, price_unit, stock, stock_unit, status, image_url, image_urls, created_at, categories(name, emoji), users!supplier_id(company_name, city, verified, verification_status)';
-const PRODUCTS_FULL_SELECT = '*, categories(name, emoji), users!supplier_id(company_name, city, verified, verification_status)';
-
-function sanitizeProductPayload(product) {
-  const normalizedImageUrls = Array.isArray(product.image_urls)
-    ? product.image_urls.filter(Boolean).slice(0, 4)
-    : [];
-
-  return {
-    ...product,
-    image_urls: normalizedImageUrls,
-    image_url: product.image_url ?? normalizedImageUrls[0] ?? null,
-  };
-}
-
 export async function getProducts(filters = {}) {
   if (useE2E()) return e2eGetProducts(filters);
   let query = supabase
     .from('products')
-    .select(filters.lite ? PRODUCTS_LITE_SELECT : PRODUCTS_FULL_SELECT);
+    .select('*, categories(name, emoji), users!supplier_id(company_name, city, verified, verification_status)');
 
   if (filters.status) {
     query = Array.isArray(filters.status)
@@ -429,23 +413,21 @@ export async function getProducts(filters = {}) {
 }
 
 export async function createProduct(product) {
-  const payload = sanitizeProductPayload(product);
   const { data, error } = await supabase
     .from('products')
-    .insert(payload)
-    .select(PRODUCTS_FULL_SELECT)
+    .insert(product)
+    .select()
     .single();
   if (error) throw error;
   return data;
 }
 
 export async function updateProduct(productId, updates) {
-  const payload = sanitizeProductPayload(updates);
   const { data, error } = await supabase
     .from('products')
-    .update(payload)
+    .update(updates)
     .eq('id', productId)
-    .select(PRODUCTS_FULL_SELECT)
+    .select()
     .single();
   if (error) throw error;
   return data;
