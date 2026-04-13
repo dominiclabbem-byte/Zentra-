@@ -55,8 +55,8 @@ export default function Landing() {
       {/* Hero */}
       <section className="relative bg-[#0a1628] text-white py-24 px-4 overflow-hidden">
         {/* Background effects */}
-        <div className="absolute inset-0 bg-grid opacity-[0.15]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-[#2ECAD5]/8 rounded-full blur-[130px]" />
+        <div className="absolute inset-0 bg-grid opacity-50" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[#2ECAD5]/5 rounded-full blur-[120px]" />
         <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-indigo-500/5 rounded-full blur-[100px]" />
 
         <div className="absolute top-14 left-[6%] hidden xl:block opacity-50 pointer-events-none animate-float select-none" style={{ animationDelay: '0s', fontSize: '72px' }}>
