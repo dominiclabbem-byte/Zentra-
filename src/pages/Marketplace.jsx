@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AuthChoiceModal from '../components/AuthChoiceModal';
 import Toast from '../components/Toast';
@@ -13,6 +13,28 @@ import {
 
 import { mapProductRecordToCard } from '../lib/productAdapters';
 import { getProducts, getPriceAlerts, getPriceAlertSubscriptions, getSupplierProfile, getSupplierStats } from '../services/database';
+
+let marketplaceCatalogCache = null;
+let marketplaceCatalogPromise = null;
+
+function isMarketplacePerfDebugEnabled() {
+  if (typeof window === 'undefined') return false;
+
+  try {
+    return window.localStorage.getItem('DEBUG_MARKETPLACE_PERF') === '1';
+  } catch {
+    return false;
+  }
+}
+
+function logMarketplacePerf(message, payload) {
+  if (!isMarketplacePerfDebugEnabled()) return;
+  if (payload === undefined) {
+    console.log(`[perf][marketplace] ${message}`);
+  } else {
+    console.log(`[perf][marketplace] ${message}`, payload);
+  }
+}
 
 export default function Marketplace() {
   const navigate = useNavigate();
@@ -29,21 +51,64 @@ export default function Marketplace() {
   const [openingSupplierId, setOpeningSupplierId] = useState('');
   const [alertSubscriptions, setAlertSubscriptions] = useState([]);
   const [priceAlerts, setPriceAlerts] = useState([]);
+  const catalogPerfRef = useRef({
+    mountAt: typeof performance !== 'undefined' ? performance.now() : 0,
+    catalogFetchStartedAt: 0,
+    catalogFetchCompletedAt: 0,
+    catalogMappedAt: 0,
+    catalogPainted: false,
+  });
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadCatalog() {
       setCatalogLoading(true);
+      catalogPerfRef.current.catalogFetchStartedAt = performance.now();
+      logMarketplacePerf('catalog fetch start');
 
       try {
-        const data = await getProducts();
-        const cards = data.map((product) => mapProductRecordToCard(product));
+        if (marketplaceCatalogCache) {
+          if (!cancelled) {
+            setCatalogProducts(marketplaceCatalogCache);
+          }
+          return;
+        }
+
+        if (!marketplaceCatalogPromise) {
+          marketplaceCatalogPromise = (async () => {
+            const data = await getProducts({ lite: true });
+            const fetchCompletedAt = performance.now();
+            catalogPerfRef.current.catalogFetchCompletedAt = fetchCompletedAt;
+            logMarketplacePerf('catalog fetch complete', {
+              durationMs: Number((fetchCompletedAt - catalogPerfRef.current.catalogFetchStartedAt).toFixed(2)),
+              productCount: data.length,
+            });
+
+            const mapStartedAt = performance.now();
+            const cards = data.map((product) => mapProductRecordToCard(product));
+            const mapCompletedAt = performance.now();
+            catalogPerfRef.current.catalogMappedAt = mapCompletedAt;
+            logMarketplacePerf('catalog map complete', {
+              durationMs: Number((mapCompletedAt - mapStartedAt).toFixed(2)),
+            });
+
+            marketplaceCatalogCache = cards;
+            return cards;
+          })();
+        }
+
+        const cards = await marketplaceCatalogPromise;
+        const fetchCompletedAt = performance.now();
+        if (!catalogPerfRef.current.catalogFetchCompletedAt) {
+          catalogPerfRef.current.catalogFetchCompletedAt = fetchCompletedAt;
+        }
 
         if (!cancelled) {
           setCatalogProducts(cards);
         }
       } catch (error) {
+        marketplaceCatalogPromise = null;
         if (!cancelled) {
           setToast({ message: error.message || 'No se pudo cargar el marketplace.', type: 'error' });
         }
@@ -67,6 +132,8 @@ export default function Marketplace() {
     let cancelled = false;
 
     const loadAlertSignals = () => {
+      const startedAt = performance.now();
+      logMarketplacePerf('buyer alert signals start');
       Promise.all([
         getPriceAlertSubscriptions(currentUser.id),
         getPriceAlerts(currentUser.id),
@@ -74,6 +141,11 @@ export default function Marketplace() {
         if (cancelled) return;
         setAlertSubscriptions(subs);
         setPriceAlerts(alerts);
+        logMarketplacePerf('buyer alert signals complete', {
+          durationMs: Number((performance.now() - startedAt).toFixed(2)),
+          subscriptions: subs.length,
+          alerts: alerts.length,
+        });
       }).catch(() => {});
     };
 
@@ -133,9 +205,10 @@ export default function Marketplace() {
   })), [catalogPriceSignalMap, catalogProducts, trackedAlertTargets]);
 
   const filteredProducts = useMemo(() => {
+    const startedAt = performance.now();
     const normalizedSearch = searchTerm.trim().toLowerCase();
 
-    return catalogProductsWithSignals.filter((product) => {
+    const result = catalogProductsWithSignals.filter((product) => {
       const matchesCategory = categoryFilter === 'Todos' || product.category === categoryFilter;
       const matchesSupplier = supplierFilter === 'Todos' || product.supplierName === supplierFilter;
       const matchesSearch = !normalizedSearch
@@ -145,7 +218,29 @@ export default function Marketplace() {
 
       return matchesCategory && matchesSupplier && matchesSearch;
     });
+    const completedAt = performance.now();
+
+    if (catalogProductsWithSignals.length > 0) {
+      logMarketplacePerf('filter products complete', {
+        durationMs: Number((completedAt - startedAt).toFixed(2)),
+        totalProducts: catalogProductsWithSignals.length,
+        filteredProducts: result.length,
+      });
+    }
+
+    return result;
   }, [catalogProductsWithSignals, categoryFilter, supplierFilter, searchTerm]);
+
+  useEffect(() => {
+    if (!catalogLoading && catalogProducts.length > 0 && !catalogPerfRef.current.catalogPainted) {
+      catalogPerfRef.current.catalogPainted = true;
+      logMarketplacePerf('catalog first paint ready', {
+        sinceMountMs: Number((performance.now() - catalogPerfRef.current.mountAt).toFixed(2)),
+        sinceFetchStartMs: Number((performance.now() - catalogPerfRef.current.catalogFetchStartedAt).toFixed(2)),
+        productCount: catalogProducts.length,
+      });
+    }
+  }, [catalogLoading, catalogProducts.length]);
 
   const openSupplierFromProduct = async (product) => {
     setOpeningSupplierId(product.id);
