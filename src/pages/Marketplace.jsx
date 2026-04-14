@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import AuthChoiceModal from '../components/AuthChoiceModal';
 import Toast from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
@@ -15,6 +15,7 @@ import { mapProductRecordToCard } from '../lib/productAdapters';
 import { getProducts, getPriceAlerts, getPriceAlertSubscriptions, getSupplierProfile, getSupplierStats } from '../services/database';
 
 export default function Marketplace() {
+  const navigate = useNavigate();
   const { categories: categoryOptions, currentUser } = useAuth();
   const [toast, setToast] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -25,6 +26,7 @@ export default function Marketplace() {
   const [supplierFilter, setSupplierFilter] = useState('Todos');
   const [searchTerm, setSearchTerm] = useState('');
   const [viewingSupplier, setViewingSupplier] = useState(null);
+  const [openingSupplierId, setOpeningSupplierId] = useState('');
   const [alertSubscriptions, setAlertSubscriptions] = useState([]);
   const [priceAlerts, setPriceAlerts] = useState([]);
 
@@ -60,18 +62,43 @@ export default function Marketplace() {
   }, []);
 
   useEffect(() => {
-    if (!currentUser?.id) return;
-    Promise.all([
-      getPriceAlertSubscriptions(currentUser.id),
-      getPriceAlerts(currentUser.id),
-    ]).then(([subs, alerts]) => {
-      setAlertSubscriptions(subs);
-      setPriceAlerts(alerts);
-    }).catch(() => {});
-  }, [currentUser?.id]);
+    if (!currentUser?.id || !currentUser?.is_buyer) return undefined;
 
-  const supplierOptions = ['Todos', ...new Set(catalogProducts.map((product) => product.supplierName).filter(Boolean))];
-  const categoryFilters = ['Todos', ...categoryOptions.map((category) => category.name)];
+    let cancelled = false;
+
+    const loadAlertSignals = () => {
+      Promise.all([
+        getPriceAlertSubscriptions(currentUser.id),
+        getPriceAlerts(currentUser.id),
+      ]).then(([subs, alerts]) => {
+        if (cancelled) return;
+        setAlertSubscriptions(subs);
+        setPriceAlerts(alerts);
+      }).catch(() => {});
+    };
+
+    const idleHandle = typeof window !== 'undefined' && 'requestIdleCallback' in window
+      ? window.requestIdleCallback(loadAlertSignals, { timeout: 1500 })
+      : window.setTimeout(loadAlertSignals, 250);
+
+    return () => {
+      cancelled = true;
+      if (typeof window !== 'undefined' && 'cancelIdleCallback' in window && typeof idleHandle === 'number') {
+        window.cancelIdleCallback(idleHandle);
+      } else {
+        window.clearTimeout(idleHandle);
+      }
+    };
+  }, [currentUser?.id, currentUser?.is_buyer]);
+
+  const supplierOptions = useMemo(
+    () => ['Todos', ...new Set(catalogProducts.map((product) => product.supplierName).filter(Boolean))],
+    [catalogProducts],
+  );
+  const categoryFilters = useMemo(
+    () => ['Todos', ...categoryOptions.map((category) => category.name)],
+    [categoryOptions],
+  );
 
   const catalogPriceSignalMap = useMemo(() => {
     const map = new Map();
@@ -105,19 +132,24 @@ export default function Marketplace() {
     hasTrackedPriceAlert: trackedAlertTargets.productIds.has(product.id) || trackedAlertTargets.categoryIds.has(product.categoryId),
   })), [catalogPriceSignalMap, catalogProducts, trackedAlertTargets]);
 
-  const filteredProducts = catalogProductsWithSignals.filter((product) => {
-    const matchesCategory = categoryFilter === 'Todos' || product.category === categoryFilter;
-    const matchesSupplier = supplierFilter === 'Todos' || product.supplierName === supplierFilter;
+  const filteredProducts = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
-    const matchesSearch = !normalizedSearch
-      || product.name.toLowerCase().includes(normalizedSearch)
-      || product.category.toLowerCase().includes(normalizedSearch)
-      || product.supplierName.toLowerCase().includes(normalizedSearch);
 
-    return matchesCategory && matchesSupplier && matchesSearch;
-  });
+    return catalogProductsWithSignals.filter((product) => {
+      const matchesCategory = categoryFilter === 'Todos' || product.category === categoryFilter;
+      const matchesSupplier = supplierFilter === 'Todos' || product.supplierName === supplierFilter;
+      const matchesSearch = !normalizedSearch
+        || product.name.toLowerCase().includes(normalizedSearch)
+        || product.category.toLowerCase().includes(normalizedSearch)
+        || product.supplierName.toLowerCase().includes(normalizedSearch);
+
+      return matchesCategory && matchesSupplier && matchesSearch;
+    });
+  }, [catalogProductsWithSignals, categoryFilter, supplierFilter, searchTerm]);
 
   const openSupplierFromProduct = async (product) => {
+    setOpeningSupplierId(product.id);
+
     try {
       const [supplierRaw, supplierStats] = await Promise.all([
         getSupplierProfile(product.supplierId),
@@ -153,7 +185,38 @@ export default function Marketplace() {
       });
     } catch (error) {
       setToast({ message: error.message || 'No se pudo cargar el proveedor.', type: 'error' });
+    } finally {
+      setOpeningSupplierId('');
     }
+  };
+
+  const handleQuoteAction = (product) => {
+    if (!currentUser) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    if (!currentUser.is_buyer) {
+      setToast({
+        message: 'Para cotizar desde marketplace necesitas activar o ingresar con un perfil comprador.',
+        type: 'error',
+      });
+      return;
+    }
+
+    navigate('/dashboard-comprador', {
+      state: {
+        activeTab: 'catalog',
+        openQuoteModal: true,
+        quotePrefill: {
+          product: product.name,
+          categoryId: product.categoryId ?? '',
+          sourceProductId: product.id,
+          sourceSupplierId: product.supplierId,
+          sourceContext: 'marketplace',
+        },
+      },
+    });
   };
 
   return (
@@ -344,33 +407,33 @@ export default function Marketplace() {
         </div>
       )}
 
-      <section className="relative overflow-hidden bg-[#09172a] text-white px-4 py-16">
+      <section className="relative overflow-hidden bg-[#09172a] text-white px-4 pt-8 pb-8 md:pt-16 md:pb-16">
         <div className="absolute inset-0 bg-grid opacity-30" />
-        <div className="absolute top-0 left-[15%] w-80 h-80 bg-[#2ECAD5]/10 rounded-full blur-[90px]" />
-        <div className="absolute bottom-0 right-[10%] w-80 h-80 bg-emerald-500/10 rounded-full blur-[100px]" />
+        <div className="absolute top-0 left-[15%] w-56 h-56 md:w-80 md:h-80 bg-[#2ECAD5]/10 rounded-full blur-[70px] md:blur-[90px]" />
+        <div className="absolute bottom-0 right-[10%] w-56 h-56 md:w-80 md:h-80 bg-emerald-500/10 rounded-full blur-[80px] md:blur-[100px]" />
 
         <div className="max-w-6xl mx-auto relative z-10">
           <div className="max-w-3xl">
-            <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-[#2ECAD5]">
+            <span className="inline-flex items-center gap-2 text-[10px] md:text-xs font-semibold uppercase tracking-[0.18em] md:tracking-[0.24em] text-[#2ECAD5]">
               Marketplace publico
             </span>
-            <h1 className="text-4xl md:text-5xl font-extrabold leading-tight mt-4">
+            <h1 className="text-2xl sm:text-3xl md:text-5xl font-extrabold leading-tight mt-3 md:mt-4 max-w-[14ch] md:max-w-none">
               Compara catalogos reales de proveedores food service en Chile
             </h1>
-            <p className="text-lg text-slate-300 mt-4 max-w-2xl leading-relaxed">
+            <p className="text-sm md:text-lg text-slate-300 mt-3 md:mt-4 max-w-xl md:max-w-2xl leading-relaxed">
               Explora precios visibles, categorias activas y fichas publicas de proveedores sin entrar al dashboard.
             </p>
             {!currentUser && (
-              <div className="flex flex-col sm:flex-row gap-3 mt-8">
+              <div className="flex flex-col sm:flex-row gap-2.5 md:gap-3 mt-5 md:mt-8">
                 <Link
                   to="/ingresar?role=comprador"
-                  className="bg-gradient-to-r from-emerald-400 to-blue-500 text-[#0D1F3C] font-bold px-6 py-3 rounded-xl transition-all hover:scale-[1.02] shadow-xl shadow-emerald-400/20 text-center"
+                  className="bg-gradient-to-r from-emerald-400 to-blue-500 text-[#0D1F3C] font-bold px-5 py-2.5 md:px-6 md:py-3 rounded-xl transition-all hover:scale-[1.02] shadow-xl shadow-emerald-400/20 text-center text-sm md:text-base"
                 >
                   Quiero Comprar
                 </Link>
                 <Link
                   to="/ingresar?role=proveedor"
-                  className="border border-white/10 bg-white/5 hover:bg-white/10 text-white font-bold px-6 py-3 rounded-xl transition-all text-center"
+                  className="border border-white/10 bg-white/5 hover:bg-white/10 text-white font-bold px-5 py-2.5 md:px-6 md:py-3 rounded-xl transition-all text-center text-sm md:text-base"
                 >
                   Quiero Vender
                 </Link>
@@ -378,7 +441,7 @@ export default function Marketplace() {
             )}
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-10">
+          <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-4 mt-10">
             {[
               { label: 'Productos visibles', value: catalogProducts.length },
               { label: 'Proveedores activos', value: supplierOptions.length - 1 },
@@ -391,12 +454,29 @@ export default function Marketplace() {
               </div>
             ))}
           </div>
+
+          <div className="md:hidden flex gap-2 overflow-x-auto pb-1 mt-5 -mx-1 px-1">
+            {[
+              { label: 'Productos', value: catalogProducts.length },
+              { label: 'Proveedores', value: supplierOptions.length - 1 },
+              { label: 'Categorias', value: [...new Set(catalogProducts.map((product) => product.category))].length },
+              { label: 'Resultados', value: filteredProducts.length },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="flex-shrink-0 rounded-full border border-white/10 bg-white/5 backdrop-blur-xl px-3 py-2 min-w-fit"
+              >
+                <div className="text-sm font-extrabold text-white leading-none">{item.value}</div>
+                <div className="text-[10px] text-slate-400 mt-1 whitespace-nowrap">{item.label}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      <section className="px-4 py-8 border-b border-slate-200 bg-white">
+      <section className="px-4 py-4 md:py-8 border-b border-slate-200 bg-white sticky top-0 z-20">
         <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_220px] gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_220px] gap-3 md:gap-4">
             <label className="relative block">
               <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
@@ -406,14 +486,14 @@ export default function Marketplace() {
                 placeholder="Buscar por producto, categoria o proveedor"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                className="w-full bg-[#f8fafc] border border-gray-100 rounded-2xl pl-12 pr-4 py-4 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                className="w-full bg-[#f8fafc] border border-gray-100 rounded-2xl pl-12 pr-4 py-3 md:py-4 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
               />
             </label>
 
             <select
               value={supplierFilter}
               onChange={(event) => setSupplierFilter(event.target.value)}
-              className="w-full bg-[#f8fafc] border border-gray-100 rounded-2xl px-4 py-4 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+              className="w-full bg-[#f8fafc] border border-gray-100 rounded-2xl px-4 py-3 md:py-4 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
             >
               {supplierOptions.map((supplier) => (
                 <option key={supplier} value={supplier}>
@@ -423,13 +503,13 @@ export default function Marketplace() {
             </select>
           </div>
 
-          <div className="flex gap-2 overflow-x-auto pb-1 mt-4">
+          <div className="flex gap-2 overflow-x-auto pb-1 mt-3 md:mt-4">
             {categoryFilters.map((category) => (
               <button
                 key={category}
                 type="button"
                 onClick={() => setCategoryFilter(category)}
-                className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${
+                className={`px-3 py-1.5 md:px-4 md:py-2 rounded-xl text-xs md:text-sm font-semibold whitespace-nowrap transition-all ${
                   categoryFilter === category
                     ? 'bg-gradient-to-r from-emerald-400 to-blue-500 text-white shadow-md shadow-emerald-400/20'
                     : 'bg-white border border-gray-100 text-gray-500 hover:border-[#2ECAD5]/30 hover:text-[#0D1F3C]'
@@ -518,21 +598,23 @@ export default function Marketplace() {
         );
       })()}
 
-      <section className="px-4 py-10">
+      <section className="px-4 py-6 md:py-10">
         <div className="max-w-6xl mx-auto">
           {catalogLoading ? (
             <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center text-sm text-gray-400">
               Cargando marketplace...
             </div>
           ) : filteredProducts.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
               {filteredProducts.map((product) => (
                 <div
                   key={product.id}
-                  className="bg-white rounded-2xl border border-gray-100 overflow-hidden card-premium cursor-pointer group"
+                  className={`bg-white rounded-2xl border border-gray-100 overflow-hidden card-premium cursor-pointer group ${
+                    openingSupplierId === product.id ? 'opacity-90' : ''
+                  }`}
                   onClick={() => openSupplierFromProduct(product)}
                 >
-                  <div className={`relative h-40 bg-gradient-to-br ${product.gradient} overflow-hidden`}>
+                  <div className={`relative h-28 sm:h-36 md:h-40 bg-gradient-to-br ${product.gradient} overflow-hidden`}>
                     {product.imageUrls?.[0] ? (
                       <img src={product.imageUrls[0]} alt={product.imageAlt} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     ) : (
@@ -542,7 +624,7 @@ export default function Marketplace() {
                           <div className="absolute bottom-4 right-4 w-20 h-20 bg-white/20 rounded-full blur-2xl" />
                         </div>
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="text-5xl filter drop-shadow-lg transform group-hover:scale-110 transition-transform duration-500">
+                          <div className="text-4xl md:text-5xl filter drop-shadow-lg transform group-hover:scale-110 transition-transform duration-500">
                             {product.emoji}
                           </div>
                         </div>
@@ -571,14 +653,14 @@ export default function Marketplace() {
                     )}
                   </div>
 
-                  <div className="p-3.5">
-                    <h3 className="text-sm font-bold text-[#0D1F3C] truncate">{product.name}</h3>
-                    <p className="text-xs text-gray-400 mt-0.5">{product.category}</p>
-                    <div className="flex items-center justify-between mt-3">
-                      <span className="text-base font-extrabold text-[#0D1F3C]">{product.price}</span>
+                  <div className="p-2.5 md:p-3.5">
+                    <h3 className="text-[13px] md:text-sm font-bold text-[#0D1F3C] truncate">{product.name}</h3>
+                    <p className="text-[10px] md:text-xs text-gray-400 mt-0.5 truncate">{product.category}</p>
+                    <div className="flex items-center justify-between mt-2 md:mt-3">
+                      <span className="text-sm md:text-base font-extrabold text-[#0D1F3C]">{product.price}</span>
                     </div>
                     {product.recentPriceAlert && (
-                      <div className="mt-2 rounded-xl border border-gray-100 bg-[#f8fafc] px-3 py-2">
+                      <div className="mt-2 rounded-xl border border-gray-100 bg-[#f8fafc] px-2.5 py-2">
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-[11px] font-semibold text-[#0D1F3C]">{product.recentPriceAlert.impactLabel}</span>
                           <span className={`text-[10px] font-bold ${
@@ -593,13 +675,13 @@ export default function Marketplace() {
                       </div>
                     )}
                     {product.supplierName && (
-                      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-50">
-                        <div className="w-6 h-6 bg-gradient-to-br from-[#0D1F3C] to-[#1a3260] rounded-md flex items-center justify-center text-[#2ECAD5] text-[8px] font-bold flex-shrink-0">
+                      <div className="flex items-center gap-2 mt-2.5 pt-2.5 md:mt-3 md:pt-3 border-t border-gray-50">
+                        <div className="w-5 h-5 md:w-6 md:h-6 bg-gradient-to-br from-[#0D1F3C] to-[#1a3260] rounded-md flex items-center justify-center text-[#2ECAD5] text-[8px] font-bold flex-shrink-0">
                           {product.supplierName.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-[11px] font-semibold text-gray-600 truncate">{product.supplierName}</p>
-                          <span className="text-[10px] text-gray-400">Ver proveedor</span>
+                          <p className="text-[10px] md:text-[11px] font-semibold text-gray-600 truncate">{product.supplierName}</p>
+                          <span className="text-[9px] md:text-[10px] text-gray-400">Ver proveedor</span>
                         </div>
                       </div>
                     )}
@@ -607,15 +689,11 @@ export default function Marketplace() {
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (currentUser) {
-                          openSupplierFromProduct(product);
-                        } else {
-                          setShowAuthModal(true);
-                        }
+                        handleQuoteAction(product);
                       }}
-                      className="mt-3 w-full bg-gradient-to-r from-[#0D1F3C] to-[#1a3260] hover:from-[#1a3260] hover:to-[#0D1F3C] text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-all hover:scale-[1.02] shadow-md"
+                      className="mt-2.5 md:mt-3 w-full bg-gradient-to-r from-[#0D1F3C] to-[#1a3260] hover:from-[#1a3260] hover:to-[#0D1F3C] text-white font-bold px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm transition-all hover:scale-[1.02] shadow-md"
                     >
-                      Cotizar
+                      {currentUser?.is_buyer ? 'Cotizar' : currentUser ? 'Activar comprador' : 'Cotizar'}
                     </button>
                   </div>
                 </div>

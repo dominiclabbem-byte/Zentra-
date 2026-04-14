@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { categories as fallbackCategoryNames } from '../data/mockData';
 import {
   getCategories,
@@ -37,15 +37,35 @@ export function AuthProvider({ children }) {
   const [plans, setPlans] = useState(FALLBACK_PLAN_ROWS);
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const refreshCurrentUserPromiseRef = useRef(null);
 
   const refreshCurrentUser = useCallback(async () => {
+    if (refreshCurrentUserPromiseRef.current) {
+      return refreshCurrentUserPromiseRef.current;
+    }
+
+    const refreshPromise = (async () => {
+      try {
+        const user = await getCurrentUser();
+        const normalizedUser = normalizeUserRecord(user);
+        setCurrentUser(normalizedUser);
+        return normalizedUser;
+      } catch {
+        setCurrentUser(null);
+        return null;
+      } finally {
+        refreshCurrentUserPromiseRef.current = null;
+      }
+    })();
+
+    refreshCurrentUserPromiseRef.current = refreshPromise;
+
     try {
-      const user = await getCurrentUser();
-      setCurrentUser(normalizeUserRecord(user));
-      return normalizeUserRecord(user);
+      return await refreshPromise;
     } catch {
-      setCurrentUser(null);
       return null;
+    } finally {
+      refreshCurrentUserPromiseRef.current = null;
     }
   }, []);
 
@@ -98,7 +118,14 @@ export function AuthProvider({ children }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'INITIAL_SESSION') return;
+      if (event === 'SIGNED_OUT') {
+        setCurrentUser(null);
+        setNotifications([]);
+        return;
+      }
+
       refreshCurrentUser();
     });
 

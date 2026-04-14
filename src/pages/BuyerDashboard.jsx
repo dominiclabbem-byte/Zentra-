@@ -412,7 +412,10 @@ export default function BuyerDashboard() {
     }
 
     setShowModal(true);
-    setQuoteForm(initialQuoteForm);
+    setQuoteForm({
+      ...initialQuoteForm,
+      ...(location.state?.quotePrefill ?? {}),
+    });
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
 
@@ -735,10 +738,12 @@ export default function BuyerDashboard() {
   const renderCatalogProductCard = (product, { showRecommendationMeta = false } = {}) => (
     <div
       key={product.id}
-      className="bg-white rounded-2xl border border-gray-100 overflow-hidden card-premium cursor-pointer group"
+      className={`bg-white rounded-2xl border border-gray-100 overflow-hidden card-premium cursor-pointer group ${
+        showRecommendationMeta ? 'h-full flex flex-col' : ''
+      }`}
       onClick={() => openSupplierFromProduct(product)}
     >
-      <div className={`relative h-40 bg-gradient-to-br ${product.gradient} overflow-hidden`}>
+      <div className={`relative ${showRecommendationMeta ? 'h-28 sm:h-32' : 'h-40'} bg-gradient-to-br ${product.gradient} overflow-hidden`}>
         {product.imageUrls?.[0] ? (
           <img src={product.imageUrls[0]} alt={product.imageAlt} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
         ) : (
@@ -748,7 +753,7 @@ export default function BuyerDashboard() {
               <div className="absolute bottom-4 right-4 w-20 h-20 bg-white/20 rounded-full blur-2xl" />
             </div>
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-5xl filter drop-shadow-lg transform group-hover:scale-110 transition-transform duration-500">
+              <div className={`${showRecommendationMeta ? 'text-4xl' : 'text-5xl'} filter drop-shadow-lg transform group-hover:scale-110 transition-transform duration-500`}>
                 {product.emoji}
               </div>
             </div>
@@ -784,44 +789,45 @@ export default function BuyerDashboard() {
         )}
       </div>
 
-      <div className="p-3.5">
-        <h3 className="text-sm font-bold text-[#0D1F3C] truncate">{product.name}</h3>
-        <p className="text-xs text-gray-400 mt-0.5">{product.category}</p>
-        <div className="flex items-center justify-between mt-3">
-          <span className="text-base font-extrabold text-[#0D1F3C]">{product.price}</span>
+      <div className={`${showRecommendationMeta ? 'p-2.5 flex-1 flex flex-col' : 'p-3.5'}`}>
+        <h3 className={`${showRecommendationMeta ? 'text-[13px]' : 'text-sm'} font-bold text-[#0D1F3C] truncate`}>{product.name}</h3>
+        <p className={`${showRecommendationMeta ? 'text-[10px]' : 'text-xs'} text-gray-400 mt-0.5 truncate`}>{product.category}</p>
+        <div className={`flex items-center justify-between ${showRecommendationMeta ? 'mt-2' : 'mt-3'}`}>
+          <span className={`${showRecommendationMeta ? 'text-sm' : 'text-base'} font-extrabold text-[#0D1F3C]`}>{product.price}</span>
         </div>
         {showRecommendationMeta && product.recommendationReasons?.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {product.recommendationReasons.map((reason) => (
-              <span key={`${product.id}-${reason}`} className="text-[10px] font-semibold bg-[#f2f7fb] text-[#0D1F3C] border border-[#dce9f2] px-2 py-1 rounded-full">
+          <div className="mt-2 flex flex-wrap gap-1 min-h-[40px] content-start">
+            {product.recommendationReasons.slice(0, 2).map((reason) => (
+              <span key={`${product.id}-${reason}`} className="text-[9px] font-semibold bg-[#f2f7fb] text-[#0D1F3C] border border-[#dce9f2] px-1.5 py-0.5 rounded-full">
                 {reason}
               </span>
             ))}
           </div>
         )}
         {product.recentPriceAlert && (
-          <div className="mt-2 rounded-xl border border-gray-100 bg-[#f8fafc] px-3 py-2">
+          <div className={`mt-2 rounded-xl border border-gray-100 bg-[#f8fafc] ${showRecommendationMeta ? 'px-2 py-1.5' : 'px-3 py-2'}`}>
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[11px] font-semibold text-[#0D1F3C]">{product.recentPriceAlert.impactLabel}</span>
+              <span className={`${showRecommendationMeta ? 'text-[10px]' : 'text-[11px]'} font-semibold text-[#0D1F3C]`}>{product.recentPriceAlert.impactLabel}</span>
               <span className={`text-[10px] font-bold ${
                 product.recentPriceAlert.change === 'down' ? 'text-emerald-600' : 'text-rose-600'
               }`}>
                 {product.recentPriceAlert.change === 'down' ? '↓' : '↑'} {product.recentPriceAlert.currentPrice}
               </span>
             </div>
-            <p className="text-[10px] text-gray-400 mt-1">
+            <p className={`${showRecommendationMeta ? 'text-[9px]' : 'text-[10px]'} text-gray-400 mt-1`}>
               Antes {product.recentPriceAlert.previousPrice} · {product.recentPriceAlert.dateLabel}
             </p>
           </div>
         )}
+        <div className="flex-1" />
         {product.supplierName && (
-          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-50">
-            <div className="w-6 h-6 bg-gradient-to-br from-[#0D1F3C] to-[#1a3260] rounded-md flex items-center justify-center text-[#2ECAD5] text-[8px] font-bold flex-shrink-0">
+          <div className={`flex items-center gap-2 ${showRecommendationMeta ? 'mt-2.5 pt-2.5' : 'mt-3 pt-3'} border-t border-gray-50`}>
+            <div className={`${showRecommendationMeta ? 'w-5 h-5' : 'w-6 h-6'} bg-gradient-to-br from-[#0D1F3C] to-[#1a3260] rounded-md flex items-center justify-center text-[#2ECAD5] text-[8px] font-bold flex-shrink-0`}>
               {product.supplierName.split(' ').map((word) => word[0]).join('').slice(0, 2).toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-semibold text-gray-600 truncate">{product.supplierName}</p>
-              <span className="text-[10px] text-gray-400">Ver proveedor</span>
+              <p className={`${showRecommendationMeta ? 'text-[10px]' : 'text-[11px]'} font-semibold text-gray-600 truncate`}>{product.supplierName}</p>
+              <span className={`${showRecommendationMeta ? 'text-[9px]' : 'text-[10px]'} text-gray-400`}>Ver proveedor</span>
             </div>
           </div>
         )}
@@ -2491,7 +2497,7 @@ export default function BuyerDashboard() {
             })()}
 
             {showRecommendedCatalog && recommendedCatalogProducts.length > 0 && (
-              <section className="bg-gradient-to-br from-[#0D1F3C] to-[#102746] rounded-3xl p-6 text-white overflow-hidden relative">
+              <section className="bg-gradient-to-br from-[#0D1F3C] to-[#102746] rounded-3xl p-4 sm:p-6 text-white overflow-hidden relative">
                 <div className="absolute inset-0 bg-grid opacity-20" />
                 <div className="relative z-10">
                   <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-5">
@@ -2499,8 +2505,8 @@ export default function BuyerDashboard() {
                       <span className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.24em] text-[#2ECAD5]">
                         Para ti
                       </span>
-                      <h2 className="text-2xl font-extrabold mt-2">Sugerencias basadas en tu actividad</h2>
-                      <p className="text-sm text-slate-300 mt-2 max-w-3xl">
+                      <h2 className="text-xl sm:text-2xl font-extrabold mt-2">Sugerencias basadas en tu actividad</h2>
+                      <p className="text-xs sm:text-sm text-slate-300 mt-2 max-w-3xl">
                         Priorizamos Solicitudes de Cotización previas, busquedas recientes, proveedores guardados y senales comerciales.
                         La cercania geografica quedara para una fase posterior cuando tengamos direccion confirmada en mapa y coordenadas.
                       </p>
@@ -2516,8 +2522,15 @@ export default function BuyerDashboard() {
                     )}
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                    {recommendedCatalogProducts.map((product) => renderCatalogProductCard(product, { showRecommendationMeta: true }))}
+                  <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory xl:grid xl:grid-cols-4 xl:overflow-visible xl:pb-0">
+                    {recommendedCatalogProducts.map((product) => (
+                      <div
+                        key={product.id}
+                        className="snap-start flex-shrink-0 w-[68vw] sm:w-[44vw] xl:w-auto"
+                      >
+                        {renderCatalogProductCard(product, { showRecommendationMeta: true })}
+                      </div>
+                    ))}
                   </div>
                 </div>
               </section>
