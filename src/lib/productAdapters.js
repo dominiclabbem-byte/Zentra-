@@ -75,7 +75,7 @@ export function buildProductFormFromCard(product) {
 
 export function mapProductRecordToCard(record) {
   const categoryRelation = takeSingle(record.categories);
-  const supplierRelation = takeSingle(record.users);
+  const supplierRelation = takeSingle(record.supplier ?? record.users);
   const categoryName = categoryRelation?.name ?? 'Otros';
   const gradient = PRODUCT_GRADIENTS[hashValue(record.id) % PRODUCT_GRADIENTS.length];
 

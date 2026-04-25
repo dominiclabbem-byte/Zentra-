@@ -20,8 +20,14 @@ Usa `.env.example` como referencia:
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
-- `VITE_ANTHROPIC_API_KEY`
-- `VITE_ELEVENLABS_API_KEY`
+- `VITE_OPENROUTER_API_KEY`
+- `VITE_OPENROUTER_IMAGE_MODEL`
+- `VITE_OPENROUTER_URL` opcional
+- `RESEND_API_KEY`
+- `NOTIFICATION_EMAIL_FROM`
+- `TWILIO_ACCOUNT_SID`
+- `TWILIO_AUTH_TOKEN`
+- `TWILIO_FROM_NUMBER`
 
 ## Supabase
 
@@ -68,7 +74,4 @@ npm run dev
 npm run build
 ```
 
-`npm run lint` todavia falla por deuda previa en:
-
-- [src/components/VoiceCall.jsx](/mnt/c/Users/mateo/Desktop/Zentra-/src/components/VoiceCall.jsx)
-- [src/services/ttsService.js](/mnt/c/Users/mateo/Desktop/Zentra-/src/services/ttsService.js)
+`npm run lint` puede reportar deuda previa en archivos fuera del cambio actual.

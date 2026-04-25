@@ -1,7 +1,12 @@
-const OPENROUTER_API_KEY = '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';
-const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
+const OPENROUTER_URL = import.meta.env.VITE_OPENROUTER_URL || 'https://openrouter.ai/api/v1/chat/completions';
+const OPENROUTER_IMAGE_MODEL = import.meta.env.VITE_OPENROUTER_IMAGE_MODEL || 'google/gemini-3.1-flash-image-preview';
 
 export async function generateProductImage(prompt) {
+  if (!OPENROUTER_API_KEY) {
+    throw new Error('Falta configurar VITE_OPENROUTER_API_KEY para generar imagenes con IA.');
+  }
+
   const response = await fetch(OPENROUTER_URL, {
     method: 'POST',
     headers: {
@@ -9,7 +14,7 @@ export async function generateProductImage(prompt) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'google/gemini-3.1-flash-image-preview',
+      model: OPENROUTER_IMAGE_MODEL,
       messages: [
         {
           role: 'user',

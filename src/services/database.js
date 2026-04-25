@@ -55,7 +55,7 @@ const SUPPLIER_CATEGORY_SCOPE = 'supplier_catalog';
 const SUPPLIER_RELEVANT_QUOTE_SELECT = `
   *,
   categories(id, name, emoji),
-  users!buyer_id(company_name, city, rut, verified),
+  buyer:users!buyer_id(company_name, city, rut, verified),
   quote_offers(
     id,
     quote_id,
@@ -67,7 +67,7 @@ const SUPPLIER_RELEVANT_QUOTE_SELECT = `
     status,
     pipeline_status,
     created_at,
-    users!supplier_id(company_name, city, verified)
+    supplier:users!supplier_id(company_name, city, verified)
   )
 `;
 
@@ -93,10 +93,145 @@ const QUOTE_CONVERSATION_MESSAGE_SELECT = `
   *,
   sender:users!sender_user_id(id, company_name, city)
 `;
+const PRODUCT_IMAGES_BUCKET = 'product-images';
+const AVATAR_IMAGES_BUCKET = 'avatars';
+const IMAGE_UPLOAD_LIMIT = 4;
+const DEFAULT_IMAGE_CONTENT_TYPE = 'image/jpeg';
 
 function takeSingle(value) {
   if (Array.isArray(value)) return value[0] ?? null;
   return value ?? null;
+}
+
+function isDataUrl(value) {
+  return typeof value === 'string' && value.startsWith('data:image/');
+}
+
+function normalizeImageUrls(imageUrls = []) {
+  return Array.isArray(imageUrls)
+    ? imageUrls.filter(Boolean).slice(0, IMAGE_UPLOAD_LIMIT)
+    : [];
+}
+
+function getImageExtension(contentType) {
+  switch (contentType) {
+    case 'image/png':
+      return 'png';
+    case 'image/webp':
+      return 'webp';
+    case 'image/gif':
+      return 'gif';
+    default:
+      return 'jpg';
+  }
+}
+
+async function uploadDataUrlToStorage({ bucket, ownerId, dataUrl, prefix }) {
+  const response = await fetch(dataUrl);
+  if (!response.ok) {
+    throw new Error('No se pudo procesar la imagen antes de subirla.');
+  }
+
+  const blob = await response.blob();
+  const contentType = blob.type || DEFAULT_IMAGE_CONTENT_TYPE;
+  const extension = getImageExtension(contentType);
+  const path = `${ownerId}/${prefix}-${crypto.randomUUID()}.${extension}`;
+
+  const { error: uploadError } = await supabase
+    .storage
+    .from(bucket)
+    .upload(path, blob, {
+      contentType,
+      upsert: false,
+    });
+
+  if (uploadError) throw uploadError;
+
+  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+  return data.publicUrl;
+}
+
+async function compressImageFile(file, maxSize) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+
+    img.onload = () => {
+      const ratio = Math.min(maxSize / img.width, maxSize / img.height);
+      const width = Math.round(img.width * ratio);
+      const height = Math.round(img.height * ratio);
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      URL.revokeObjectURL(url);
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          reject(new Error('No se pudo preparar la imagen.'));
+          return;
+        }
+
+        resolve(blob);
+      }, 'image/jpeg', 0.82);
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('No se pudo leer la imagen'));
+    };
+
+    img.src = url;
+  });
+}
+
+async function uploadBlobToStorage({ bucket, ownerId, blob, prefix }) {
+  const contentType = blob.type || DEFAULT_IMAGE_CONTENT_TYPE;
+  const extension = getImageExtension(contentType);
+  const path = `${ownerId}/${prefix}-${crypto.randomUUID()}.${extension}`;
+
+  const { error: uploadError } = await supabase
+    .storage
+    .from(bucket)
+    .upload(path, blob, {
+      contentType,
+      upsert: false,
+    });
+
+  if (uploadError) throw uploadError;
+
+  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+  return data.publicUrl;
+}
+
+async function persistProductImages(product) {
+  const normalizedImageUrls = normalizeImageUrls(product.image_urls);
+
+  if (!normalizedImageUrls.length) {
+    return {
+      ...product,
+      image_url: null,
+      image_urls: [],
+    };
+  }
+
+  const storedImageUrls = await Promise.all(
+    normalizedImageUrls.map((imageUrl, index) => (
+      isDataUrl(imageUrl)
+        ? uploadDataUrlToStorage({
+          bucket: PRODUCT_IMAGES_BUCKET,
+          ownerId: product.supplier_id,
+          dataUrl: imageUrl,
+          prefix: `product-${index + 1}`,
+        })
+        : imageUrl
+    )),
+  );
+
+  return {
+    ...product,
+    image_url: storedImageUrls[0] ?? null,
+    image_urls: storedImageUrls,
+  };
 }
 
 function dedupeLatestPriceAlerts(alerts) {
@@ -311,29 +446,16 @@ export async function updateUser(userId, updates) {
 }
 
 export async function uploadAvatar(userId, file) {
-  // Compress to max 200x200 and store as base64 in avatar_url
-  const base64 = await new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      const MAX = 200;
-      let { width, height } = img;
-      const ratio = Math.min(MAX / width, MAX / height);
-      width = Math.round(width * ratio);
-      height = Math.round(height * ratio);
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-      URL.revokeObjectURL(url);
-      resolve(canvas.toDataURL('image/jpeg', 0.8));
-    };
-    img.onerror = () => reject(new Error('No se pudo leer la imagen'));
-    img.src = url;
+  const blob = await compressImageFile(file, 200);
+  const publicUrl = await uploadBlobToStorage({
+    bucket: AVATAR_IMAGES_BUCKET,
+    ownerId: userId,
+    blob,
+    prefix: 'avatar',
   });
 
-  await updateUser(userId, { avatar_url: base64 });
-  return base64;
+  await updateUser(userId, { avatar_url: publicUrl });
+  return publicUrl;
 }
 
 export async function enableBuyerRole(userId, buyerData) {
@@ -357,14 +479,26 @@ export async function getSupplierProfile(userId) {
       *,
       supplier_profiles(*),
       user_categories(scope, category_id, categories(id, name, emoji)),
-      products(*, categories(name, emoji)),
       subscriptions(*, plans(*))
     `)
     .eq('id', userId)
     .eq('is_supplier', true)
     .single();
   if (error) throw error;
-  return data;
+
+  const { data: products, error: productsError } = await supabase
+    .from('products')
+    .select(PRODUCTS_LITE_SELECT)
+    .eq('supplier_id', userId)
+    .eq('status', 'active')
+    .order('created_at', { ascending: false });
+
+  if (productsError) throw productsError;
+
+  return {
+    ...data,
+    products: products ?? [],
+  };
 }
 
 export async function getBuyerProfile(userId) {
@@ -404,9 +538,10 @@ function sanitizeProductPayload(product) {
 }
 export async function getProducts(filters = {}) {
   if (useE2E()) return e2eGetProducts(filters);
+  const shouldUseLiteSelect = filters.lite || filters.dashboardLite || filters.supplierCatalogLite;
   let query = supabase
     .from('products')
-    .select(filters.lite ? PRODUCTS_LITE_SELECT : PRODUCTS_FULL_SELECT);
+    .select(shouldUseLiteSelect ? PRODUCTS_LITE_SELECT : PRODUCTS_FULL_SELECT);
 
   if (filters.status) {
     query = Array.isArray(filters.status)
@@ -424,13 +559,14 @@ export async function getProducts(filters = {}) {
 
   const { data, error } = await query;
   if (error) throw error;
-  return (data ?? []).map((product) => (filters.lite ? product : sanitizeProductPayload(product)));
+  return (data ?? []).map((product) => (shouldUseLiteSelect ? product : sanitizeProductPayload(product)));
 }
 
 export async function createProduct(product) {
+  const payload = await persistProductImages(product);
   const { data, error } = await supabase
     .from('products')
-    .insert(product)
+    .insert(payload)
     .select()
     .single();
   if (error) throw error;
@@ -438,9 +574,10 @@ export async function createProduct(product) {
 }
 
 export async function updateProduct(productId, updates) {
+  const payload = updates.image_urls ? await persistProductImages(updates) : updates;
   const { data, error } = await supabase
     .from('products')
-    .update(updates)
+    .update(payload)
     .eq('id', productId)
     .select()
     .single();
@@ -465,9 +602,10 @@ export async function createQuoteRequest(quote) {
     .select(`
       *,
       categories(id, name, emoji),
+      target_supplier:users!target_supplier_id(company_name, city, verified),
       quote_offers(
         *,
-        users!supplier_id(company_name, city, verified)
+        supplier:users!supplier_id(company_name, city, verified)
       )
     `)
     .single();
@@ -506,9 +644,11 @@ export async function getQuoteRequestsForBuyer(buyerId) {
     .select(`
       *,
       categories(id, name, emoji),
+      buyer:users!buyer_id(company_name, city, rut, verified),
+      target_supplier:users!target_supplier_id(company_name, city, verified),
       quote_offers(
         *,
-        users!supplier_id(company_name, city, verified)
+        supplier:users!supplier_id(company_name, city, verified)
       )
     `)
     .eq('buyer_id', buyerId)
@@ -902,7 +1042,7 @@ export async function getBuyerReviewOpportunities(buyerId) {
         unit,
         delivery_date
       ),
-      users!supplier_id(company_name, city, verified, verification_status)
+      supplier:users!supplier_id(company_name, city, verified, verification_status)
     `)
     .eq('status', 'accepted')
     .eq('quote_requests.buyer_id', buyerId)
@@ -926,7 +1066,7 @@ export async function getBuyerReviewOpportunities(buyerId) {
   return (offers ?? [])
     .filter((offer) => !reviewedOfferIds.has(offer.id))
     .map((offer) => {
-      const supplier = takeSingle(offer.users);
+      const supplier = takeSingle(offer.supplier ?? offer.users);
       const quote = takeSingle(offer.quote_requests);
 
       return {
@@ -1240,7 +1380,7 @@ export async function getNotifications(userId) {
   if (useE2E()) return e2eGetNotifications(userId);
   const { data, error } = await supabase
     .from('notifications')
-    .select('*')
+    .select('id, recipient_id, actor_id, type, title, message, entity_type, entity_id, created_at, read_at')
     .eq('recipient_id', userId)
     .order('created_at', { ascending: false })
     .limit(30);

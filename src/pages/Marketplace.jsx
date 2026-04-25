@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AuthChoiceModal from '../components/AuthChoiceModal';
+import ExternalContactValue from '../components/ExternalContactValue';
 import Toast from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -43,7 +44,7 @@ export default function Marketplace() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [catalogProducts, setCatalogProducts] = useState([]);
-  const [supplierInsights, setSupplierInsights] = useState({});
+  const [supplierInsights] = useState({});
   const [categoryFilter, setCategoryFilter] = useState('Todos');
   const [supplierFilter, setSupplierFilter] = useState('Todos');
   const [searchTerm, setSearchTerm] = useState('');
@@ -417,7 +418,9 @@ export default function Marketplace() {
                     ].map((item) => (
                       <div key={item.label} className="flex justify-between gap-3 border-b border-gray-50 pb-3 last:border-0 last:pb-0">
                         <span className="text-gray-400">{item.label}</span>
-                        <span className="font-semibold text-[#0D1F3C] text-right">{item.value || '-'}</span>
+                        <span className="font-semibold text-[#0D1F3C] text-right">
+                          <ExternalContactValue label={item.label} value={item.value} />
+                        </span>
                       </div>
                     ))}
                   </div>

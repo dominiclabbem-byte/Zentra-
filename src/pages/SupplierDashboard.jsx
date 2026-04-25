@@ -1,16 +1,11 @@
-import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Toast from '../components/Toast';
 import Modal from '../components/Modal';
 import StatDetailModal from '../components/StatDetailModal';
 import QuoteConversationModal from '../components/QuoteConversationModal';
 import DashboardPageHeader from '../components/DashboardPageHeader';
-import { salesAgents } from '../data/mockData';
-import { chatWithAgent } from '../services/claudeApi';
-import { speakText as ttsSpeak, stopSpeaking as ttsStop } from '../services/ttsService';
-import VoiceCall from '../components/VoiceCall';
 import { generateProductImage } from '../services/imageGenerator';
-import AgentCharacter from '../components/AgentCharacter';
 import { useAuth } from '../context/AuthContext';
 import {
   buildBuyerProfileView,
@@ -81,6 +76,10 @@ const initialProfile = {
   categories: ['Congelados IQF', 'Lacteos', 'Carnes y cecinas'],
 };
 
+function normalizeSupplierDashboardTab(tab) {
+  return tab === 'agents' ? 'quotes' : tab;
+}
+
 export default function SupplierDashboard() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -129,10 +128,7 @@ export default function SupplierDashboard() {
   const [conversationLoading, setConversationLoading] = useState(false);
   const [isSendingConversationMessage, setIsSendingConversationMessage] = useState(false);
   const [offerForm, setOfferForm] = useState({ price: '', notes: '', estimatedLeadTime: '' });
-  const [activeTab, setActiveTab] = useState('quotes');
-  const [selectedAgent, setSelectedAgent] = useState(null);
-  const [chatInput, setChatInput] = useState('');
-  const [chatMessages, setChatMessages] = useState([]);
+  const [activeTab, setActiveTab] = useState(() => normalizeSupplierDashboardTab(location.state?.activeTab ?? 'quotes'));
   const [productDetail, setProductDetail] = useState(null);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [profileForm, setProfileForm] = useState(initialProfile);
@@ -366,8 +362,6 @@ export default function SupplierDashboard() {
       setIsSavingProduct(false);
     }
   };
-  const [voiceCallActive, setVoiceCallActive] = useState(false);
-
   const loadQuotesData = useCallback(async () => {
     if (!currentUser?.id) {
       setOpenQuotes([]);
@@ -407,7 +401,7 @@ export default function SupplierDashboard() {
 
     async function applyNotificationState() {
       if (location.state?.activeTab) {
-        setActiveTab(location.state.activeTab);
+        setActiveTab(normalizeSupplierDashboardTab(location.state.activeTab));
       }
 
       const targetQuoteId = location.state?.focusQuoteId;
@@ -877,124 +871,6 @@ export default function SupplierDashboard() {
     () => getSupplierEntitlements(currentPlanDetails, usageSummary),
     [currentPlanDetails, usageSummary],
   );
-  const hasAgentFeature = entitlements.hasAgents;
-  const hasAgentAccess = entitlements.canUseAgents;
-  const hasVoiceAccess = entitlements.canUseVoiceCalls;
-
-  const [agentLoading, setAgentLoading] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const recognitionRef = useRef(null);
-
-  const isVoiceAgent = selectedAgent?.type === 'Llamadas IA';
-
-  const speakTextChat = useCallback((text) => {
-    ttsSpeak(text, {
-      onStart: () => setIsSpeaking(true),
-      onEnd: () => setIsSpeaking(false),
-    });
-  }, []);
-
-  const stopSpeakingChat = useCallback(() => {
-    ttsStop();
-    setIsSpeaking(false);
-  }, []);
-
-  const toggleListening = useCallback(() => {
-    if (!hasVoiceAccess) {
-      setToast({ message: 'Tu plan actual no tiene cupo disponible para llamadas de voz este mes.', type: 'error' });
-      setActiveTab('plan');
-      return;
-    }
-
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      setToast({ message: 'Tu navegador no soporta reconocimiento de voz. Usa Chrome.', type: 'error' });
-      return;
-    }
-
-    if (isListening) {
-      recognitionRef.current?.stop();
-      setIsListening(false);
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'es-CL';
-    recognition.interimResults = false;
-    recognition.continuous = false;
-    recognitionRef.current = recognition;
-
-    recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      setChatInput(transcript);
-      setIsListening(false);
-    };
-
-    recognition.onerror = () => {
-      setIsListening(false);
-      setToast({ message: 'No se pudo captar el audio. Intenta de nuevo.', type: 'error' });
-    };
-
-    recognition.onend = () => setIsListening(false);
-
-    recognition.start();
-    setIsListening(true);
-  }, [hasVoiceAccess, isListening]);
-
-  const handleAgentChat = async (e) => {
-    e.preventDefault();
-    if (!hasAgentAccess) {
-      setToast({ message: 'Tu plan actual no tiene conversaciones IA disponibles este mes.', type: 'error' });
-      setActiveTab('plan');
-      return;
-    }
-    if (!chatInput.trim() || agentLoading) return;
-    const now = new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
-    const userMsg = { role: 'user', text: chatInput, time: now };
-    const updatedMessages = [...chatMessages, userMsg];
-    setChatMessages(updatedMessages);
-    setChatInput('');
-    setAgentLoading(true);
-
-    try {
-      const responseText = await chatWithAgent(
-        selectedAgent.name,
-        selectedAgent.type,
-        updatedMessages,
-        profile,
-      );
-      setChatMessages((prev) => [
-        ...prev,
-        { role: 'agent', text: responseText, time: new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) },
-      ]);
-      // Auto-speak response for voice agent (Carlos)
-      if (isVoiceAgent) speakTextChat(responseText);
-    } catch {
-      const fallback = [
-        `Entendido. He actualizado la estrategia de contacto. Los prospectos recibiran el nuevo mensaje a partir de manana.`,
-        `He revisado las metricas. La tasa de respuesta subio un 12% esta semana. Recomiendo mantener la frecuencia actual.`,
-        `Perfecto, pausare las llamadas automaticas a ese cliente. Puedes reactivarlas cuando quieras.`,
-        `Listo. He priorizado los leads de Santiago y Valparaiso. Las proximas 10 interacciones seran con esos prospectos.`,
-      ];
-      const text = fallback[Math.floor(Math.random() * fallback.length)];
-      setChatMessages((prev) => [
-        ...prev,
-        { role: 'agent', text, time: new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) },
-      ]);
-      if (isVoiceAgent) speakTextChat(text);
-    } finally {
-      setAgentLoading(false);
-    }
-  };
-
-  const selectAgent = (agent) => {
-    setSelectedAgent(agent);
-    setChatMessages([
-      { role: 'agent', text: `Hola! Soy ${agent.name}, tu agente de ventas IA. Hoy he gestionado ${agent.conversationsToday} conversaciones. En que puedo ayudarte?`, time: new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) },
-    ]);
-  };
-
   const handleOfferPipelineChange = async (offerId, pipelineStatus) => {
     if (!currentUser?.id) return;
 
@@ -1090,13 +966,6 @@ export default function SupplierDashboard() {
       badge: buyerRelationships.length,
     },
     {
-      id: 'agents',
-      label: 'Agentes de Venta IA',
-      active: activeTab === 'agents',
-      onClick: () => setActiveTab('agents'),
-      dot: hasAgentFeature,
-    },
-    {
       id: 'plan',
       label: 'Plan',
       active: activeTab === 'plan',
@@ -1116,15 +985,6 @@ export default function SupplierDashboard() {
           items={statDetail.items}
           emptyText={statDetail.emptyText}
           onClose={() => setStatDetail(null)}
-        />
-      )}
-
-      {voiceCallActive && selectedAgent && (
-        <VoiceCall
-          agent={selectedAgent}
-          profile={profile}
-          onClose={() => setVoiceCallActive(false)}
-          onToast={setToast}
         />
       )}
 
@@ -2794,7 +2654,7 @@ export default function SupplierDashboard() {
                       Plan {currentPlanCard?.name ?? currentPlanLabel}
                     </h2>
                     <p className="text-sm text-gray-500 mt-2 max-w-2xl">
-                      Este plan gobierna acceso a agentes IA, voz y capacidades operativas del panel supplier. Puedes seguir usando activacion interna para desarrollo, y en paralelo dejar preparado el billing con Flow.
+                      Este plan gobierna capacidades operativas del panel supplier, catalogo y cotizaciones. Puedes seguir usando activacion interna para desarrollo, y en paralelo dejar preparado el billing con Flow.
                     </p>
                   </div>
                   <div className="rounded-2xl bg-[#0D1F3C] px-5 py-4 text-white min-w-[180px]">
@@ -2806,8 +2666,8 @@ export default function SupplierDashboard() {
 
                 <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mt-6">
                   {[
-                    { label: 'Agents IA', enabled: Boolean(currentPlanDetails?.has_agents) },
-                    { label: 'Voice IA', enabled: Boolean(currentPlanDetails?.has_voice_calls) },
+                    { label: 'Catalogo ampliado', enabled: entitlements.productLimit === null || entitlements.productLimit > 25 },
+                    { label: 'Cotizaciones avanzadas', enabled: entitlements.quoteResponseLimit === null || entitlements.quoteResponseLimit > 20 },
                     { label: 'CRM / export', enabled: Boolean(currentPlanDetails?.has_crm) },
                     { label: 'API', enabled: Boolean(currentPlanDetails?.has_api) },
                   ].map((feature) => (
@@ -2836,16 +2696,6 @@ export default function SupplierDashboard() {
                     <div className="text-xs font-semibold uppercase tracking-wide text-gray-400">Cotizaciones respondidas</div>
                     <div className="text-2xl font-extrabold text-emerald-500 mt-1">{usageSummary.quoteResponsesThisMonth}</div>
                     <div className="text-xs text-gray-400 mt-1">{formatLimitLabel(entitlements.quoteResponseLimit, 'cotizaciones')}</div>
-                  </div>
-                  <div className="rounded-2xl bg-[#f8fafc] px-4 py-4">
-                    <div className="text-xs font-semibold uppercase tracking-wide text-gray-400">Conversaciones IA</div>
-                    <div className="text-2xl font-extrabold text-[#2ECAD5] mt-1">{usageSummary.aiConversationsThisMonth}</div>
-                    <div className="text-xs text-gray-400 mt-1">{formatLimitLabel(entitlements.aiConversationLimit, 'conversaciones')}</div>
-                  </div>
-                  <div className="rounded-2xl bg-[#f8fafc] px-4 py-4">
-                    <div className="text-xs font-semibold uppercase tracking-wide text-gray-400">Llamadas voz</div>
-                    <div className="text-2xl font-extrabold text-indigo-500 mt-1">{usageSummary.voiceCallsThisMonth}</div>
-                    <div className="text-xs text-gray-400 mt-1">{formatLimitLabel(entitlements.voiceCallLimit, 'llamadas')}</div>
                   </div>
                   {usageLoading && <div className="text-xs text-gray-400">Actualizando uso mensual...</div>}
                 </div>
@@ -2954,299 +2804,6 @@ export default function SupplierDashboard() {
           </div>
         )}
 
-        {/* ===== AGENTS TAB ===== */}
-        {activeTab === 'agents' && (
-          <div className="animate-fade-in">
-            {!hasAgentFeature ? (
-              /* Upgrade CTA */
-              <div className="max-w-lg mx-auto text-center py-16">
-                <div className="w-20 h-20 bg-gradient-to-br from-[#2ECAD5]/10 to-indigo-500/10 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                  <svg className="w-10 h-10 text-[#2ECAD5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-                  </svg>
-                </div>
-                <h3 className="text-2xl font-extrabold text-[#0D1F3C] mb-3">Agentes de Venta IA</h3>
-                <p className="text-gray-500 mb-6 leading-relaxed">
-                  Automatiza tus ventas con agentes inteligentes que contactan prospectos por WhatsApp, email y llamadas.
-                  Disponible en planes <strong className="text-[#0D1F3C]">Pro</strong> y <strong className="text-[#0D1F3C]">Enterprise</strong>.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('plan')}
-                  className="bg-gradient-to-r from-emerald-400 to-blue-500 text-white font-bold px-8 py-3.5 rounded-xl transition-all hover:shadow-lg hover:shadow-emerald-400/20 hover:scale-[1.02]"
-                >
-                  Actualizar a Pro
-                </button>
-              </div>
-            ) : !hasAgentAccess ? (
-              <div className="max-w-lg mx-auto text-center py-16">
-                <div className="w-20 h-20 bg-gradient-to-br from-amber-200/60 to-orange-300/60 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                  <svg className="w-10 h-10 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 6.75h.008v.008H12v-.008z" />
-                  </svg>
-                </div>
-                <h3 className="text-2xl font-extrabold text-[#0D1F3C] mb-3">Límite mensual de IA alcanzado</h3>
-                <p className="text-gray-500 mb-6 leading-relaxed">
-                  Ya consumiste las conversaciones IA disponibles para este ciclo. Puedes seguir usando Solicitudes de Cotización y catálogo, o cambiar de plan para ampliar el cupo.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('plan')}
-                  className="bg-gradient-to-r from-emerald-400 to-blue-500 text-white font-bold px-8 py-3.5 rounded-xl transition-all hover:shadow-lg hover:shadow-emerald-400/20 hover:scale-[1.02]"
-                >
-                  Ver plan y cupos
-                </button>
-              </div>
-            ) : (
-              /* Agents Panel */
-              <div className="space-y-6">
-                {/* Agent stats */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  {[
-                    { label: 'Agentes activos', value: salesAgents.filter(a => a.status === 'active').length, color: 'text-emerald-500', items: salesAgents.filter(a => a.status === 'active').map(a => ({ label: a.name, sub: a.description || '' })), emptyText: 'Sin agentes activos' },
-                    { label: 'Conversaciones hoy', value: salesAgents.reduce((acc, a) => acc + a.conversationsToday, 0), color: 'text-[#0D1F3C]', items: salesAgents.map(a => ({ label: a.name, value: `${a.conversationsToday} hoy` })), emptyText: 'Sin conversaciones hoy' },
-                    { label: 'Conversiones semana', value: salesAgents.reduce((acc, a) => acc + a.conversionsThisWeek, 0), color: 'text-[#2ECAD5]', items: salesAgents.map(a => ({ label: a.name, value: `${a.conversionsThisWeek} esta semana` })), emptyText: 'Sin conversiones esta semana' },
-                    { label: 'Satisfaccion promedio', value: '93%', color: 'text-amber-500', items: [], emptyText: 'Sin datos de satisfaccion' },
-                  ].map((s) => (
-                    <button key={s.label} type="button" onClick={() => setStatDetail({ title: s.label, value: s.value, items: s.items, emptyText: s.emptyText })} className="bg-white rounded-2xl border border-gray-100 p-5 card-premium text-left hover:border-[#2ECAD5]/40 hover:shadow-md transition-all group">
-                      <div className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-2">{s.label}</div>
-                      <div className={`text-2xl font-extrabold ${s.color}`}>{s.value}</div>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* Agent list */}
-                  <div className="space-y-3">
-                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider px-1">Tus agentes</h3>
-                    {salesAgents.map((agent) => (
-                      <button
-                        key={agent.id}
-                        onClick={() => selectAgent(agent)}
-                        className={`w-full text-left rounded-2xl border p-5 transition-all ${
-                          selectedAgent?.id === agent.id
-                            ? 'border-[#2ECAD5] bg-[#2ECAD5]/5 shadow-lg shadow-emerald-400/10'
-                            : 'border-gray-100 bg-white hover:border-gray-200 card-premium'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden bg-white border border-gray-100">
-                            <AgentCharacter name={agent.name} size={36} />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-[#0D1F3C] text-sm">{agent.name}</span>
-                              <span className={`w-2 h-2 rounded-full ${agent.status === 'active' ? 'bg-emerald-400' : 'bg-gray-300'}`} />
-                            </div>
-                            <span className="text-xs text-gray-400">{agent.type}</span>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2 text-center">
-                          <div>
-                            <div className="text-sm font-bold text-[#0D1F3C]">{agent.conversationsToday}</div>
-                            <div className="text-[10px] text-gray-400">Hoy</div>
-                          </div>
-                          <div>
-                            <div className="text-sm font-bold text-[#2ECAD5]">{agent.conversionsThisWeek}</div>
-                            <div className="text-[10px] text-gray-400">Conv.</div>
-                          </div>
-                          <div>
-                            <div className="text-sm font-bold text-amber-500">{agent.satisfaction}</div>
-                            <div className="text-[10px] text-gray-400">Satisf.</div>
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Agent detail + chat */}
-                  <div className="lg:col-span-2">
-                    {!selectedAgent ? (
-                      <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center h-full flex flex-col items-center justify-center">
-                        <div className="w-16 h-16 bg-[#f8fafc] rounded-2xl flex items-center justify-center mb-4">
-                          <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
-                          </svg>
-                        </div>
-                        <p className="text-gray-400 text-sm">Selecciona un agente para ver su actividad e interactuar</p>
-                      </div>
-                    ) : (
-                      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col" style={{ minHeight: '520px' }}>
-                        {/* Agent header */}
-                        <div className="border-b border-gray-100 px-6 py-4 flex items-center justify-between bg-[#f8fafc]">
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden bg-white border border-gray-100">
-                              <AgentCharacter name={selectedAgent.name} size={36} />
-                            </div>
-                            <div>
-                              <div className="font-bold text-[#0D1F3C] text-sm">{selectedAgent.name}</div>
-                              <div className="text-xs text-gray-400">{selectedAgent.type} / {selectedAgent.lastActivity}</div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {isVoiceAgent && selectedAgent.status === 'active' && entitlements.hasVoiceCalls && (
-                              <button
-                                onClick={() => {
-                                  if (!hasVoiceAccess) {
-                                    setToast({ message: 'Ya agotaste el cupo mensual de voz disponible en tu plan.', type: 'error' });
-                                    setActiveTab('plan');
-                                    return;
-                                  }
-
-                                  setVoiceCallActive(true);
-                                }}
-                                className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border transition-all ${
-                                  hasVoiceAccess
-                                    ? 'bg-purple-50 text-purple-600 hover:bg-purple-100 border-purple-200'
-                                    : 'bg-gray-100 text-gray-400 border-gray-200'
-                                }`}
-                              >
-                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
-                                </svg>
-                                {hasVoiceAccess ? 'Llamar' : 'Sin cupo'}
-                              </button>
-                            )}
-                            <button
-                              onClick={() => {
-                                setToast({
-                                  message: selectedAgent.status === 'active'
-                                    ? `${selectedAgent.name} pausado`
-                                    : `${selectedAgent.name} activado`,
-                                  type: 'info',
-                                });
-                              }}
-                              className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-all ${
-                                selectedAgent.status === 'active'
-                                  ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
-                                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                              }`}
-                            >
-                              {selectedAgent.status === 'active' ? 'Activo' : 'Pausado'}
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Recent conversations */}
-                        <div className="border-b border-gray-100 px-6 py-3">
-                          <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Conversaciones recientes</div>
-                          <div className="space-y-2">
-                            {selectedAgent.recentConversations.map((conv) => (
-                              <div key={conv.id} className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-[#f8fafc] transition-colors">
-                                <div className="w-7 h-7 bg-[#0D1F3C]/5 rounded-lg flex items-center justify-center flex-shrink-0">
-                                  {conv.channel === 'WhatsApp' ? (
-                                    <svg className="w-3.5 h-3.5 text-emerald-500" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.118.549 4.107 1.511 5.839L.057 23.7a.5.5 0 00.608.612l5.961-1.529A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.978 0-3.83-.562-5.397-1.534l-.386-.232-4.005 1.028 1.047-3.925-.254-.403A9.96 9.96 0 012 12C2 6.486 6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/></svg>
-                                  ) : conv.channel === 'Email' ? (
-                                    <svg className="w-3.5 h-3.5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg>
-                                  ) : (
-                                    <svg className="w-3.5 h-3.5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg>
-                                  )}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs font-semibold text-[#0D1F3C]">{conv.contact}</span>
-                                    <span className="text-[10px] text-gray-400">{conv.time}</span>
-                                  </div>
-                                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{conv.message}</p>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Chat area */}
-                        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3" style={{ maxHeight: '220px' }}>
-                          {chatMessages.map((msg, i) => (
-                            <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                              <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
-                                msg.role === 'user'
-                                  ? 'bg-[#0D1F3C] text-white rounded-br-md'
-                                  : 'bg-[#f0fafb] text-[#0D1F3C] border border-[#2ECAD5]/20 rounded-bl-md'
-                              }`}>
-                                <p>{msg.text}</p>
-                                <p className={`text-[10px] mt-1 ${msg.role === 'user' ? 'text-gray-400' : 'text-gray-400'}`}>{msg.time}</p>
-                              </div>
-                            </div>
-                          ))}
-                          {agentLoading && (
-                            <div className="flex justify-start">
-                              <div className="bg-[#f0fafb] border border-[#2ECAD5]/20 rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-1.5">
-                                <span className="w-2 h-2 bg-[#2ECAD5] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                                <span className="w-2 h-2 bg-[#2ECAD5] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                                <span className="w-2 h-2 bg-[#2ECAD5] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Speaking indicator */}
-                        {isSpeaking && isVoiceAgent && (
-                          <div className="border-t border-[#2ECAD5]/20 bg-[#f0fafb] px-4 py-2 flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-xs text-[#2ECAD5] font-semibold">
-                              <svg className="w-4 h-4 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
-                              </svg>
-                              Carlos esta hablando...
-                            </div>
-                            <button
-                              type="button"
-                              onClick={stopSpeakingChat}
-                              className="text-xs text-gray-400 hover:text-red-500 font-medium transition-colors"
-                            >
-                              Detener
-                            </button>
-                          </div>
-                        )}
-
-                        {/* Chat input */}
-                        <form onSubmit={handleAgentChat} className="border-t border-gray-100 px-4 py-3 flex items-center gap-2">
-                          {isVoiceAgent && (
-                            <button
-                              type="button"
-                              onClick={toggleListening}
-                              className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
-                                isListening
-                                  ? 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/30'
-                                  : 'bg-purple-50 text-purple-500 hover:bg-purple-100 border border-purple-200'
-                              }`}
-                              title={isListening ? 'Detener grabacion' : 'Hablar con Carlos'}
-                            >
-                              {isListening ? (
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 7.5A2.25 2.25 0 017.5 5.25h9a2.25 2.25 0 012.25 2.25v9a2.25 2.25 0 01-2.25 2.25h-9a2.25 2.25 0 01-2.25-2.25v-9z" />
-                                </svg>
-                              ) : (
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
-                                </svg>
-                              )}
-                            </button>
-                          )}
-                          <input
-                            type="text"
-                            value={chatInput}
-                            onChange={(e) => setChatInput(e.target.value)}
-                            placeholder={isListening ? 'Escuchando...' : isVoiceAgent ? 'Escribe o usa el microfono...' : `Mensaje a ${selectedAgent.name}...`}
-                            className={`flex-1 bg-[#f8fafc] border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all ${isListening ? 'border-red-300 bg-red-50/50' : 'border-gray-100'}`}
-                          />
-                          <button
-                            type="submit"
-                            disabled={agentLoading}
-                            className={`w-10 h-10 bg-gradient-to-r from-emerald-400 to-blue-500 rounded-xl flex items-center justify-center text-[#0D1F3C] transition-all flex-shrink-0 ${agentLoading ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg hover:shadow-emerald-400/20'}`}
-                          >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
-                            </svg>
-                          </button>
-                        </form>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );

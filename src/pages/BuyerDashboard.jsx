@@ -5,6 +5,7 @@ import Modal from '../components/Modal';
 import StatDetailModal from '../components/StatDetailModal';
 import QuoteConversationModal from '../components/QuoteConversationModal';
 import DashboardPageHeader from '../components/DashboardPageHeader';
+import ExternalContactValue from '../components/ExternalContactValue';
 import { useAuth } from '../context/AuthContext';
 import {
   BUSINESS_TYPE_OPTIONS,
@@ -252,7 +253,7 @@ export default function BuyerDashboard() {
       setCatalogLoading(true);
 
       try {
-        const data = await getProducts();
+        const data = await getProducts({ lite: true, dashboardLite: true });
         if (!cancelled) {
           setCatalogProducts(data.map((product) => mapProductRecordToCard(product)));
         }
@@ -403,7 +404,32 @@ export default function BuyerDashboard() {
   }, [currentUser?.id]);
 
   useEffect(() => {
-    loadBuyerWorkspace();
+    let timeoutId = null;
+    let idleId = null;
+
+    const scheduleWorkspaceLoad = () => {
+      if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+        idleId = window.requestIdleCallback(() => {
+          loadBuyerWorkspace();
+        }, { timeout: 1200 });
+        return;
+      }
+
+      timeoutId = window.setTimeout(() => {
+        loadBuyerWorkspace();
+      }, 350);
+    };
+
+    scheduleWorkspaceLoad();
+
+    return () => {
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
+      if (idleId && typeof window !== 'undefined' && 'cancelIdleCallback' in window) {
+        window.cancelIdleCallback(idleId);
+      }
+    };
   }, [loadBuyerWorkspace]);
 
   useEffect(() => {
@@ -568,6 +594,7 @@ export default function BuyerDashboard() {
         unit: quoteForm.unit,
         delivery_date: quoteForm.deliveryDate,
         notes: quoteForm.notes || null,
+        target_supplier_id: quoteForm.sourceSupplierId || null,
       }));
 
       setBuyerQuotes((currentQuotes) => [savedQuote, ...currentQuotes]);
@@ -1315,7 +1342,7 @@ export default function BuyerDashboard() {
                   <p className="text-sm text-gray-500">{quote.quantityLabel}</p>
                   <p className="text-xs text-gray-400 mt-1">{quote.categoryName} / Entrega {quote.deliveryDateLabel}</p>
                   <p className="text-xs text-gray-400 mt-2">{quote.createdAtLabel}</p>
-                  {quote.offers.length > 0 && (
+                  {quote.offers.length > 0 ? (
                     <div className="mt-3 flex flex-wrap gap-1.5">
                       {quote.offers.map((offer) => offer.supplierName).filter(Boolean).map((name) => (
                         <span key={name} className="text-[10px] font-semibold bg-[#f2f7fb] text-[#0D1F3C] border border-[#dce9f2] px-2 py-0.5 rounded-full">
@@ -1323,7 +1350,13 @@ export default function BuyerDashboard() {
                         </span>
                       ))}
                     </div>
-                  )}
+                  ) : quote.targetSupplierName ? (
+                    <div className="mt-3">
+                      <span className="text-[10px] font-semibold bg-[#f2f7fb] text-[#0D1F3C] border border-[#dce9f2] px-2 py-0.5 rounded-full">
+                        🏪 Solicitado a {quote.targetSupplierName}
+                      </span>
+                    </div>
+                  ) : null}
                   {acceptedOffer && (
                     <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 px-3.5 py-3">
                       <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-600">Oferta aceptada</div>
@@ -1460,6 +1493,8 @@ export default function BuyerDashboard() {
                       <p className="text-xs text-gray-500 mt-0.5">
                         🏪 {quote.offers.map((o) => o.supplierName).filter(Boolean).join(', ')}
                       </p>
+                    ) : quote.targetSupplierName ? (
+                      <p className="text-xs text-gray-500 mt-0.5">🏪 Solicitado a {quote.targetSupplierName}</p>
                     ) : null}
                   </div>
                   <button
@@ -2287,7 +2322,9 @@ export default function BuyerDashboard() {
                     ].map((item) => (
                       <div key={item.label} className="flex justify-between border-b border-gray-50 last:border-0 pb-2 last:pb-0">
                         <span className="text-gray-400 text-xs">{item.label}</span>
-                        <span className="font-semibold text-[#0D1F3C] text-xs">{item.value}</span>
+                        <span className="font-semibold text-[#0D1F3C] text-xs text-right">
+                          <ExternalContactValue label={item.label} value={item.value} />
+                        </span>
                       </div>
                     ))}
                   </div>

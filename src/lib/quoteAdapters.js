@@ -162,9 +162,9 @@ export function formatOfferPipelineStatus(status) {
 }
 
 export function mapQuoteOfferRecord(record) {
-  const supplier = takeSingle(record.users);
+  const supplier = takeSingle(record.supplier ?? record.users);
   const quote = takeSingle(record.quote_requests);
-  const buyer = takeSingle(quote?.users);
+  const buyer = takeSingle(quote?.buyer ?? quote?.users);
   const statusMeta = formatOfferStatus(record.status);
   const pipelineStatus = record.pipeline_status ?? getDefaultOfferPipelineStatus(record.status);
   const pipelineMeta = formatOfferPipelineStatus(pipelineStatus);
@@ -228,8 +228,9 @@ export function sortQuoteOffersForBuyer(offers = []) {
 }
 
 export function mapQuoteRequestRecord(record) {
-  const buyer = takeSingle(record.users);
+  const buyer = takeSingle(record.buyer ?? record.users);
   const category = takeSingle(record.categories);
+  const targetSupplier = takeSingle(record.target_supplier);
   const offers = Array.isArray(record.quote_offers)
     ? record.quote_offers.map((offer) => mapQuoteOfferRecord(offer))
     : [];
@@ -243,6 +244,10 @@ export function mapQuoteRequestRecord(record) {
     buyerCity: buyer?.city ?? '',
     buyerRut: buyer?.rut ?? '',
     buyerVerified: Boolean(buyer?.verified),
+    targetSupplierId: record.target_supplier_id ?? '',
+    targetSupplierName: targetSupplier?.company_name ?? '',
+    targetSupplierCity: targetSupplier?.city ?? '',
+    targetSupplierVerified: Boolean(targetSupplier?.verified),
     productName: record.product_name,
     categoryId: record.category_id ?? '',
     categoryName: category?.name ?? 'Sin categoria',

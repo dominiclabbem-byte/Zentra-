@@ -28,6 +28,7 @@ const FALLBACK_CATEGORY_ROWS = fallbackCategoryNames.map((name) => ({
   name,
   emoji: '🍽️',
 }));
+const NOTIFICATIONS_POLL_INTERVAL_MS = 90000;
 
 const AuthContext = createContext(null);
 
@@ -141,13 +142,49 @@ export function AuthProvider({ children }) {
       return undefined;
     }
 
-    refreshNotifications(currentUser.id);
+    let intervalId = null;
 
-    const interval = window.setInterval(() => {
-      refreshNotifications(currentUser.id);
-    }, 30000);
+    const runRefresh = () => refreshNotifications(currentUser.id);
 
-    return () => window.clearInterval(interval);
+    const restartPolling = () => {
+      if (intervalId) {
+        window.clearInterval(intervalId);
+        intervalId = null;
+      }
+
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
+        return;
+      }
+
+      intervalId = window.setInterval(() => {
+        runRefresh();
+      }, NOTIFICATIONS_POLL_INTERVAL_MS);
+    };
+
+    const handleVisibilityChange = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        runRefresh();
+      }
+      restartPolling();
+    };
+
+    const handleWindowFocus = () => {
+      runRefresh();
+      restartPolling();
+    };
+
+    runRefresh();
+    restartPolling();
+    window.addEventListener('focus', handleWindowFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      if (intervalId) {
+        window.clearInterval(intervalId);
+      }
+      window.removeEventListener('focus', handleWindowFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [currentUser?.id, refreshNotifications]);
 
   const login = useCallback(async ({ email, password }) => {

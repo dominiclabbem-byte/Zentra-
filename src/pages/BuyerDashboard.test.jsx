@@ -108,7 +108,7 @@ describe('BuyerDashboard', () => {
     await waitFor(() => {
       expect(screen.getAllByText('Harina premium').length).toBeGreaterThan(0);
     });
-    expect(screen.getByText('Alerta activa')).toBeInTheDocument();
+    expect(await screen.findByText('Alerta activa')).toBeInTheDocument();
     expect(screen.getByText('Precio a la baja')).toBeInTheDocument();
     expect(screen.getByText(/Antes \$1\.350/i)).toBeInTheDocument();
 
@@ -127,7 +127,9 @@ describe('BuyerDashboard', () => {
 
     expect(await screen.findByText('Sugerencias basadas en tu actividad')).toBeInTheDocument();
     expect(screen.getByText(/La cercania geografica quedara para una fase posterior/i)).toBeInTheDocument();
-    expect(screen.getAllByText('Proveedor guardado en favoritos').length).toBeGreaterThan(0);
+    await waitFor(() => {
+      expect(screen.getAllByText('Proveedor guardado en favoritos').length).toBeGreaterThan(0);
+    });
   });
 
   it('registra eventos de busqueda y apertura de proveedor desde catalogo', async () => {
@@ -167,6 +169,18 @@ describe('BuyerDashboard', () => {
         )),
       ).toBe(true);
     });
+  });
+
+  it('muestra la web del proveedor como link clickeable en la ficha', async () => {
+    const user = userEvent.setup();
+
+    renderWithRouter(<BuyerDashboard />);
+
+    await user.click(await screen.findByText('Harina premium'));
+
+    const websiteLink = await screen.findByRole('link', { name: 'www.vallefrio.cl' });
+    expect(websiteLink).toHaveAttribute('href', 'https://www.vallefrio.cl');
+    expect(websiteLink).toHaveAttribute('target', '_blank');
   });
 
   it('permite crear una suscripcion de alerta por categoria', async () => {
@@ -227,6 +241,7 @@ describe('BuyerDashboard', () => {
         unit: 'kg',
         delivery_date: '2026-04-12',
         notes: 'Despacho refrigerado AM',
+        target_supplier_id: null,
       });
     });
 

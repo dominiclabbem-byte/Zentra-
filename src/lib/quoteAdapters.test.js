@@ -73,6 +73,7 @@ describe('quoteAdapters', () => {
       requester_id: 'buyer-1',
       product_name: 'Harina premium',
       category_id: 'cat-1',
+      target_supplier_id: 'supplier-target',
       quantity: 500,
       unit: 'kg',
       delivery_date: '2026-03-30',
@@ -80,6 +81,7 @@ describe('quoteAdapters', () => {
       status: 'in_review',
       created_at: '2026-03-24T10:30:00Z',
       categories: { id: 'cat-1', name: 'Harinas y cereales', emoji: '🌾' },
+      target_supplier: { company_name: 'Valle Frio SpA', city: 'Santiago', verified: true },
       quote_offers: [
         {
           id: 'offer-1',
@@ -100,6 +102,9 @@ describe('quoteAdapters', () => {
       productName: 'Harina premium',
       categoryName: 'Harinas y cereales',
       quantityLabel: '500 kg',
+      targetSupplierId: 'supplier-target',
+      targetSupplierName: 'Valle Frio SpA',
+      targetSupplierVerified: true,
       offerCount: 1,
       status: 'in_review',
       statusLabel: '1 oferta',

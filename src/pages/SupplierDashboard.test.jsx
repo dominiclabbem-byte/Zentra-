@@ -34,10 +34,7 @@ const mockDatabase = vi.hoisted(() => ({
 }));
 
 vi.mock('../services/database', () => mockDatabase);
-vi.mock('../services/claudeApi', () => ({ chatWithAgent: vi.fn() }));
-vi.mock('../services/ttsService', () => ({ speakText: vi.fn(), stopSpeaking: vi.fn() }));
 vi.mock('../services/imageGenerator', () => ({ generateProductImage: vi.fn() }));
-vi.mock('../components/VoiceCall', () => ({ default: () => null }));
 
 describe('SupplierDashboard', () => {
   const seed = buildMarketplaceSeed();
@@ -117,7 +114,7 @@ describe('SupplierDashboard', () => {
 
     await user.click(screen.getByRole('button', { name: /Plan/ }));
     expect(await screen.findByText('Workspace activo')).toBeInTheDocument();
-    expect(screen.getByText('Agents IA')).toBeInTheDocument();
+    expect(screen.getByText('Catalogo ampliado')).toBeInTheDocument();
     expect(screen.getByText('Cotizaciones respondidas')).toBeInTheDocument();
   });
 
@@ -291,8 +288,7 @@ describe('SupplierDashboard', () => {
     await user.click(await screen.findByRole('button', { name: /Mis Productos/ }));
     expect(await screen.findByRole('button', { name: 'Limite del plan' })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /Agentes de Venta IA/ }));
-    expect(await screen.findByText('Actualizar a Pro')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Agentes de Venta IA/ })).not.toBeInTheDocument();
   });
 
   it('permite preparar una solicitud placeholder de pago con Flow', async () => {
