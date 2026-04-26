@@ -7,6 +7,7 @@ import StatDetailModal from '../components/StatDetailModal';
 import QuoteConversationModal from '../components/QuoteConversationModal';
 import DashboardPageHeader from '../components/DashboardPageHeader';
 import ExternalContactValue from '../components/ExternalContactValue';
+import ProductImageCarousel from '../components/ProductImageCarousel';
 import { useAuth } from '../context/AuthContext';
 import {
   BUSINESS_TYPE_OPTIONS,
@@ -771,22 +772,13 @@ export default function BuyerDashboard() {
       }`}
       onClick={() => openSupplierFromProduct(product)}
     >
-      <div className={`relative ${showRecommendationMeta ? 'h-28 sm:h-32' : 'h-40'} bg-gradient-to-br ${product.gradient} overflow-hidden`}>
-        {product.imageUrls?.[0] ? (
-          <img src={product.imageUrls[0]} alt={product.imageAlt} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-        ) : (
-          <>
-            <div className="absolute inset-0 opacity-20">
-              <div className="absolute top-3 left-3 w-16 h-16 bg-white/30 rounded-full blur-xl" />
-              <div className="absolute bottom-4 right-4 w-20 h-20 bg-white/20 rounded-full blur-2xl" />
-            </div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className={`${showRecommendationMeta ? 'text-4xl' : 'text-5xl'} filter drop-shadow-lg transform group-hover:scale-110 transition-transform duration-500`}>
-                {product.emoji}
-              </div>
-            </div>
-          </>
-        )}
+      <div className="relative">
+        <ProductImageCarousel
+          images={product.imageUrls}
+          alt={product.imageAlt}
+          fallbackClassName={`bg-gradient-to-br ${product.gradient}`}
+          className={showRecommendationMeta ? 'h-28 sm:h-32' : 'h-40'}
+        />
         <div className="absolute top-2 left-2 flex flex-col items-start gap-1.5">
           {showRecommendationMeta && product.recommendationScore > 0 && (
             <div className="text-[9px] font-bold bg-brand-ink/90 text-white px-2 py-0.5 rounded-full shadow-sm">
@@ -2176,7 +2168,7 @@ export default function BuyerDashboard() {
                   <p className="text-gray-500 text-sm">{viewingSupplier.description}</p>
                   <div className="flex items-center gap-2 mt-2 flex-wrap">
                     <span className="text-[10px] font-bold bg-gradient-to-r from-emerald-400 to-blue-500 text-white px-2.5 py-0.5 rounded-full uppercase">
-                      Plan {viewingSupplier.plan}
+                      Proveedor activo
                     </span>
                     {viewingSupplier.verified && (
                       <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100 px-2.5 py-0.5 rounded-full flex items-center gap-1">
@@ -2356,14 +2348,14 @@ export default function BuyerDashboard() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {viewingSupplier.products.map((product) => (
                       <div key={product.id} className="bg-white rounded-xl border border-gray-100 overflow-hidden card-premium">
-                        <div className={`h-28 ${product.imageUrls?.[0] ? '' : `bg-gradient-to-br ${product.gradient}`} relative overflow-hidden`}>
-                          {product.imageUrls?.[0] ? (
-                            <img src={product.imageUrls[0]} alt={product.imageAlt} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <span className="text-4xl">{product.emoji}</span>
-                            </div>
-                          )}
+                        <div className="relative">
+                          <ProductImageCarousel
+                            images={product.imageUrls}
+                            alt={product.imageAlt}
+                            fallbackClassName={`bg-gradient-to-br ${product.gradient}`}
+                            className="h-28"
+                            imageClassName=""
+                          />
                           {product.status === 'low_stock' && (
                             <span className="absolute top-2 right-2 text-[9px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
                               Stock bajo

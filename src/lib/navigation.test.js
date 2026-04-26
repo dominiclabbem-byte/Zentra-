@@ -116,8 +116,8 @@ describe('navigation helpers', () => {
 
   it('deja el footer en superficie publica', () => {
     const labels = getFooterLinks().map((link) => link.label);
-    expect(labels).toContain('🧭 Marketplace');
-    expect(labels).toContain('🔐 Ingresar');
+    expect(labels).toContain('Marketplace');
+    expect(labels).toContain('Ingresar');
     expect(labels).not.toContain('Dashboard Comprador');
     expect(labels).not.toContain('Dashboard Proveedor');
   });

@@ -380,6 +380,53 @@ async function getQuoteConversationRecordById(conversationId) {
   return data ?? null;
 }
 
+async function createTargetedQuoteConversation({ quoteRequest, quote }) {
+  if (!quote?.target_supplier_id || !quote?.buyer_id) return null;
+
+  const { data: conversation, error } = await supabase
+    .from('quote_conversations')
+    .insert({
+      quote_request_id: quoteRequest.id,
+      buyer_user_id: quote.buyer_id,
+      supplier_user_id: quote.target_supplier_id,
+      started_by_user_id: quote.requester_id ?? quote.buyer_id,
+    })
+    .select(QUOTE_CONVERSATION_SELECT)
+    .single();
+
+  if (error && error.code !== '23505') throw error;
+
+  const resolvedConversation = conversation
+    ?? await getQuoteConversationForQuote(quoteRequest.id, quote.target_supplier_id);
+
+  if (!resolvedConversation?.id) return null;
+
+  const { data: existingMessage, error: existingMessageError } = await supabase
+    .from('quote_conversation_messages')
+    .select('id')
+    .eq('conversation_id', resolvedConversation.id)
+    .limit(1)
+    .maybeSingle();
+
+  if (existingMessageError) throw existingMessageError;
+  if (existingMessage?.id) return resolvedConversation;
+
+  const initialBody = String(quote.notes ?? '').trim()
+    || `Solicitud creada para ${quote.product_name}. Cantidad: ${quote.quantity} ${quote.unit}.`;
+
+  const { error: messageError } = await supabase
+    .from('quote_conversation_messages')
+    .insert({
+      conversation_id: resolvedConversation.id,
+      sender_user_id: quote.requester_id ?? quote.buyer_id,
+      body: initialBody,
+    });
+
+  if (messageError) throw messageError;
+
+  return resolvedConversation;
+}
+
 // ========================
 // AUTH
 // ========================
@@ -611,6 +658,11 @@ export async function createQuoteRequest(quote) {
     .single();
   if (error) throw error;
 
+  const targetedConversation = await createTargetedQuoteConversation({
+    quoteRequest: data,
+    quote,
+  });
+
   const { data: supplierLinks, error: supplierLinksError } = await supabase
     .from('user_categories')
     .select('user_id')
@@ -619,17 +671,24 @@ export async function createQuoteRequest(quote) {
 
   if (supplierLinksError) throw supplierLinksError;
 
-  const supplierIds = [...new Set((supplierLinks ?? []).map((row) => row.user_id).filter(Boolean))];
+  const supplierIds = [
+    ...new Set([
+      ...(supplierLinks ?? []).map((row) => row.user_id).filter(Boolean),
+      quote.target_supplier_id,
+    ].filter(Boolean)),
+  ];
   if (supplierIds.length) {
     await createNotifications(
       supplierIds.map((recipientId) => ({
         recipient_id: recipientId,
         actor_id: quote.buyer_id,
         type: 'rfq_created',
-        title: 'Nueva cotización en tu producto',
-        message: `Se publico una nueva Solicitud de Cotización para ${quote.product_name}.`,
-        entity_type: 'quote_request',
-        entity_id: data.id,
+        title: quote.target_supplier_id === recipientId ? 'Nueva cotización directa' : 'Nueva cotización en tu categoria',
+        message: quote.notes
+          ? `Se publico una Solicitud de Cotización para ${quote.product_name}: ${quote.notes}`
+          : `Se publico una nueva Solicitud de Cotización para ${quote.product_name}.`,
+        entity_type: targetedConversation?.id && quote.target_supplier_id === recipientId ? 'quote_conversation' : 'quote_request',
+        entity_id: targetedConversation?.id && quote.target_supplier_id === recipientId ? targetedConversation.id : data.id,
       })),
     );
   }
@@ -892,6 +951,55 @@ export async function getQuoteConversationForQuote(quoteRequestId, supplierUserI
 export async function getQuoteConversationById(conversationId) {
   if (useE2E()) return e2eGetQuoteConversationById(conversationId);
   return getQuoteConversationRecordById(conversationId);
+}
+
+export async function ensureQuoteConversationForSupplier({
+  quoteId,
+  buyerUserId,
+  supplierUserId,
+  startedByUserId,
+}) {
+  if (useE2E()) {
+    const existing = await e2eGetQuoteConversationForQuote(quoteId, supplierUserId);
+    if (existing) return existing;
+    throw new Error('No se pudo crear la conversacion en modo E2E.');
+  }
+
+  const { data: conversation, error } = await supabase
+    .from('quote_conversations')
+    .insert({
+      quote_request_id: quoteId,
+      buyer_user_id: buyerUserId,
+      supplier_user_id: supplierUserId,
+      started_by_user_id: startedByUserId ?? supplierUserId,
+    })
+    .select(QUOTE_CONVERSATION_SELECT)
+    .single();
+
+  if (error && error.code !== '23505') throw error;
+
+  const resolvedConversation = conversation
+    ?? await getQuoteConversationForQuote(quoteId, supplierUserId);
+
+  if (!resolvedConversation?.id) {
+    throw new Error('No se pudo abrir la conversacion para esta cotizacion.');
+  }
+
+  return resolvedConversation;
+}
+
+export async function getQuoteConversationsForUser(userId) {
+  if (!userId) return [];
+
+  const { data, error } = await supabase
+    .from('quote_conversations')
+    .select(QUOTE_CONVERSATION_SELECT)
+    .or(`buyer_user_id.eq.${userId},supplier_user_id.eq.${userId}`)
+    .order('last_message_at', { ascending: false, nullsFirst: false })
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data ?? [];
 }
 
 export async function getQuoteConversationMessages(conversationId) {

@@ -41,10 +41,10 @@ export function getNavbarLinks(user) {
 
 export function getFooterLinks() {
   return [
-    { to: '/marketplace', label: '🧭 Marketplace' },
-    { to: '/registro-comprador', label: '🛒 Registro Comprador' },
-    { to: '/registro-proveedor', label: '🏪 Registro Proveedor' },
-    { to: '/ingresar', label: '🔐 Ingresar' },
+    { to: '/marketplace', label: 'Marketplace', icon: 'compass' },
+    { to: '/registro-comprador', label: 'Registro Comprador', icon: 'cart' },
+    { to: '/registro-proveedor', label: 'Registro Proveedor', icon: 'store' },
+    { to: '/ingresar', label: 'Ingresar', icon: 'login' },
   ];
 }
 

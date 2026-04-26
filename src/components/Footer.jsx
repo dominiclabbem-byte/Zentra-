@@ -1,7 +1,14 @@
 import { Link } from 'react-router-dom';
-import { Mail, MapPin, Phone, ShieldCheck } from 'lucide-react';
+import { Compass, LogIn, Mail, MapPin, Phone, ShieldCheck, ShoppingCart, Store } from 'lucide-react';
 import mainLogo from '../assets/zentra_main_logo.png';
 import { getFooterLinks } from '../lib/navigation';
+
+const footerIcons = {
+  compass: Compass,
+  cart: ShoppingCart,
+  store: Store,
+  login: LogIn,
+};
 
 export default function Footer() {
   const footerLinks = getFooterLinks();
@@ -37,13 +44,17 @@ export default function Footer() {
           <div>
             <h4 className="text-white font-semibold mb-4 text-sm uppercase tracking-wider">Plataforma</h4>
             <ul className="space-y-3 text-sm">
-              {footerLinks.map((link) => (
-                <li key={link.to}>
-                  <Link to={link.to} className="hover:text-brand-accent transition-colors duration-200">
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
+              {footerLinks.map((link) => {
+                const Icon = footerIcons[link.icon];
+                return (
+                  <li key={link.to}>
+                    <Link to={link.to} className="inline-flex items-center gap-2 hover:text-brand-accent transition-colors duration-200">
+                      {Icon && <Icon className="h-4 w-4 text-brand-accent" />}
+                      {link.label}
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           </div>
 

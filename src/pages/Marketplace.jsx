@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import AuthChoiceModal from '../components/AuthChoiceModal';
 import ExternalContactValue from '../components/ExternalContactValue';
+import ProductImageCarousel from '../components/ProductImageCarousel';
 import Toast from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -366,7 +367,7 @@ export default function Marketplace() {
                   <p className="text-sm text-gray-500 mt-1">{viewingSupplier.description}</p>
                   <div className="flex items-center gap-2 mt-3 flex-wrap">
                     <span className="text-xs font-bold bg-gradient-to-r from-emerald-400 to-blue-500 text-white px-3 py-1 rounded-full">
-                      Plan {viewingSupplier.plan}
+                      Proveedor activo
                     </span>
                     {viewingSupplier.verified ? (
                       <span className="text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100 px-3 py-1 rounded-full flex items-center gap-1">
@@ -487,16 +488,15 @@ export default function Marketplace() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {viewingSupplier.products.map((product) => (
                       <div key={product.id} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-                        <div className={`h-28 ${product.imageUrls?.[0] ? '' : `bg-gradient-to-br ${product.gradient}`} relative overflow-hidden`}>
-                          {product.imageUrls?.[0] ? (
-                            <img src={product.imageUrls[0]} alt={product.imageAlt} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <div className="grid h-14 w-14 place-items-center rounded-2xl bg-white/20 text-white">
-                                <Package className="h-7 w-7" />
-                              </div>
-                            </div>
-                          )}
+                        <div className="relative">
+                          <ProductImageCarousel
+                            images={product.imageUrls}
+                            alt={product.imageAlt}
+                            fallbackClassName={`bg-gradient-to-br ${product.gradient}`}
+                            className="h-28"
+                            iconClassName="h-7 w-7"
+                            imageClassName=""
+                          />
                           {product.status === 'low_stock' && (
                             <span className="absolute top-2 right-2 text-[9px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
                               Stock bajo
@@ -808,22 +808,13 @@ export default function Marketplace() {
                   }`}
                   onClick={() => openSupplierFromProduct(product)}
                 >
-                  <div className={`relative h-28 sm:h-36 md:h-40 bg-gradient-to-br ${product.gradient} overflow-hidden`}>
-                    {product.imageUrls?.[0] ? (
-                      <img src={product.imageUrls[0]} alt={product.imageAlt} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    ) : (
-                      <>
-                        <div className="absolute inset-0 opacity-20">
-                          <div className="absolute top-3 left-3 w-16 h-16 bg-white/30 rounded-full blur-xl" />
-                          <div className="absolute bottom-4 right-4 w-20 h-20 bg-white/20 rounded-full blur-2xl" />
-                        </div>
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="grid h-16 w-16 place-items-center rounded-2xl bg-white/20 text-white shadow-lg transition-transform duration-500 group-hover:scale-110">
-                            <Package className="h-8 w-8" />
-                          </div>
-                        </div>
-                      </>
-                    )}
+                  <div className="relative">
+                    <ProductImageCarousel
+                      images={product.imageUrls}
+                      alt={product.imageAlt}
+                      fallbackClassName={`bg-gradient-to-br ${product.gradient}`}
+                      className="h-28 sm:h-36 md:h-40"
+                    />
                     <div className="absolute top-2 left-2 flex flex-col items-start gap-1.5">
                       <div className="inline-flex items-center gap-1 rounded-full bg-emerald-950/80 px-2 py-1 text-[9px] font-black uppercase tracking-wide text-emerald-300 shadow-sm">
                         <CheckCircle2 className="h-3 w-3" />

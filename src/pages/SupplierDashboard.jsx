@@ -1,20 +1,18 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { CheckCircle2, Package, UploadCloud } from 'lucide-react';
+import { CheckCircle2, Package, Sparkles, UploadCloud } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Toast from '../components/Toast';
 import Modal from '../components/Modal';
 import StatDetailModal from '../components/StatDetailModal';
 import QuoteConversationModal from '../components/QuoteConversationModal';
 import DashboardPageHeader from '../components/DashboardPageHeader';
-import { generateProductImage } from '../services/imageGenerator';
+import ProductImageCarousel from '../components/ProductImageCarousel';
 import { useAuth } from '../context/AuthContext';
 import {
   buildBuyerProfileView,
   buildSupplierProfileView,
   formatMemberSince,
-  formatPlanName,
   getPlanKey,
-  mapPlanRowToCard,
   normalizeUserRecord,
 } from '../lib/profileAdapters';
 import {
@@ -33,14 +31,12 @@ import {
   buildSupplierBuyerRelationships,
   buildSupplierWorkspaceSummary,
 } from '../lib/supplierWorkspaceAdapters';
-import {
-  formatLimitLabel,
-  getSupplierEntitlements,
-} from '../lib/planEntitlements';
+import { getSupplierEntitlements } from '../lib/planEntitlements';
 import {
   createProduct,
   createReview,
   deleteProduct,
+  ensureQuoteConversationForSupplier,
   getBuyerProfile,
   getBuyerStats,
   getOffersForSupplier,
@@ -60,6 +56,7 @@ import {
   updateOfferPipelineStatus,
   uploadAvatar,
 } from '../services/database';
+import { generateProductImage } from '../services/imageGenerator';
 import { mapQuoteConversationMessageRecord, mapQuoteConversationRecord } from '../lib/conversationAdapters';
 
 const initialProfile = {
@@ -77,7 +74,7 @@ const initialProfile = {
 };
 
 function normalizeSupplierDashboardTab(tab) {
-  return tab === 'agents' ? 'quotes' : tab;
+  return ['agents', 'plan'].includes(tab) ? 'quotes' : tab;
 }
 
 export default function SupplierDashboard() {
@@ -88,8 +85,6 @@ export default function SupplierDashboard() {
     categories: categoryOptions,
     notifications = [],
     plans,
-    changeSupplierPlan,
-    requestSupplierPlanBilling,
     saveSupplierProfile,
     refreshCurrentUser,
   } = useAuth();
@@ -97,9 +92,7 @@ export default function SupplierDashboard() {
   const liveProfile = currentUser ? buildSupplierProfileView(currentUser) : initialProfile;
   const profile = liveProfile;
   const currentPlanKey = getPlanKey(currentUser) ?? 'starter';
-  const currentPlanLabel = formatPlanName(currentPlanKey);
   const memberSinceLabel = formatMemberSince(currentUser?.created_at);
-  const pendingPlanRequest = currentUser?.pendingSubscription ?? null;
   const unreadSupplierQuoteNotifications = useMemo(
     () => notifications.filter((notification) => (
       !notification.read_at
@@ -140,6 +133,9 @@ export default function SupplierDashboard() {
   const [isSavingProduct, setIsSavingProduct] = useState(false);
   const [editingProductId, setEditingProductId] = useState(null);
   const [productForm, setProductForm] = useState(createEmptyProductForm(defaultProductCategory));
+  const [imageMode, setImageMode] = useState('upload');
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
   const [quotesLoading, setQuotesLoading] = useState(false);
   const [openQuotes, setOpenQuotes] = useState([]);
   const [supplierOffers, setSupplierOffers] = useState([]);
@@ -157,8 +153,6 @@ export default function SupplierDashboard() {
     voiceCallsThisMonth: 0,
   });
   const [usageLoading, setUsageLoading] = useState(false);
-  const [isChangingPlan, setIsChangingPlan] = useState(false);
-  const [isPreparingBilling, setIsPreparingBilling] = useState(false);
   const [highlightedQuoteId, setHighlightedQuoteId] = useState('');
   const [highlightedOfferId, setHighlightedOfferId] = useState('');
   const [supplierReviewOpportunities, setSupplierReviewOpportunities] = useState([]);
@@ -171,10 +165,6 @@ export default function SupplierDashboard() {
     comment: '',
   });
   const [isSubmittingSupplierReview, setIsSubmittingSupplierReview] = useState(false);
-
-  const [imageMode, setImageMode] = useState('upload'); // 'upload' | 'generate'
-  const [aiPrompt, setAiPrompt] = useState('');
-  const [aiLoading, setAiLoading] = useState(false);
 
   const loadProducts = useCallback(async () => {
     if (!currentUser?.id) return;
@@ -205,30 +195,6 @@ export default function SupplierDashboard() {
 
     return () => window.clearTimeout(timeout);
   }, [highlightedOfferId, highlightedQuoteId]);
-
-  const handleGenerateImage = async () => {
-    if (!aiPrompt.trim()) {
-      setToast({ message: 'Escribe una descripción para generar la imagen', type: 'error' });
-      return;
-    }
-    if (productForm.imagePreviews.length >= 4) {
-      setToast({ message: 'Has alcanzado el límite de 4 imágenes por producto', type: 'error' });
-      return;
-    }
-    setAiLoading(true);
-    try {
-      const imageData = await generateProductImage(aiPrompt.trim());
-      setProductForm((prev) => ({
-        ...prev,
-        imagePreviews: [...prev.imagePreviews, imageData]
-      }));
-      setToast({ message: 'Imagen generada exitosamente', type: 'success' });
-    } catch (err) {
-      setToast({ message: err.message, type: 'error' });
-    } finally {
-      setAiLoading(false);
-    }
-  };
 
   const handleProductImage = (e) => {
     if (productForm.imagePreviews.length >= 4) {
@@ -264,13 +230,44 @@ export default function SupplierDashboard() {
     });
   };
 
+  const handleGenerateImage = async () => {
+    if (productForm.imagePreviews.length >= 4) {
+      setToast({ message: 'Has alcanzado el limite de 4 imagenes por producto', type: 'error' });
+      return;
+    }
+
+    const prompt = aiPrompt.trim() || [productForm.name, productForm.category, productForm.description]
+      .filter(Boolean)
+      .join(', ');
+
+    if (!prompt) {
+      setToast({ message: 'Describe el producto antes de generar una imagen.', type: 'error' });
+      return;
+    }
+
+    setAiLoading(true);
+
+    try {
+      const imageUrl = await generateProductImage(prompt);
+      setProductForm((prev) => ({
+        ...prev,
+        imagePreviews: [...prev.imagePreviews, imageUrl],
+      }));
+      setAiPrompt('');
+      setToast({ message: 'Imagen generada correctamente.', type: 'success' });
+    } catch (error) {
+      setToast({ message: error.message || 'No se pudo generar la imagen.', type: 'error' });
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   const handleSaveProduct = async (e) => {
     e.preventDefault();
 
     if (!currentUser?.id) return;
     if (!editingProductId && !entitlements.canCreateProduct) {
-      setToast({ message: 'Tu plan actual llego al limite de productos activos. Actualiza el plan para seguir publicando.', type: 'error' });
-      setActiveTab('plan');
+      setToast({ message: 'Se alcanzo el limite operativo de productos activos.', type: 'error' });
       return;
     }
 
@@ -573,8 +570,7 @@ export default function SupplierDashboard() {
 
   const openAddProductModal = () => {
     if (!entitlements.canCreateProduct) {
-      setToast({ message: 'Tu plan actual ya uso todos los productos activos disponibles.', type: 'error' });
-      setActiveTab('plan');
+      setToast({ message: 'Se alcanzo el limite operativo de productos activos.', type: 'error' });
       return;
     }
 
@@ -800,30 +796,64 @@ export default function SupplierDashboard() {
     if (!currentUser?.id || !quoteModal) {
       return;
     }
-    if (!entitlements.canRespondToQuotes) {
-      setToast({ message: 'Tu plan actual llego al limite mensual de respuestas. Actualiza el plan para seguir cotizando.', type: 'error' });
-      setActiveTab('plan');
+    const hasPrice = String(offerForm.price).trim() !== '';
+
+    if (hasPrice && !entitlements.canRespondToQuotes) {
+      setToast({ message: 'Se alcanzo el limite operativo mensual de respuestas.', type: 'error' });
       return;
     }
 
     setIsSubmittingOffer(true);
 
     try {
-      await submitOffer({
+      const notes = offerForm.notes.trim();
+      const estimatedLeadTime = offerForm.estimatedLeadTime.trim();
+
+      if (hasPrice) {
+        await submitOffer({
+          quoteId: quoteModal.id,
+          supplierId: currentUser.id,
+          responderId: currentUser.id,
+          price: Number(offerForm.price),
+          notes: notes || null,
+          estimatedLeadTime: estimatedLeadTime || null,
+        });
+
+        await loadQuotesData();
+        await refreshUsageSummary();
+        closeQuoteOfferModal();
+        setToast({ message: `Oferta enviada a ${quoteModal.buyerName}.`, type: 'success' });
+        return;
+      }
+
+      const messageBody = [
+        notes,
+        estimatedLeadTime ? `Tiempo estimado de entrega: ${estimatedLeadTime}` : '',
+      ].filter(Boolean).join('\n\n');
+
+      if (!messageBody) {
+        setToast({ message: 'Escribe un mensaje o agrega un precio estimado para responder.', type: 'error' });
+        return;
+      }
+
+      const conversation = await ensureQuoteConversationForSupplier({
         quoteId: quoteModal.id,
-        supplierId: currentUser.id,
-        responderId: currentUser.id,
-        price: Number(offerForm.price),
-        notes: offerForm.notes || null,
-        estimatedLeadTime: offerForm.estimatedLeadTime || null,
+        buyerUserId: quoteModal.buyerId,
+        supplierUserId: currentUser.id,
+        startedByUserId: currentUser.id,
       });
 
-      await loadQuotesData();
-      await refreshUsageSummary();
+      await sendQuoteConversationMessage({
+        conversationId: conversation.id,
+        senderUserId: currentUser.id,
+        body: messageBody,
+      });
+
       closeQuoteOfferModal();
-      setToast({ message: `Oferta enviada a ${quoteModal.buyerName}.`, type: 'success' });
+      setToast({ message: `Mensaje enviado a ${quoteModal.buyerName}.`, type: 'success' });
+      await loadConversationForSupplier({ quoteId: quoteModal.id });
     } catch (error) {
-      setToast({ message: error.message || 'No se pudo enviar la oferta.', type: 'error' });
+      setToast({ message: error.message || 'No se pudo responder la cotizacion.', type: 'error' });
     } finally {
       setIsSubmittingOffer(false);
     }
@@ -835,11 +865,6 @@ export default function SupplierDashboard() {
   const buyerRelationships = useMemo(
     () => buildSupplierBuyerRelationships(openQuotes, supplierOffers),
     [openQuotes, supplierOffers],
-  );
-  const planCards = useMemo(() => plans.map((plan) => mapPlanRowToCard(plan)), [plans]);
-  const currentPlanCard = useMemo(
-    () => planCards.find((plan) => plan.key === currentPlanKey) ?? planCards[0] ?? null,
-    [currentPlanKey, planCards],
   );
   const profileReviews = useMemo(() => (
     supplierReviews.map((review) => {
@@ -895,39 +920,6 @@ export default function SupplierDashboard() {
     }
   };
 
-  const handlePlanChange = async (planId) => {
-    if (!currentUser?.id || planId === currentUser?.activeSubscription?.plan_id) {
-      return;
-    }
-
-    setIsChangingPlan(true);
-
-    try {
-      await changeSupplierPlan(planId);
-      setToast({ message: 'Plan actualizado correctamente.', type: 'success' });
-    } catch (error) {
-      setToast({ message: error.message || 'No se pudo actualizar el plan.', type: 'error' });
-    } finally {
-      setIsChangingPlan(false);
-    }
-  };
-
-  const handlePrepareFlowBilling = async (planId) => {
-    if (!currentUser?.id || !requestSupplierPlanBilling) return;
-    if (pendingPlanRequest?.plan_id === planId) return;
-
-    setIsPreparingBilling(true);
-
-    try {
-      await requestSupplierPlanBilling(planId);
-      setToast({ message: 'Solicitud Flow preparada. Podras conectar checkout y webhooks cuando habilites tu cuenta.', type: 'success' });
-    } catch (error) {
-      setToast({ message: error.message || 'No se pudo preparar la solicitud de billing.', type: 'error' });
-    } finally {
-      setIsPreparingBilling(false);
-    }
-  };
-
   const headerTabs = [
     {
       id: 'profile',
@@ -965,13 +957,6 @@ export default function SupplierDashboard() {
       onClick: () => setActiveTab('buyers'),
       badge: buyerRelationships.length,
     },
-    {
-      id: 'plan',
-      label: 'Plan',
-      active: activeTab === 'plan',
-      onClick: () => setActiveTab('plan'),
-      badge: currentPlanLabel,
-    },
   ];
 
   return (
@@ -1005,14 +990,13 @@ export default function SupplierDashboard() {
           <form onSubmit={handleOfferSubmit} className="space-y-4">
             <div>
               <label htmlFor="offer-price" className="block text-sm font-medium text-gray-700 mb-1.5">
-                Nueva Propuesta de Precio (CLP) <span className="text-red-500">*</span>
+                Precio estimado (CLP, opcional)
               </label>
               <div className="relative">
                 <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-medium text-sm">$</span>
                 <input
                   id="offer-price"
                   type="number"
-                  required
                   min="1"
                   placeholder="4.200"
                   value={offerForm.price}
@@ -1036,12 +1020,12 @@ export default function SupplierDashboard() {
             </div>
             <div>
               <label htmlFor="offer-notes" className="block text-base font-semibold text-gray-800 mb-1.5">
-                Notas adicionales
+                Mensaje al comprador
               </label>
               <textarea
                 id="offer-notes"
                 rows={5}
-                placeholder="Ej: Disponibilidad inmediata. Entrega en 48hrs. Incluye flete a Santiago."
+                placeholder="Ej: Tenemos disponibilidad. Puedo confirmar precio por volumen y condiciones de entrega por este chat."
                 value={offerForm.notes}
                 onChange={(e) => setOfferForm({ ...offerForm, notes: e.target.value })}
                 className="w-full border-2 border-brand-accent/40 rounded-xl px-4 py-3 text-base focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 resize-none transition-all"
@@ -1060,7 +1044,7 @@ export default function SupplierDashboard() {
                 disabled={isSubmittingOffer}
                 className="flex-1 bg-gradient-to-r from-emerald-400 to-blue-500 text-white font-bold py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-emerald-400/20 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {isSubmittingOffer ? 'Enviando...' : 'Enviar oferta'}
+                {isSubmittingOffer ? 'Enviando...' : (String(offerForm.price).trim() ? 'Enviar oferta' : 'Enviar mensaje')}
               </button>
             </div>
           </form>
@@ -1082,10 +1066,15 @@ export default function SupplierDashboard() {
       {productDetail && (
         <Modal title={productDetail.name} onClose={() => setProductDetail(null)}>
           {/* Product image */}
-          <div className={`relative h-56 rounded-xl ${productDetail.customImage ? '' : `bg-gradient-to-br ${productDetail.gradient}`} overflow-hidden mb-5`}>
-            {productDetail.customImage ? (
-              <img src={productDetail.customImage} alt={productDetail.imageAlt} className="w-full h-full object-cover" />
-            ) : (
+          <div className="relative mb-5">
+            <ProductImageCarousel
+              images={productDetail.imageUrls}
+              alt={productDetail.imageAlt}
+              fallbackClassName={`bg-gradient-to-br ${productDetail.gradient}`}
+              className="h-56 rounded-xl"
+              imageClassName=""
+            />
+            {!productDetail.imageUrls?.length && (
               <>
                 <div className="absolute inset-0 opacity-20">
                   <div className="absolute top-6 left-6 w-32 h-32 bg-white/30 rounded-full blur-xl" />
@@ -1102,9 +1091,6 @@ export default function SupplierDashboard() {
                     <rect width="200" height="200" fill="url(#ice-detail)" />
                   </svg>
                 </div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-8xl filter drop-shadow-lg">{productDetail.emoji}</div>
-                </div>
               </>
             )}
             <div className="absolute bottom-3 left-3 bg-black/30 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5">
@@ -1118,9 +1104,9 @@ export default function SupplierDashboard() {
               ) : (
                 <>
                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4" />
                   </svg>
-                  Imagen generada con IA
+                  Imagen de catalogo
                 </>
               )}
             </div>
@@ -1156,24 +1142,12 @@ export default function SupplierDashboard() {
             <div className="flex gap-3 pt-2">
               <button
                 onClick={() => openEditProductModal(productDetail)}
-                className="flex-1 border border-gray-200 text-gray-600 font-medium py-3 rounded-xl hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
+                className="w-full border border-gray-200 text-gray-600 font-medium py-3 rounded-xl hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
                 </svg>
                 Editar
-              </button>
-              <button
-                onClick={() => {
-                  setProductDetail(null);
-                  setToast({ message: 'Imagen regenerada con IA exitosamente', type: 'success' });
-                }}
-                className="flex-1 bg-gradient-to-r from-emerald-400 to-blue-500 text-white font-bold py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-emerald-400/20 flex items-center justify-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-                </svg>
-                Regenerar imagen IA
               </button>
             </div>
           </div>
@@ -1513,40 +1487,39 @@ export default function SupplierDashboard() {
               />
             </div>
 
-            {/* Image upload / AI generation */}
+            {/* Image upload / generation */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Foto del producto
+                Fotos del producto
               </label>
 
-              {/* Toggle: Upload vs Generate */}
-              <div className="flex gap-2 mb-3">
+              <div className="grid grid-cols-2 gap-2 mb-3">
                 <button
                   type="button"
                   onClick={() => setImageMode('upload')}
-                  className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium border-2 transition-all ${
+                  className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-sm font-medium border transition-all ${
                     imageMode === 'upload'
                       ? 'border-brand-accent bg-brand-accent/10 text-brand-ink'
-                      : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300'
+                      : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
                   }`}
                 >
-                  <UploadCloud className="mr-1.5 inline h-4 w-4" />
-                  Subir imagen
+                  <UploadCloud className="h-4 w-4" />
+                  Subir foto
                 </button>
                 <button
                   type="button"
                   onClick={() => setImageMode('generate')}
-                  className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium border-2 transition-all ${
+                  className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-sm font-medium border transition-all ${
                     imageMode === 'generate'
-                      ? 'border-purple-400 bg-purple-50 text-purple-700'
-                      : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300'
+                      ? 'border-brand-accent bg-brand-accent/10 text-brand-ink'
+                      : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
                   }`}
                 >
-                  <span className="mr-1.5">✨</span> Crear con IA
+                  <Sparkles className="h-4 w-4" />
+                  Crear con IA
                 </button>
               </div>
 
-              {/* Previews of existing images */}
               {productForm.imagePreviews && productForm.imagePreviews.length > 0 && (
                 <div className="grid grid-cols-2 gap-3 mb-3">
                   {productForm.imagePreviews.map((preview, idx) => (
@@ -1570,13 +1543,10 @@ export default function SupplierDashboard() {
                 </div>
               )}
 
-              {/* Upload mode */}
               {productForm.imagePreviews.length < 4 && imageMode === 'upload' && (
                 <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-brand-accent hover:bg-brand-accent/5 transition-all group mb-3">
                   <div className="flex flex-col items-center justify-center pt-2 pb-3">
-                    <svg className="w-8 h-8 text-gray-300 group-hover:text-brand-accent transition-colors mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21zm14.25-15.75a1.125 1.125 0 11-2.25 0 1.125 1.125 0 012.25 0z" />
-                    </svg>
+                    <UploadCloud className="w-8 h-8 text-gray-300 group-hover:text-brand-accent transition-colors mb-2" />
                     <p className="text-sm font-medium text-gray-400 group-hover:text-gray-600">Subir foto del producto ({productForm.imagePreviews.length}/4)</p>
                     <p className="text-[10px] text-gray-300 mt-1">JPG, PNG o WebP (max. 5MB)</p>
                   </div>
@@ -1588,31 +1558,30 @@ export default function SupplierDashboard() {
                   />
                 </label>
               )}
-              {/* AI Generate mode */}
+
               {productForm.imagePreviews.length < 4 && imageMode === 'generate' && (
-                /* AI Generate mode */
-                <div className="border-2 border-dashed border-purple-200 rounded-xl p-4 bg-purple-50/50 space-y-3">
-                  <p className="text-xs text-purple-600 font-medium">
-                    Describe cómo quieres que se vea la imagen y la IA la creará por ti.
+                <div className="border border-brand-accent/20 rounded-xl p-4 bg-brand-accent/5 space-y-3 mb-3">
+                  <p className="text-xs text-gray-600 font-medium">
+                    Describe el producto para crear una foto de catalogo limpia y profesional.
                   </p>
                   <textarea
                     rows={3}
                     value={aiPrompt}
                     onChange={(e) => setAiPrompt(e.target.value)}
-                    placeholder="Ej: Caja de tomates cherry orgánicos frescos con gotas de agua, fondo blanco, iluminación de estudio..."
-                    className="w-full border border-purple-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 resize-none transition-all bg-white"
+                    placeholder="Ej: mango Tommy fresco cortado, fondo blanco, luz de estudio, estilo marketplace B2B..."
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 resize-none transition-all bg-white"
                   />
                   <div className="flex flex-wrap gap-1.5">
                     {[
-                      'Fondo blanco, estilo catálogo',
-                      'Vista cenital, fondo oscuro',
-                      'Estilo premium, elegante',
+                      'Fondo blanco',
+                      'Vista de catalogo',
+                      'Empaque mayorista',
                     ].map((tag) => (
                       <button
                         key={tag}
                         type="button"
                         onClick={() => setAiPrompt((prev) => prev ? `${prev}, ${tag.toLowerCase()}` : tag)}
-                        className="text-[10px] px-2.5 py-1 rounded-full border border-purple-200 text-purple-500 hover:bg-purple-100 hover:border-purple-300 transition-all"
+                        className="text-[10px] px-2.5 py-1 rounded-full border border-brand-accent/20 text-brand-ink hover:bg-white transition-all"
                       >
                         + {tag}
                       </button>
@@ -1621,28 +1590,14 @@ export default function SupplierDashboard() {
                   <button
                     type="button"
                     onClick={handleGenerateImage}
-                    disabled={aiLoading || !aiPrompt.trim()}
-                    className={`w-full py-3 rounded-xl text-sm font-bold transition-all ${
-                      aiLoading || !aiPrompt.trim()
-                        ? 'bg-purple-200 text-purple-400 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white hover:shadow-lg hover:shadow-purple-500/20'
-                    }`}
+                    disabled={aiLoading || (!aiPrompt.trim() && !productForm.name.trim())}
+                    className="w-full ui-btn-primary py-3 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    {aiLoading ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                        </svg>
-                        Generando imagen...
-                      </span>
-                    ) : (
-                      '✨ Generar imagen con IA'
-                    )}
+                    {aiLoading ? 'Generando imagen...' : 'Generar imagen'}
                   </button>
                 </div>
               )}
-              <p className="text-[10px] text-gray-400 mt-1.5">Opcional. Si no subes foto, se usará una imagen generada automáticamente.</p>
+              <p className="text-[10px] text-gray-400 mt-1.5">Puedes subir o generar hasta 4 fotos del producto o empaque.</p>
             </div>
 
             {/* Preview */}
@@ -1855,7 +1810,7 @@ export default function SupplierDashboard() {
         eyebrow="Panel de proveedor"
         title={profile.companyName}
         subtitle={`${profile.city} / RUT ${profile.rut}`}
-        badges={[{ label: `Plan ${currentPlanLabel}` }]}
+        badges={[{ label: 'Proveedor activo' }]}
         action={{
           onClick: () => navigate(currentUser?.is_buyer ? '/dashboard-comprador' : '/registro-comprador'),
           label: currentUser?.is_buyer ? 'Ir a comprador' : 'Activar comprador',
@@ -1902,7 +1857,7 @@ export default function SupplierDashboard() {
                     <h2 className="text-2xl font-extrabold text-brand-ink">{profile.companyName}</h2>
                     <p className="text-gray-500 text-sm mt-1">{profile.description}</p>
                     <div className="flex items-center gap-3 mt-3 flex-wrap">
-                      <span className="text-xs font-bold bg-gradient-to-r from-emerald-400 to-blue-500 text-white px-3 py-1 rounded-full">Plan {currentPlanLabel}</span>
+                      <span className="text-xs font-bold bg-gradient-to-r from-emerald-400 to-blue-500 text-white px-3 py-1 rounded-full">Proveedor activo</span>
                       <span className={`text-xs font-semibold px-3 py-1 rounded-full flex items-center gap-1 ${currentUser?.verified ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border border-amber-100'}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${currentUser?.verified ? 'bg-emerald-500' : 'bg-amber-500'}`} />
                         {currentUser?.verified ? 'Verificado' : 'En revision'}
@@ -2240,10 +2195,10 @@ export default function SupplierDashboard() {
                                     </button>
                                   ) : (
                                     <button
-                                      onClick={() => setActiveTab('plan')}
-                                      className="bg-gray-100 text-gray-500 font-bold text-sm px-4 py-2 rounded-lg transition-all"
+                                      disabled
+                                      className="bg-gray-100 text-gray-500 font-bold text-sm px-4 py-2 rounded-lg transition-all cursor-not-allowed"
                                     >
-                                      Limite del plan
+                                      Limite operativo
                                     </button>
                                   )
                                 )}
@@ -2298,10 +2253,10 @@ export default function SupplierDashboard() {
                                 </button>
                               ) : (
                                 <button
-                                  onClick={() => setActiveTab('plan')}
-                                  className="bg-gray-100 text-gray-500 font-bold text-sm px-4 py-2 rounded-lg transition-all"
+                                  disabled
+                                  className="bg-gray-100 text-gray-500 font-bold text-sm px-4 py-2 rounded-lg transition-all cursor-not-allowed"
                                 >
-                                  Limite del plan
+                                  Limite operativo
                                 </button>
                               )
                             )}
@@ -2421,8 +2376,11 @@ export default function SupplierDashboard() {
               <div>
                 <h2 className="text-xl font-extrabold text-brand-ink">Catalogo de productos</h2>
                 <p className="text-sm text-gray-400 mt-1">
-                  Imagenes generadas con IA (Nano Banana Pro 2) / {formatLimitLabel(entitlements.productLimit, 'productos')}
+                  Fotos subidas o generadas con IA para tu catalogo.
                 </p>
+                {usageLoading && (
+                  <p className="text-xs text-gray-400 mt-1">Actualizando uso operativo...</p>
+                )}
               </div>
               <button
                 onClick={openAddProductModal}
@@ -2435,7 +2393,7 @@ export default function SupplierDashboard() {
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>
-                {entitlements.canCreateProduct ? 'Agregar producto' : 'Limite del plan'}
+                {entitlements.canCreateProduct ? 'Agregar producto' : 'Limite operativo'}
               </button>
             </div>
 
@@ -2453,10 +2411,14 @@ export default function SupplierDashboard() {
                   className="bg-white rounded-2xl border border-gray-100 overflow-hidden card-premium cursor-pointer group"
                 >
                   {/* Product image */}
-                  <div className={`relative h-48 ${product.customImage ? '' : `bg-gradient-to-br ${product.gradient}`} overflow-hidden`}>
-                    {product.customImage ? (
-                      <img src={product.customImage} alt={product.imageAlt} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    ) : (
+                  <div className="relative">
+                    <ProductImageCarousel
+                      images={product.imageUrls}
+                      alt={product.imageAlt}
+                      fallbackClassName={`bg-gradient-to-br ${product.gradient}`}
+                      className="h-48"
+                    />
+                    {!product.imageUrls?.length && (
                       <>
                         {/* Decorative shapes */}
                         <div className="absolute inset-0 opacity-20">
@@ -2475,12 +2437,6 @@ export default function SupplierDashboard() {
                             <rect width="200" height="200" fill={`url(#ice-${product.id})`} />
                           </svg>
                         </div>
-                        {/* Central product emoji */}
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="text-7xl filter drop-shadow-lg transform group-hover:scale-110 transition-transform duration-500">
-                            {product.emoji}
-                          </div>
-                        </div>
                       </>
                     )}
                     {/* Badge */}
@@ -2497,7 +2453,7 @@ export default function SupplierDashboard() {
                           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
                           </svg>
-                          IA Gen
+                          Catalogo
                         </>
                       )}
                     </div>
@@ -2641,168 +2597,6 @@ export default function SupplierDashboard() {
                 <p className="text-sm text-gray-400 mt-2">A medida que respondas Solicitudes de Cotización relevantes y cierres ofertas, este espacio se convierte en tu cartera comercial.</p>
               </div>
             )}
-          </div>
-        )}
-
-        {/* ===== PLAN TAB ===== */}
-        {activeTab === 'plan' && (
-          <div className="space-y-8 animate-fade-in">
-            <div className="grid grid-cols-1 xl:grid-cols-[1.3fr,0.7fr] gap-6">
-              <div className="bg-white rounded-2xl border border-gray-100 p-6 card-premium">
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                  <div>
-                    <span className="text-xs font-semibold uppercase tracking-widest text-brand-accent">Workspace activo</span>
-                    <h2 className="text-2xl font-extrabold text-brand-ink mt-2">
-                      Plan {currentPlanCard?.name ?? currentPlanLabel}
-                    </h2>
-                    <p className="text-sm text-gray-500 mt-2 max-w-2xl">
-                      Este plan gobierna capacidades operativas del panel supplier, catalogo y cotizaciones. Puedes seguir usando activacion interna para desarrollo, y en paralelo dejar preparado el billing con Flow.
-                    </p>
-                  </div>
-                  <div className="rounded-2xl bg-brand-ink px-5 py-4 text-white min-w-[180px]">
-                    <div className="text-xs uppercase tracking-wide text-white/60">Precio referencial</div>
-                    <div className="text-2xl font-extrabold mt-1">{currentPlanCard?.price ?? '$0'}</div>
-                    <div className="text-xs text-white/60 mt-1">{currentPlanCard?.period ?? '/mes'}</div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mt-6">
-                  {[
-                    { label: 'Catalogo ampliado', enabled: entitlements.productLimit === null || entitlements.productLimit > 25 },
-                    { label: 'Cotizaciones avanzadas', enabled: entitlements.quoteResponseLimit === null || entitlements.quoteResponseLimit > 20 },
-                    { label: 'CRM / export', enabled: Boolean(currentPlanDetails?.has_crm) },
-                    { label: 'API', enabled: Boolean(currentPlanDetails?.has_api) },
-                  ].map((feature) => (
-                    <div key={feature.label} className={`rounded-2xl border px-4 py-4 ${feature.enabled ? 'border-emerald-100 bg-emerald-50' : 'border-gray-100 bg-brand-canvas'}`}>
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-semibold text-brand-ink">{feature.label}</span>
-                        <span className={`w-2.5 h-2.5 rounded-full ${feature.enabled ? 'bg-emerald-400' : 'bg-gray-300'}`} />
-                      </div>
-                      <p className={`text-xs mt-2 ${feature.enabled ? 'text-emerald-700' : 'text-gray-400'}`}>
-                        {feature.enabled ? 'Disponible ahora' : 'Bloqueado en este plan'}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl border border-gray-100 p-6 card-premium">
-                <h3 className="text-lg font-extrabold text-brand-ink">Impacto del plan</h3>
-                <div className="space-y-4 mt-4">
-                  <div className="rounded-2xl bg-brand-canvas px-4 py-4">
-                    <div className="text-xs font-semibold uppercase tracking-wide text-gray-400">Productos activos</div>
-                    <div className="text-2xl font-extrabold text-brand-ink mt-1">{usageSummary.activeProducts}</div>
-                    <div className="text-xs text-gray-400 mt-1">{formatLimitLabel(entitlements.productLimit, 'productos')}</div>
-                  </div>
-                  <div className="rounded-2xl bg-brand-canvas px-4 py-4">
-                    <div className="text-xs font-semibold uppercase tracking-wide text-gray-400">Cotizaciones respondidas</div>
-                    <div className="text-2xl font-extrabold text-emerald-500 mt-1">{usageSummary.quoteResponsesThisMonth}</div>
-                    <div className="text-xs text-gray-400 mt-1">{formatLimitLabel(entitlements.quoteResponseLimit, 'cotizaciones')}</div>
-                  </div>
-                  {usageLoading && <div className="text-xs text-gray-400">Actualizando uso mensual...</div>}
-                </div>
-
-                <div className="mt-5 rounded-2xl border border-dashed border-brand-accent/30 bg-brand-mint px-4 py-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <div className="text-xs font-semibold uppercase tracking-wide text-brand-accent">Billing Flow</div>
-                      <div className="text-sm font-bold text-brand-ink mt-1">
-                        {pendingPlanRequest
-                          ? `Solicitud pendiente para Plan ${pendingPlanRequest.plans?.name ?? pendingPlanRequest.plan_id}`
-                          : 'Aun no hay una solicitud de cobro preparada'}
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {pendingPlanRequest
-                          ? `Referencia ${pendingPlanRequest.billing_reference ?? 'sin referencia'} · estado ${pendingPlanRequest.billing_status ?? 'pendiente'}`
-                          : 'Cuando abras tu cuenta en Flow, este bloque servira para conectar checkout, referencia y webhook sin rehacer la logica de planes.'}
-                      </p>
-                    </div>
-                    <span className={`text-[10px] font-bold uppercase tracking-wide px-3 py-1 rounded-full ${
-                      pendingPlanRequest ? 'bg-amber-300 text-amber-950' : 'bg-white text-gray-500 border border-gray-200'
-                    }`}>
-                      {pendingPlanRequest ? 'Pendiente' : 'Placeholder'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {planCards.map((plan) => {
-                const isCurrent = plan.key === currentPlanKey;
-                const hasPendingFlowRequest = pendingPlanRequest?.plan_id === plan.id;
-
-                return (
-                  <div key={plan.id} className={`rounded-2xl border p-6 ${isCurrent ? 'border-brand-accent bg-brand-accent/5 shadow-lg shadow-emerald-400/10' : 'border-gray-100 bg-white card-premium'}`}>
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <h3 className="text-xl font-extrabold text-brand-ink">{plan.name}</h3>
-                        <p className="text-sm text-gray-400 mt-1">{plan.price}{plan.period}</p>
-                      </div>
-                      {isCurrent ? (
-                        <span className="text-[10px] font-bold uppercase tracking-wide px-3 py-1 rounded-full bg-emerald-400 text-emerald-950">
-                          Actual
-                        </span>
-                      ) : hasPendingFlowRequest ? (
-                        <span className="text-[10px] font-bold uppercase tracking-wide px-3 py-1 rounded-full bg-amber-300 text-amber-950">
-                          Flow pendiente
-                        </span>
-                      ) : null}
-                    </div>
-
-                    <div className="space-y-3 mt-5">
-                      {plan.features.map((feature) => (
-                        <div key={feature} className="flex items-start gap-2 text-sm text-gray-600">
-                          <span className="mt-1 w-1.5 h-1.5 rounded-full bg-brand-accent" />
-                          <span>{feature}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 mt-5">
-                      <div className="rounded-xl bg-brand-canvas px-3 py-2">
-                        <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Productos</div>
-                        <div className="text-sm font-bold text-brand-ink mt-1">{plan.maxActiveProducts ?? 'Ilimitado'}</div>
-                      </div>
-                      <div className="rounded-xl bg-brand-canvas px-3 py-2">
-                        <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Cotizaciones / mes</div>
-                        <div className="text-sm font-bold text-brand-ink mt-1">{plan.maxQuoteResponsesPerMonth ?? 'Ilimitado'}</div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2 mt-5">
-                      <button
-                        type="button"
-                        disabled={isCurrent || isChangingPlan}
-                        onClick={() => handlePlanChange(plan.id)}
-                        className={`w-full rounded-xl py-3 text-sm font-bold transition-all ${
-                          isCurrent
-                            ? 'bg-gray-100 text-gray-400 cursor-default'
-                            : 'bg-gradient-to-r from-emerald-400 to-blue-500 text-brand-ink hover:shadow-lg hover:shadow-emerald-400/20'
-                        } ${isChangingPlan ? 'opacity-60 cursor-not-allowed' : ''}`}
-                      >
-                        {isCurrent ? 'Plan actual' : isChangingPlan ? 'Actualizando...' : `Cambiar a ${plan.name}`}
-                      </button>
-
-                      {!isCurrent && (
-                        <button
-                          type="button"
-                          disabled={isPreparingBilling || hasPendingFlowRequest}
-                          onClick={() => handlePrepareFlowBilling(plan.id)}
-                          className={`w-full rounded-xl py-3 text-sm font-semibold border transition-all ${
-                            hasPendingFlowRequest
-                              ? 'border-amber-200 bg-amber-50 text-amber-700 cursor-default'
-                              : 'border-brand-accent/30 text-brand-ink hover:bg-brand-accent/5'
-                          } ${isPreparingBilling ? 'opacity-60 cursor-not-allowed' : ''}`}
-                        >
-                          {hasPendingFlowRequest ? 'Flow pendiente para este plan' : isPreparingBilling ? 'Preparando Flow...' : 'Preparar pago con Flow'}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
           </div>
         )}
 
