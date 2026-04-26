@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { LockKeyhole, ShoppingCart, Store } from 'lucide-react';
 import Toast from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
 import { resolvePostLoginPath } from '../lib/navigation';
@@ -10,6 +11,7 @@ export default function Login() {
   const { currentUser, login } = useAuth();
   const role = searchParams.get('role') || '';
   const isSupplier = role === 'proveedor';
+  const RoleIcon = isSupplier ? Store : ShoppingCart;
   const [toast, setToast] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState({
@@ -50,11 +52,9 @@ export default function Login() {
         <div className="text-center mb-8 animate-fade-in-up">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-brand-ink to-brand-inkLight rounded-2xl mb-4 shadow-xl shadow-brand-ink/20">
             {role ? (
-              <span className="text-3xl" aria-hidden="true">{isSupplier ? '🏪' : '🛒'}</span>
+              <RoleIcon className="h-8 w-8 text-brand-accent" aria-hidden="true" />
             ) : (
-              <svg className="w-8 h-8 text-brand-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25m0 0A2.25 2.25 0 0013.5 3h-3A2.25 2.25 0 008.25 5.25m7.5 0v3.75m0 0H18a2.25 2.25 0 012.25 2.25v6A2.25 2.25 0 0118 19.5H6a2.25 2.25 0 01-2.25-2.25v-6A2.25 2.25 0 016 9h2.25m7.5 0h-7.5" />
-              </svg>
+              <LockKeyhole className="h-8 w-8 text-brand-accent" />
             )}
           </div>
           <h1 className="text-3xl font-extrabold text-brand-ink">

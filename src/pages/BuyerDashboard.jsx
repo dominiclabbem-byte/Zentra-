@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { CheckCircle2, Store, TrendingDown, TrendingUp } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Toast from '../components/Toast';
 import Modal from '../components/Modal';
@@ -835,10 +836,11 @@ export default function BuyerDashboard() {
           <div className={`mt-2 rounded-xl border border-gray-100 bg-brand-canvas ${showRecommendationMeta ? 'px-2 py-1.5' : 'px-3 py-2'}`}>
             <div className="flex items-center justify-between gap-2">
               <span className={`${showRecommendationMeta ? 'text-[10px]' : 'text-[11px]'} font-semibold text-brand-ink`}>{product.recentPriceAlert.impactLabel}</span>
-              <span className={`text-[10px] font-bold ${
+              <span className={`inline-flex items-center gap-1 text-[10px] font-bold ${
                 product.recentPriceAlert.change === 'down' ? 'text-emerald-600' : 'text-rose-600'
               }`}>
-                {product.recentPriceAlert.change === 'down' ? '↓' : '↑'} {product.recentPriceAlert.currentPrice}
+                {product.recentPriceAlert.change === 'down' ? <TrendingDown className="h-3 w-3" /> : <TrendingUp className="h-3 w-3" />}
+                {product.recentPriceAlert.currentPrice}
               </span>
             </div>
             <p className={`${showRecommendationMeta ? 'text-[9px]' : 'text-[10px]'} text-gray-400 mt-1`}>
@@ -1345,15 +1347,17 @@ export default function BuyerDashboard() {
                   {quote.offers.length > 0 ? (
                     <div className="mt-3 flex flex-wrap gap-1.5">
                       {quote.offers.map((offer) => offer.supplierName).filter(Boolean).map((name) => (
-                        <span key={name} className="text-[10px] font-semibold bg-brand-panel text-brand-ink border border-brand-panelBorder px-2 py-0.5 rounded-full">
-                          🏪 {name}
+                        <span key={name} className="inline-flex items-center gap-1 text-[10px] font-semibold bg-brand-panel text-brand-ink border border-brand-panelBorder px-2 py-0.5 rounded-full">
+                          <Store className="h-3 w-3" />
+                          {name}
                         </span>
                       ))}
                     </div>
                   ) : quote.targetSupplierName ? (
                     <div className="mt-3">
-                      <span className="text-[10px] font-semibold bg-brand-panel text-brand-ink border border-brand-panelBorder px-2 py-0.5 rounded-full">
-                        🏪 Solicitado a {quote.targetSupplierName}
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-brand-panel text-brand-ink border border-brand-panelBorder px-2 py-0.5 rounded-full">
+                        <Store className="h-3 w-3" />
+                        Solicitado a {quote.targetSupplierName}
                       </span>
                     </div>
                   ) : null}
@@ -1426,8 +1430,9 @@ export default function BuyerDashboard() {
                     <p className="text-xs text-gray-400 truncate">{opportunity.productName}</p>
                   </div>
                 </div>
-                <div className="text-[10px] font-semibold text-amber-600 bg-amber-50 rounded-lg px-2.5 py-1.5 mb-3">
-                  ✅ Compra verificada — Deja tu opinión
+                <div className="flex items-center gap-1.5 text-[10px] font-semibold text-amber-600 bg-amber-50 rounded-lg px-2.5 py-1.5 mb-3">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Compra verificada - Deja tu opinion
                 </div>
                 <button
                   type="button"
@@ -1488,13 +1493,14 @@ export default function BuyerDashboard() {
                       {acceptedOffer ? ` / Mejor cierre ${acceptedOffer.priceLabel}` : ''}
                     </p>
                     {acceptedOffer?.supplierName ? (
-                      <p className="text-xs font-semibold text-brand-ink mt-0.5">🏪 {acceptedOffer.supplierName}</p>
+                      <p className="flex items-center gap-1 text-xs font-semibold text-brand-ink mt-0.5"><Store className="h-3 w-3" /> {acceptedOffer.supplierName}</p>
                     ) : quote.offers.length > 0 ? (
                       <p className="text-xs text-gray-500 mt-0.5">
-                        🏪 {quote.offers.map((o) => o.supplierName).filter(Boolean).join(', ')}
+                        <Store className="h-3 w-3" />
+                        {quote.offers.map((o) => o.supplierName).filter(Boolean).join(', ')}
                       </p>
                     ) : quote.targetSupplierName ? (
-                      <p className="text-xs text-gray-500 mt-0.5">🏪 Solicitado a {quote.targetSupplierName}</p>
+                      <p className="flex items-center gap-1 text-xs text-gray-500 mt-0.5"><Store className="h-3 w-3" /> Solicitado a {quote.targetSupplierName}</p>
                     ) : null}
                   </div>
                   <button
@@ -2511,8 +2517,9 @@ export default function BuyerDashboard() {
                               <div className="text-[11px] text-gray-400 mt-0.5 truncate">{alert.supplierName}{alert.categoryName ? ` · ${alert.categoryName}` : ''}</div>
                               <div className="flex items-center gap-2 mt-2">
                                 <span className="text-xs text-gray-500 line-through">{alert.previousPrice}</span>
-                                <span className={`text-sm font-extrabold ${isDown ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                  {isDown ? '↓' : '↑'} {alert.currentPrice}
+                                <span className={`inline-flex items-center gap-1 text-sm font-extrabold ${isDown ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                  {isDown ? <TrendingDown className="h-4 w-4" /> : <TrendingUp className="h-4 w-4" />}
+                                  {alert.currentPrice}
                                 </span>
                               </div>
                             </div>

@@ -1,39 +1,60 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import {
+  ArrowRight,
+  Bell,
+  Boxes,
+  Building2,
+  CheckCircle2,
+  Clock3,
+  FileText,
+  MessageCircle,
+  Network,
+  Package,
+  Search,
+  ShieldCheck,
+  ShoppingCart,
+  Star,
+  Store,
+  Truck,
+  Users,
+} from 'lucide-react';
 import mainLogo from '../assets/zentra_main_logo.png';
 import AuthChoiceModal from '../components/AuthChoiceModal';
-import { Avocado, Grapes, Orange, Strawberry } from '../components/FruitIllustrations';
 import { useAuth } from '../context/AuthContext';
 
-const valueProps = [
-  {
-    emoji: '⚡',
-    title: 'Cotizaciones en 24hrs',
-    description: 'Recibe propuestas de multiples proveedores verificados en menos de 24 horas.',
-  },
-  {
-    emoji: '🛡️',
-    title: 'Proveedores verificados',
-    description: 'Todos los proveedores estan validados con su RUT chileno y documentacion vigente.',
-  },
-  {
-    emoji: '🔔',
-    title: 'Alertas inteligentes',
-    description: 'Recibe notificaciones automaticas cuando los precios de tus insumos cambien.',
-  },
-];
-
-const featuredSuppliers = [
-  { name: 'Valle Frio SpA', emoji: '🏭', category: 'Congelados / Lacteos / Carnes', city: 'Santiago', rating: '4.9' },
-  { name: 'Distribuidora El Roble', emoji: '🫒', category: 'Abarrotes / Aceites / Especias', city: 'Valparaiso', rating: '4.7' },
-  { name: 'Agroindustrial del Sur Ltda.', emoji: '🌾', category: 'Harinas / Cereales / Legumbres', city: 'Temuco', rating: '4.8' },
-];
-
 const stats = [
-  { value: '180+', label: '🏪 Proveedores activos' },
-  { value: '500+', label: '🛒 Compradores' },
-  { value: '24hrs', label: '⏱️ Tiempo respuesta' },
-  { value: '98%', label: '⭐ Satisfaccion' },
+  { value: '180+', label: 'Proveedores activos', Icon: Users },
+  { value: '500+', label: 'Compradores food service', Icon: ShoppingCart },
+  { value: '24 hrs', label: 'Respuesta promedio', Icon: Clock3 },
+  { value: '98%', label: 'Satisfaccion operativa', Icon: Star },
+];
+
+const steps = [
+  { step: '01', title: 'Publica tu necesidad', desc: 'Carga productos, volumen y fecha de entrega para recibir cotizaciones comparables.', Icon: FileText },
+  { step: '02', title: 'Compara y elige', desc: 'Revisa precio, proveedor, condiciones y reputacion desde una vista centralizada.', Icon: MessageCircle },
+  { step: '03', title: 'Compra y recibe', desc: 'Coordina entrega con proveedores verificados y deja trazabilidad de la operacion.', Icon: Package },
+];
+
+const valueProps = [
+  { title: 'Transparencia total', description: 'Precios visibles, condiciones claras y menos conversaciones dispersas.', Icon: ShieldCheck },
+  { title: 'Proveedores verificados', description: 'Perfiles comerciales con RUT, categorias, reputacion y estado de revision.', Icon: CheckCircle2 },
+  { title: 'Cotizacion rapida', description: 'Una solicitud puede activar multiples respuestas comparables en minutos.', Icon: Clock3 },
+  { title: 'Conexion directa', description: 'Compradores y proveedores conversan sin intermediarios innecesarios.', Icon: Network },
+];
+
+const categories = [
+  { name: 'Frutas y verduras', detail: 'Frescos y congelados', Icon: Boxes },
+  { name: 'Carnes y pollo', detail: 'Vacuno, cerdo y aves', Icon: Package },
+  { name: 'Abarrotes', detail: 'Secos y estables', Icon: Store },
+  { name: 'Congelados', detail: 'IQF y horeca', Icon: Truck },
+  { name: 'Mas categorias', detail: 'Aceites, lacteos y mas', Icon: Search },
+];
+
+const supplierActivity = [
+  { name: 'Frutas y verduras', meta: '8 respuestas nuevas' },
+  { name: 'Carnes y pollo', meta: '5 propuestas activas' },
+  { name: 'Abarrotes secos', meta: '3 proveedores verificados' },
 ];
 
 export default function Landing() {
@@ -51,377 +72,256 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen">
-      {/* Hero */}
-      <section className="relative bg-brand-inkDark text-white py-24 px-4 overflow-hidden">
-        {/* Background effects */}
-        <div className="absolute inset-0 bg-grid opacity-50" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-brand-accent/5 rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-indigo-500/5 rounded-full blur-[100px]" />
+    <div className="min-h-screen bg-white">
+      <section className="relative overflow-hidden bg-brand-inkDark text-white">
+        <div className="absolute inset-0 bg-grid opacity-40" />
+        <div className="absolute -top-40 right-[-10%] h-[640px] w-[640px] rounded-full border border-brand-accent/10" />
+        <div className="absolute top-10 right-[-6%] h-[520px] w-[520px] rounded-full border border-brand-accent/10" />
+        <div className="absolute top-28 right-[4%] h-[360px] w-[360px] rounded-full bg-brand-accent/10 blur-[90px]" />
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-brand-accent/40 to-transparent" />
 
-        <div className="absolute top-14 left-[6%] hidden xl:block opacity-50 pointer-events-none animate-float select-none" style={{ animationDelay: '0s', fontSize: '72px' }}>
-          🌾
-        </div>
-        <div className="absolute top-28 right-[7%] hidden xl:block opacity-20 pointer-events-none animate-float select-none" style={{ animationDelay: '0.9s', fontSize: '56px' }}>
-          🥩
-        </div>
-        <div className="absolute bottom-20 left-[10%] hidden xl:block opacity-20 pointer-events-none animate-float select-none" style={{ animationDelay: '1.5s', fontSize: '52px' }}>
-          🧀
-        </div>
-        <div className="absolute bottom-12 right-[10%] hidden xl:block opacity-20 pointer-events-none animate-float select-none" style={{ animationDelay: '0.35s', fontSize: '52px' }}>
-          🫒
-        </div>
+        <div className="relative z-10 mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
+          <div className="grid gap-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(520px,1fr)] lg:items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-brand-accent/20 bg-brand-accent/10 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.28em] text-brand-accent">
+                <span className="h-1.5 w-1.5 rounded-full bg-brand-accent" />
+                Plataforma B2B Food Service
+              </div>
 
-        <div className="max-w-5xl mx-auto text-center relative z-10">
-          <div className="inline-flex items-center gap-2 glass rounded-full px-5 py-2.5 mb-8 text-sm text-brand-accent font-medium animate-fade-in-up">
-            <span className="w-2 h-2 bg-brand-accent rounded-full animate-pulse" />
-            🇨🇱 La infrastructura de abastecimiento para el food service
+              <h1 className="mt-7 max-w-3xl text-4xl font-black leading-[1.02] tracking-tight sm:text-5xl lg:text-6xl">
+                Gestiona, conecta y compra mejor en un solo{' '}
+                <span className="text-brand-accent">ecosistema</span>
+              </h1>
+
+              <p className="mt-6 max-w-2xl text-base leading-8 text-slate-300 sm:text-lg">
+                Conectamos restaurantes, pastelerias y hoteles de Chile con proveedores verificados de insumos alimentarios, carnes, harinas y mas.
+              </p>
+
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => handleRoleClick('comprador')}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-400 to-blue-500 px-6 py-3.5 text-sm font-extrabold text-brand-ink shadow-xl shadow-emerald-400/20 transition hover:scale-[1.02]"
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                  Soy comprador
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleRoleClick('proveedor')}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-6 py-3.5 text-sm font-bold text-white transition hover:bg-white/10"
+                >
+                  <Store className="h-4 w-4" />
+                  Soy Proveedor
+                </button>
+                <Link
+                  to="/marketplace"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-6 py-3.5 text-sm font-bold text-white transition hover:bg-white/10"
+                >
+                  <Search className="h-4 w-4" />
+                  Explorar marketplace
+                </Link>
+              </div>
+            </div>
+
+            <div className="relative hidden lg:block">
+              <div className="absolute -inset-6 rounded-[28px] bg-brand-accent/10 blur-2xl" />
+              <div className="relative overflow-hidden rounded-2xl border border-white/15 bg-[#071527]/90 p-4 shadow-2xl shadow-black/30">
+                <div className="grid grid-cols-[170px_minmax(0,1fr)] gap-4">
+                  <aside className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                    <img src={mainLogo} alt="Zentra" className="h-10 w-auto" />
+                    <div className="mt-6 space-y-2">
+                      {['Inicio', 'Cotizaciones', 'Pedidos', 'Proveedores', 'Favoritos'].map((item, index) => (
+                        <div
+                          key={item}
+                          className={`rounded-lg px-3 py-2 text-xs font-semibold ${index === 0 ? 'bg-brand-accent/15 text-brand-accent' : 'text-slate-400'}`}
+                        >
+                          {item}
+                        </div>
+                      ))}
+                    </div>
+                  </aside>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-lg font-extrabold">Hola, Camila</div>
+                        <div className="text-xs text-slate-400">Resumen operativo de tu actividad</div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="grid h-8 w-8 place-items-center rounded-lg bg-white/5 text-brand-accent">
+                          <Bell className="h-4 w-4" />
+                        </div>
+                        <div className="grid h-8 w-8 place-items-center rounded-full bg-slate-700 text-xs font-bold">CM</div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-3">
+                      {[
+                        ['8', 'Cotizaciones activas'],
+                        ['24', 'Respuestas recibidas'],
+                        ['5', 'Pedidos en curso'],
+                        ['$320.000', 'Ahorro estimado'],
+                      ].map(([value, label]) => (
+                        <div key={label} className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
+                          <div className="text-xl font-black">{value}</div>
+                          <div className="mt-1 text-[10px] text-slate-400">{label}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+                        <div className="mb-3 text-sm font-bold">Cotizaciones recientes</div>
+                        <div className="space-y-3">
+                          {supplierActivity.map((item) => (
+                            <div key={item.name} className="flex items-center justify-between gap-3">
+                              <div className="flex min-w-0 items-center gap-2">
+                                <div className="grid h-8 w-8 place-items-center rounded-lg bg-brand-accent/10 text-brand-accent">
+                                  <Package className="h-4 w-4" />
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="truncate text-xs font-bold">{item.name}</div>
+                                  <div className="text-[10px] text-slate-500">Compra pendiente</div>
+                                </div>
+                              </div>
+                              <span className="rounded-full bg-emerald-400/10 px-2 py-1 text-[10px] font-bold text-emerald-300">{item.meta}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+                        <div className="mb-3 text-sm font-bold">Actividad de proveedores</div>
+                        <div className="space-y-3">
+                          {['Patagua SPA', 'Big Star SPA', 'Zentra Distribuciones'].map((name, index) => (
+                            <div key={name} className="flex items-center gap-3">
+                              <div className="grid h-8 w-8 place-items-center rounded-full bg-white/10 text-[10px] font-bold">
+                                {name.split(' ').map((word) => word[0]).join('').slice(0, 2)}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="truncate text-xs font-bold">{name}</div>
+                                <div className="text-[10px] text-slate-500">{index === 0 ? 'Respondio una cotizacion' : 'Nueva oferta recibida'}</div>
+                              </div>
+                              <div className="text-[10px] text-slate-500">Hace {index + 1}h</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-[1.1] mb-6 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-            GESTIONA, CONECTA Y OPTIMIZA{' '}
-            <span className="gradient-text">PROVEEDORES</span>{' '}
-            EN UN SOLO LUGAR
-          </h1>
-          <p className="text-lg md:text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            La plataforma que une a restaurantes, pastelerias y hoteles de Chile con
-            proveedores verificados de insumos alimentarios, carnes, harinas y mas.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-            <Link
-              to="/marketplace"
-              className="glass hover:bg-white/10 text-white font-bold px-8 py-4 rounded-xl text-lg transition-all hover:scale-[1.02]"
-            >
-              🔎 Explorar Marketplace
-            </Link>
-            <button
-              type="button"
-              onClick={() => handleRoleClick('proveedor')}
-              className="bg-gradient-to-r from-emerald-400 to-blue-500 hover:from-emerald-500 hover:to-blue-600 text-brand-ink font-bold px-8 py-4 rounded-xl text-lg transition-all hover:scale-[1.02] shadow-xl shadow-emerald-400/20 hover:shadow-emerald-400/30"
-            >
-              🏪 Soy Proveedor
-            </button>
-            <button
-              type="button"
-              onClick={() => handleRoleClick('comprador')}
-              className="glass hover:bg-white/10 text-white font-bold px-8 py-4 rounded-xl text-lg transition-all hover:scale-[1.02]"
-            >
-              🛒 Soy Comprador
-            </button>
-          </div>
-          {authRole && <AuthChoiceModal role={authRole} onClose={() => setAuthRole(null)} />}
 
-          {/* Stats bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-16 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
-            {stats.map((s) => (
-              <div key={s.label} className="glass rounded-xl p-4">
-                <div className="text-2xl font-extrabold text-white">{s.value}</div>
-                <div className="text-xs text-gray-400 mt-1">{s.label}</div>
+          <div className="mt-12 grid gap-3 rounded-2xl border border-white/10 bg-white/[0.06] p-4 sm:grid-cols-2 lg:grid-cols-4">
+            {stats.map((item) => (
+              <div key={item.label} className="flex items-center gap-3 border-white/10 px-3 py-2 lg:border-r last:border-r-0">
+                <div className="grid h-11 w-11 place-items-center rounded-xl bg-brand-accent/10 text-brand-accent">
+                  <item.Icon className="h-5 w-5" />
+                </div>
+                <div>
+                  <div className="text-xl font-black">{item.value}</div>
+                  <div className="text-xs text-slate-400">{item.label}</div>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* How it works */}
-      <section className="py-20 px-4 bg-brand-canvas bg-grid">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-brand-ink mb-3">Como funciona? 🤔</h2>
-            <p className="text-gray-500 text-lg">Simple y rapido en 3 pasos</p>
+      {authRole && <AuthChoiceModal role={authRole} onClose={() => setAuthRole(null)} />}
+
+      <section className="bg-white px-4 py-14">
+        <div className="mx-auto max-w-6xl">
+          <div className="text-center">
+            <h2 className="text-2xl font-black text-brand-ink sm:text-3xl">Como funciona Zentra?</h2>
+            <p className="mt-2 text-sm text-slate-500">En 3 pasos simples y rapidos</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { step: '1', emoji: '📝', title: 'Registrate gratis', desc: 'Crea tu perfil como comprador o proveedor en menos de 2 minutos.' },
-              { step: '2', emoji: '📦', title: 'Publica o recibe', desc: 'Compradores publican sus necesidades y proveedores responden con ofertas.' },
-              { step: '3', emoji: '🤝', title: 'Cierra el trato', desc: 'Compara precios, elige la mejor oferta y coordina la entrega.' },
-            ].map((item) => (
-              <div key={item.step} className="text-center group">
-                <div className="relative w-20 h-20 mx-auto mb-6">
-                  <div className="absolute inset-0 bg-gradient-to-br from-brand-accent/20 to-transparent rounded-2xl rotate-6 group-hover:rotate-12 transition-transform" />
-                  <div className="relative w-20 h-20 bg-brand-ink rounded-2xl flex items-center justify-center text-3xl">
-                    {item.emoji}
-                  </div>
-                  <div className="absolute -top-2 -right-2 w-7 h-7 bg-gradient-to-r from-emerald-400 to-blue-500 rounded-lg flex items-center justify-center text-brand-ink font-bold text-xs shadow-lg">
-                    {item.step}
-                  </div>
+          <div className="mt-10 grid gap-5 md:grid-cols-3">
+            {steps.map((item) => (
+              <div key={item.step} className="relative rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+                <div className="absolute -top-3 left-6 grid h-7 w-7 place-items-center rounded-full bg-brand-accent text-xs font-black text-brand-ink">{item.step}</div>
+                <div className="grid h-14 w-14 place-items-center rounded-xl bg-brand-ink text-brand-accent">
+                  <item.Icon className="h-6 w-6" />
                 </div>
-                <h3 className="text-lg font-bold text-brand-ink mb-2">{item.title}</h3>
-                <p className="text-gray-500 text-sm leading-relaxed">{item.desc}</p>
+                <h3 className="mt-5 text-base font-black text-brand-ink">{item.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-500">{item.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* B2B Connection Animation */}
-      <section className="py-20 px-4 bg-[#060e1a] text-white overflow-hidden relative">
-        <div className="absolute inset-0 bg-grid opacity-20" />
-        <div className="absolute left-1/4 top-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/5 rounded-full blur-[120px]" />
-        <div className="absolute right-1/4 top-1/2 -translate-y-1/2 w-96 h-96 bg-brand-accent/5 rounded-full blur-[120px]" />
-
-        <div className="max-w-6xl mx-auto relative z-10">
-          <div className="text-center mb-16">
-            <span className="inline-block text-brand-accent text-sm font-semibold uppercase tracking-widest mb-3">Plataforma B2B</span>
-            <h2 className="text-3xl md:text-4xl font-extrabold mb-4">
-              Conexion directa en{' '}
-              <span className="gradient-text">tiempo real</span> 🔗
-            </h2>
-            <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-              Un hub inteligente que conecta compradores gastronomicos con proveedores
-              verificados, eliminando intermediarios en cada transaccion
-            </p>
-          </div>
-
-          {/* Desktop diagram */}
-          <div className="hidden md:flex items-center gap-3">
-            {/* Buyers column */}
-            <div className="flex flex-col gap-3 w-52 flex-shrink-0">
-              {[
-                { emoji: '🍽️', label: 'Restaurantes', sub: '200+ activos' },
-                { emoji: '🧁', label: 'Pastelerias', sub: '85+ activos' },
-                { emoji: '🏨', label: 'Hoteles & Catering', sub: '45+ activos' },
-              ].map((item) => (
-                <div key={item.label} className="glass rounded-xl p-3.5 flex items-center gap-3 hover:bg-white/5 transition-colors">
-                  <span className="text-2xl flex-shrink-0">{item.emoji}</span>
-                  <div className="min-w-0">
-                    <div className="text-sm font-bold truncate">{item.label}</div>
-                    <div className="text-xs text-indigo-400">{item.sub}</div>
-                  </div>
-                </div>
-              ))}
-              <div className="text-center pt-1">
-                <span className="text-xs font-bold text-indigo-400 uppercase tracking-widest">Compradores</span>
-              </div>
-            </div>
-
-            {/* Left animated lines */}
-            <div className="flex-1 flex flex-col justify-around" style={{ height: '162px' }}>
-              {[0, 1, 2].map(i => (
-                <div key={i} className="relative h-px w-full overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 to-brand-accent/20" />
-                  <div
-                    className="animate-data-flow"
-                    style={{ animationDelay: `${i * 0.7}s` }}
-                  />
-                </div>
-              ))}
-            </div>
-
-            {/* Central Hub */}
-            <div className="flex-shrink-0 flex flex-col items-center gap-3 px-2">
-              <div className="relative">
-                <div className="absolute -inset-6 rounded-3xl bg-brand-accent/10 animate-ping-slow" />
-                <div className="absolute -inset-3 rounded-2xl border border-brand-accent/20 animate-rotate-slow" />
-                <div className="relative w-28 h-28 bg-gradient-to-br from-brand-accent to-brand-accentDark rounded-2xl flex flex-col items-center justify-center shadow-2xl shadow-emerald-400/30 z-10 gap-1 p-2">
-                  <img src={mainLogo} alt="Zentra B2B Hub" className="w-16 h-auto drop-shadow-md" />
-                  <span className="text-brand-ink font-black text-[9px] leading-none uppercase tracking-wider">B2B Hub</span>
-                </div>
-              </div>
-              <div className="text-sm font-bold text-brand-accent">Zentra</div>
-              <div className="flex items-center gap-1.5">
-                {[0, 1, 2].map(i => (
-                  <div
-                    key={i}
-                    className="w-1.5 h-1.5 bg-brand-accent rounded-full animate-bounce"
-                    style={{ animationDelay: `${i * 0.15}s` }}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Right animated lines */}
-            <div className="flex-1 flex flex-col justify-around" style={{ height: '162px' }}>
-              {[0, 1, 2].map(i => (
-                <div key={i} className="relative h-px w-full overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-r from-brand-accent/20 to-emerald-500/20" />
-                  <div
-                    className="animate-data-flow"
-                    style={{ animationDelay: `${i * 0.7 + 0.35}s` }}
-                  />
-                </div>
-              ))}
-            </div>
-
-            {/* Suppliers column */}
-            <div className="flex flex-col gap-3 w-52 flex-shrink-0">
-              {[
-                { emoji: '🥩', label: 'Carnes y cecinas', sub: '42 proveedores' },
-                { emoji: '🌾', label: 'Harinas y cereales', sub: '38 proveedores' },
-                { emoji: '🧀', label: 'Lacteos', sub: '55 proveedores' },
-              ].map((item) => (
-                <div key={item.label} className="glass rounded-xl p-3.5 flex items-center gap-3 hover:bg-white/5 transition-colors">
-                  <span className="text-2xl flex-shrink-0">{item.emoji}</span>
-                  <div className="min-w-0">
-                    <div className="text-sm font-bold truncate">{item.label}</div>
-                    <div className="text-xs text-emerald-400">{item.sub}</div>
-                  </div>
-                </div>
-              ))}
-              <div className="text-center pt-1">
-                <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest">Proveedores</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Mobile layout */}
-          <div className="md:hidden space-y-3">
-            <div className="glass rounded-2xl p-5 text-center">
-              <div className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-3">Compradores</div>
-              <div className="flex justify-center gap-2 flex-wrap">
-                {['🍽️ Restaurantes', '🧁 Pastelerias', '🏨 Hoteles'].map(t => (
-                  <span key={t} className="bg-indigo-500/10 text-indigo-300 text-xs px-3 py-1.5 rounded-full border border-indigo-500/20">{t}</span>
-                ))}
-              </div>
-            </div>
-            <div className="flex justify-center">
-              <div className="w-px h-8 bg-gradient-to-b from-indigo-500/50 to-brand-accent/50" />
-            </div>
-            <div className="glass rounded-2xl p-5 flex flex-col items-center gap-2 border border-brand-accent/25">
-              <img src={mainLogo} alt="Zentra B2B Hub" className="w-16 h-auto drop-shadow-md" />
-              <div className="text-sm font-bold text-brand-accent">Zentra</div>
-              <div className="text-xs text-gray-400">Hub B2B inteligente 🔗</div>
-            </div>
-            <div className="flex justify-center">
-              <div className="w-px h-8 bg-gradient-to-b from-brand-accent/50 to-emerald-500/50" />
-            </div>
-            <div className="glass rounded-2xl p-5 text-center">
-              <div className="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-3">Proveedores</div>
-              <div className="flex justify-center gap-2 flex-wrap">
-                {['🥩 Carnes', '🌾 Harinas', '🧀 Lacteos', '🫒 Aceites'].map(t => (
-                  <span key={t} className="bg-emerald-500/10 text-emerald-300 text-xs px-3 py-1.5 rounded-full border border-emerald-500/20">{t}</span>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Metrics */}
-          <div className="mt-12 grid grid-cols-3 gap-4">
-            {[
-              { value: '< 2s', label: '⚡ Tiempo de match' },
-              { value: '99.9%', label: '🔒 Uptime garantizado' },
-              { value: '24/7', label: '🌐 Red activa' },
-            ].map(m => (
-              <div key={m.label} className="glass rounded-xl p-5 text-center">
-                <div className="text-2xl font-extrabold text-brand-accent">{m.value}</div>
-                <div className="text-xs text-gray-400 mt-1">{m.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Value propositions */}
-      <section className="py-20 px-4 bg-white relative">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-14">
-            <span className="inline-block text-brand-accent text-sm font-semibold uppercase tracking-widest mb-3">Ventajas</span>
-            <h2 className="text-3xl md:text-4xl font-extrabold text-brand-ink mb-3">Por que Zentra? 🚀</h2>
-            <p className="text-gray-500 text-lg max-w-xl mx-auto">Todo lo que necesitas para agilizar tus compras de insumos</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {valueProps.map((vp) => (
-              <div
-                key={vp.title}
-                className="bg-white border border-gray-100 rounded-2xl p-8 card-premium group"
-              >
-                <div className="w-14 h-14 bg-gradient-to-br from-brand-accent/10 to-brand-accent/5 rounded-2xl flex items-center justify-center text-3xl mb-5 group-hover:from-brand-accent group-hover:to-[#22a8b2] group-hover:scale-110 transition-all duration-300">
-                  {vp.emoji}
-                </div>
-                <h3 className="text-lg font-bold text-brand-ink mb-2">
-                  {vp.title}
-                </h3>
-                <p className="text-gray-500 text-sm leading-relaxed">{vp.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Trust layer */}
-      <section className="px-4 py-6 bg-brand-canvas border-y border-brand-accent/10">
-        <div className="max-w-6xl mx-auto rounded-2xl border border-brand-accent/15 bg-white px-6 py-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <section className="border-y border-slate-100 bg-brand-canvas px-4 py-12">
+        <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1fr_1fr]">
           <div>
-            <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-brand-accent">Trust layer Zentra</div>
-            <p className="text-brand-ink font-semibold mt-1">
-              La reputacion visible del marketplace se construye con operaciones aceptadas, reseñas elegibles y verificacion comercial.
-            </p>
+            <h2 className="text-xl font-black text-brand-ink">Explora categorias</h2>
+            <p className="mt-1 text-sm text-slate-500">Encuentra lo que tu negocio necesita</p>
+            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
+              {categories.map((item) => (
+                <Link key={item.name} to="/marketplace" className="rounded-xl border border-slate-100 bg-white p-4 transition hover:border-brand-accent/30 hover:shadow-md">
+                  <div className="grid h-10 w-10 place-items-center rounded-lg bg-brand-accent/10 text-brand-accent">
+                    <item.Icon className="h-5 w-5" />
+                  </div>
+                  <div className="mt-4 text-sm font-black text-brand-ink">{item.name}</div>
+                  <div className="mt-1 text-xs text-slate-500">{item.detail}</div>
+                </Link>
+              ))}
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <span className="text-xs font-semibold bg-brand-mint text-brand-ink border border-brand-accent/20 px-3 py-1.5 rounded-full">Reseñas de operaciones reales</span>
-            <span className="text-xs font-semibold bg-brand-mint text-brand-ink border border-brand-accent/20 px-3 py-1.5 rounded-full">RUT y perfil verificado</span>
-            <span className="text-xs font-semibold bg-brand-mint text-brand-ink border border-brand-accent/20 px-3 py-1.5 rounded-full">Rating agregado en vivo</span>
+          <div>
+            <h2 className="text-xl font-black text-brand-ink">Por que elegir Zentra?</h2>
+            <p className="mt-1 text-sm text-slate-500">Una plataforma diseñada para hacer crecer tu negocio</p>
+            <div className="mt-6 grid grid-cols-2 gap-4">
+              {valueProps.map((item) => (
+                <div key={item.title} className="rounded-xl bg-white p-4">
+                  <item.Icon className="h-6 w-6 text-brand-accent" />
+                  <div className="mt-3 text-sm font-black text-brand-ink">{item.title}</div>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">{item.description}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Featured suppliers */}
-      <section className="py-20 px-4 bg-white">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-14">
-            <span className="inline-block text-brand-accent text-sm font-semibold uppercase tracking-widest mb-3">Partners</span>
-            <h2 className="text-3xl md:text-4xl font-extrabold text-brand-ink mb-3">Proveedores destacados 🌟</h2>
-            <p className="text-gray-500 text-lg">Empresas verificadas listas para atenderte</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {featuredSuppliers.map((s) => (
-              <div
-                key={s.name}
-                className="border border-gray-100 rounded-2xl p-6 card-premium group"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-brand-ink to-brand-inkLight rounded-xl flex items-center justify-center text-2xl">
-                    {s.emoji}
-                  </div>
-                  <div className="flex items-center gap-1 text-sm font-semibold text-amber-500">
-                    <svg className="w-4 h-4 fill-amber-400" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                    {s.rating}
-                  </div>
-                </div>
-                <h3 className="font-bold text-brand-ink text-lg mb-1">{s.name}</h3>
-                <p className="text-sm text-brand-accent font-medium mb-1">{s.category}</p>
-                <p className="text-sm text-gray-400 flex items-center gap-1 mb-4">
-                  📍 {s.city}
+      <section className="bg-white px-4 py-14">
+        <div className="mx-auto max-w-6xl overflow-hidden rounded-2xl bg-brand-inkDark text-white">
+          <div className="grid gap-8 p-8 lg:grid-cols-[0.9fr_1fr] lg:p-10">
+            <div>
+              <div className="text-xs font-bold uppercase tracking-[0.28em] text-brand-accent">Unete a Zentra</div>
+              <h2 className="mt-4 text-3xl font-black leading-tight">Miles de negocios ya compran mejor con Zentra</h2>
+              <p className="mt-4 max-w-xl text-sm leading-6 text-slate-400">
+                Crea tu cuenta gratis y empieza a recibir mejores cotizaciones desde proveedores verificados.
+              </p>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <Link to="/registro-comprador" className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-400 to-blue-500 px-5 py-3 text-sm font-black text-brand-ink">
+                  Crear cuenta gratis
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+                <button type="button" onClick={() => handleRoleClick('proveedor')} className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 py-3 text-sm font-bold text-white">
+                  <Store className="h-4 w-4" />
+                  Publicar como proveedor
+                </button>
+              </div>
+            </div>
+            <div className="relative min-h-[220px] overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+              <div className="absolute right-[-80px] top-[-80px] h-72 w-72 rounded-full border border-brand-accent/20" />
+              <div className="absolute right-[-40px] top-[-40px] h-52 w-52 rounded-full border border-brand-accent/20" />
+              <div className="relative z-10 max-w-sm">
+                <div className="text-sm font-bold">Lo que dicen nuestros usuarios</div>
+                <p className="mt-5 text-lg font-semibold leading-8 text-slate-200">
+                  Zentra nos permitio ahorrar tiempo y comparar mejores precios con trazabilidad.
                 </p>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs bg-emerald-50 text-emerald-600 font-semibold px-3 py-1 rounded-full border border-emerald-100">
-                    ✅ RUT verificado
-                  </span>
+                <div className="mt-6 flex items-center gap-3">
+                  <div className="grid h-11 w-11 place-items-center rounded-full bg-brand-accent text-sm font-black text-brand-ink">MJ</div>
+                  <div>
+                    <div className="text-sm font-bold">Maria Jose R.</div>
+                    <div className="text-xs text-slate-500">Gerente de Compras</div>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA bottom */}
-      <section className="relative bg-brand-inkDark text-white py-20 px-4 overflow-hidden">
-        <div className="absolute inset-0 bg-grid opacity-30" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-brand-accent/5 rounded-full blur-[100px]" />
-
-        {/* Floating emojis in CTA */}
-        <div className="absolute top-8 left-[15%] text-3xl animate-float opacity-15 select-none pointer-events-none" style={{ animationDelay: '0.5s' }}>🍊</div>
-        <div className="absolute bottom-8 right-[15%] text-3xl animate-float opacity-15 select-none pointer-events-none" style={{ animationDelay: '1s' }}>🫐</div>
-
-        <div className="max-w-3xl mx-auto text-center relative z-10">
-          <h2 className="text-3xl md:text-4xl font-extrabold mb-4">🚀 Listo para empezar?</h2>
-          <p className="text-gray-400 mb-10 text-lg leading-relaxed">
-            Unete a cientos de empresas gastronomicas chilenas que ya usan Zentra.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              to="/registro-proveedor"
-              className="bg-gradient-to-r from-emerald-400 to-blue-500 text-white font-bold px-8 py-4 rounded-xl text-lg transition-all hover:scale-[1.02] shadow-xl shadow-emerald-400/20"
-            >
-              🏪 Registrar mi empresa
-            </Link>
-            <Link
-              to="/marketplace"
-              className="glass hover:bg-white/10 font-bold px-8 py-4 rounded-xl text-lg transition-all hover:scale-[1.02]"
-            >
-              🔍 Buscar proveedores
-            </Link>
+            </div>
           </div>
         </div>
       </section>

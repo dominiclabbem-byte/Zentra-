@@ -1,5 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import {
+  ArrowRight,
+  Boxes,
+  CheckCircle2,
+  Clock3,
+  Grid2X2,
+  Heart,
+  LayoutGrid,
+  Package,
+  Search,
+  ShieldCheck,
+  SlidersHorizontal,
+  Store,
+  TrendingDown,
+  TrendingUp,
+  Truck,
+  Users,
+} from 'lucide-react';
 import AuthChoiceModal from '../components/AuthChoiceModal';
 import ExternalContactValue from '../components/ExternalContactValue';
 import Toast from '../components/Toast';
@@ -473,8 +491,10 @@ export default function Marketplace() {
                           {product.imageUrls?.[0] ? (
                             <img src={product.imageUrls[0]} alt={product.imageAlt} className="w-full h-full object-cover" />
                           ) : (
-                            <div className="absolute inset-0 flex items-center justify-center text-4xl">
-                              {product.emoji}
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="grid h-14 w-14 place-items-center rounded-2xl bg-white/20 text-white">
+                                <Package className="h-7 w-7" />
+                              </div>
                             </div>
                           )}
                           {product.status === 'low_stock' && (
@@ -505,93 +525,82 @@ export default function Marketplace() {
         </div>
       )}
 
-      <section className="relative overflow-hidden bg-[#09172a] text-white px-4 pt-8 pb-8 md:pt-16 md:pb-16">
+      <section className="relative overflow-hidden bg-brand-inkDark text-white px-4 pt-8 pb-8 md:pt-16 md:pb-16">
         <div className="absolute inset-0 bg-grid opacity-30" />
         <div className="absolute top-0 left-[15%] w-56 h-56 md:w-80 md:h-80 bg-brand-accent/10 rounded-full blur-[70px] md:blur-[90px]" />
         <div className="absolute bottom-0 right-[10%] w-56 h-56 md:w-80 md:h-80 bg-emerald-500/10 rounded-full blur-[80px] md:blur-[100px]" />
+        <div className="absolute -right-24 top-4 h-[420px] w-[420px] rounded-full border border-brand-accent/10" />
+        <div className="absolute -right-10 top-16 h-[300px] w-[300px] rounded-full border border-brand-accent/10" />
 
         <div className="max-w-6xl mx-auto relative z-10">
-          <div className="max-w-3xl">
-            <span className="inline-flex items-center gap-2 text-[10px] md:text-xs font-semibold uppercase tracking-[0.18em] md:tracking-[0.24em] text-brand-accent">
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(480px,1fr)] lg:items-center">
+            <div>
+              <span className="inline-flex items-center gap-2 rounded-full border border-brand-accent/20 bg-brand-accent/10 px-4 py-2 text-[10px] md:text-xs font-semibold uppercase tracking-[0.18em] md:tracking-[0.24em] text-brand-accent">
+                <span className="h-1.5 w-1.5 rounded-full bg-brand-accent" />
               Marketplace publico
-            </span>
-            <h1 className="text-2xl sm:text-3xl md:text-5xl font-extrabold leading-tight mt-3 md:mt-4 max-w-[14ch] md:max-w-none">
-              Compara catalogos reales de proveedores food service en Chile
-            </h1>
-            <p className="text-sm md:text-lg text-slate-300 mt-3 md:mt-4 max-w-xl md:max-w-2xl leading-relaxed">
-              Explora precios visibles, categorias activas y fichas publicas de proveedores sin entrar al dashboard.
-            </p>
-            {!currentUser && (
-              <div className="flex flex-col sm:flex-row gap-2.5 md:gap-3 mt-5 md:mt-8">
-                <Link
-                  to="/ingresar?role=comprador"
-                  className="bg-gradient-to-r from-emerald-400 to-blue-500 text-brand-ink font-bold px-5 py-2.5 md:px-6 md:py-3 rounded-xl transition-all hover:scale-[1.02] shadow-xl shadow-emerald-400/20 text-center text-sm md:text-base"
-                >
-                  Quiero Comprar
-                </Link>
-                <Link
-                  to="/ingresar?role=proveedor"
-                  className="border border-white/10 bg-white/5 hover:bg-white/10 text-white font-bold px-5 py-2.5 md:px-6 md:py-3 rounded-xl transition-all text-center text-sm md:text-base"
-                >
-                  Quiero Vender
-                </Link>
-              </div>
-            )}
-          </div>
+              </span>
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-black leading-tight mt-4 max-w-[12ch] md:max-w-none">
+                Marketplace de proveedores <span className="text-brand-accent">verificados</span>
+              </h1>
+              <p className="text-sm md:text-lg text-slate-300 mt-4 max-w-xl md:max-w-2xl leading-relaxed">
+                Compara catalogos reales, precios transparentes y cotiza en minutos con proveedores food service de Chile.
+              </p>
+              {!currentUser && (
+                <div className="flex flex-col sm:flex-row gap-2.5 md:gap-3 mt-6 md:mt-8">
+                  <Link
+                    to="/ingresar?role=comprador"
+                    className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-400 to-blue-500 text-brand-ink font-bold px-5 py-2.5 md:px-6 md:py-3 rounded-xl transition-all hover:scale-[1.02] shadow-xl shadow-emerald-400/20 text-center text-sm md:text-base"
+                  >
+                    Comprar ahora
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                  <Link
+                    to="/ingresar?role=proveedor"
+                    className="inline-flex items-center justify-center gap-2 border border-white/10 bg-white/5 hover:bg-white/10 text-white font-bold px-5 py-2.5 md:px-6 md:py-3 rounded-xl transition-all text-center text-sm md:text-base"
+                  >
+                    <Store className="h-4 w-4" />
+                    Publicar catalogo
+                  </Link>
+                </div>
+              )}
+            </div>
 
-          <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-4 mt-10">
-            {[
-              { label: 'Productos visibles', value: catalogProducts.length },
-              { label: 'Proveedores activos', value: supplierOptions.length - 1 },
-              { label: 'Categorias activas', value: [...new Set(catalogProducts.map((product) => product.category))].length },
-              { label: 'Resultados filtrados', value: filteredProducts.length },
-            ].map((item) => (
-              <div key={item.label} className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-4">
-                <div className="text-2xl font-extrabold text-white">{item.value}</div>
-                <div className="text-xs text-slate-400 mt-1">{item.label}</div>
-              </div>
-            ))}
-          </div>
-
-          <div className="md:hidden flex gap-2 overflow-x-auto pb-1 mt-5 -mx-1 px-1">
-            {[
-              { label: 'Productos', value: catalogProducts.length },
-              { label: 'Proveedores', value: supplierOptions.length - 1 },
-              { label: 'Categorias', value: [...new Set(catalogProducts.map((product) => product.category))].length },
-              { label: 'Resultados', value: filteredProducts.length },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className="flex-shrink-0 rounded-full border border-white/10 bg-white/5 backdrop-blur-xl px-3 py-2 min-w-fit"
-              >
-                <div className="text-sm font-extrabold text-white leading-none">{item.value}</div>
-                <div className="text-[10px] text-slate-400 mt-1 whitespace-nowrap">{item.label}</div>
-              </div>
-            ))}
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              {[
+                { label: 'Productos visibles', value: catalogProducts.length, Icon: Package },
+                { label: 'Proveedores activos', value: supplierOptions.length - 1, Icon: Users },
+                { label: 'Categorias activas', value: [...new Set(catalogProducts.map((product) => product.category))].length, Icon: Grid2X2 },
+                { label: 'Resultados hoy', value: filteredProducts.length, Icon: Search },
+              ].map((item) => (
+                <div key={item.label} className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-4">
+                  <item.Icon className="h-6 w-6 text-brand-accent" />
+                  <div className="mt-4 text-2xl font-black text-white">{item.value}</div>
+                  <div className="text-xs text-slate-400 mt-1">{item.label}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="px-4 py-4 md:py-8 border-b border-slate-200 bg-white sticky top-0 z-20">
+      <section className="px-4 py-4 md:py-6 border-y border-white/10 bg-brand-inkDark sticky top-16 z-20">
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_220px] gap-3 md:gap-4">
             <label className="relative block">
-              <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-              </svg>
+              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
               <input
                 type="text"
                 placeholder="Buscar por producto, categoria o proveedor"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                className="w-full bg-brand-canvas border border-gray-100 rounded-2xl pl-12 pr-4 py-3 md:py-4 text-sm focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all"
+                className="w-full rounded-xl border border-white/10 bg-white/[0.04] pl-12 pr-4 py-3 md:py-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all"
               />
             </label>
 
             <select
               value={supplierFilter}
               onChange={(event) => setSupplierFilter(event.target.value)}
-              className="w-full bg-brand-canvas border border-gray-100 rounded-2xl px-4 py-3 md:py-4 text-sm focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all"
+              className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 md:py-4 text-sm text-white focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all"
             >
               {supplierOptions.map((supplier) => (
                 <option key={supplier} value={supplier}>
@@ -610,7 +619,7 @@ export default function Marketplace() {
                 className={`px-3 py-1.5 md:px-4 md:py-2 rounded-xl text-xs md:text-sm font-semibold whitespace-nowrap transition-all ${
                   categoryFilter === category
                     ? 'bg-gradient-to-r from-emerald-400 to-blue-500 text-white shadow-md shadow-emerald-400/20'
-                    : 'bg-white border border-gray-100 text-gray-500 hover:border-brand-accent/30 hover:text-brand-ink'
+                    : 'bg-white/[0.04] border border-white/10 text-slate-400 hover:border-brand-accent/30 hover:text-white'
                 }`}
               >
                 {category}
@@ -672,8 +681,9 @@ export default function Marketplace() {
                             <div className="text-[11px] text-gray-400 mt-0.5 truncate">{supplier?.company_name ?? ''}{category?.name ? ` · ${category.name}` : ''}</div>
                             <div className="flex items-center gap-2 mt-2">
                               <span className="text-xs text-gray-500 line-through">{formatCLP(alert.old_price)}</span>
-                              <span className={`text-sm font-extrabold ${isDown ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                {isDown ? '↓' : '↑'} {formatCLP(alert.new_price)}
+                              <span className={`inline-flex items-center gap-1 text-sm font-extrabold ${isDown ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                {isDown ? <TrendingDown className="h-4 w-4" /> : <TrendingUp className="h-4 w-4" />}
+                                {formatCLP(alert.new_price)}
                               </span>
                             </div>
                           </div>
@@ -696,10 +706,96 @@ export default function Marketplace() {
         );
       })()}
 
-      <section className="px-4 py-6 md:py-10">
-        <div className="max-w-6xl mx-auto">
+      <section className="bg-brand-inkDark px-4 py-6 md:py-10">
+        <div className="max-w-6xl mx-auto grid gap-5 lg:grid-cols-[240px_minmax(0,1fr)]">
+          <aside className="hidden lg:block">
+            <div className="sticky top-40 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-white">
+              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                <div className="flex items-center gap-2 text-sm font-black">
+                  <SlidersHorizontal className="h-4 w-4 text-brand-accent" />
+                  Filtros
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCategoryFilter('Todos');
+                    setSupplierFilter('Todos');
+                    setSearchTerm('');
+                  }}
+                  className="text-xs font-semibold text-brand-accent hover:text-white"
+                >
+                  Limpiar
+                </button>
+              </div>
+
+              <div className="py-5 border-b border-white/10">
+                <div className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-400">Categorias</div>
+                <div className="space-y-2">
+                  {categoryFilters.slice(0, 8).map((category) => {
+                    const count = category === 'Todos'
+                      ? catalogProducts.length
+                      : catalogProducts.filter((product) => product.category === category).length;
+                    return (
+                      <button
+                        key={category}
+                        type="button"
+                        onClick={() => setCategoryFilter(category)}
+                        className="flex w-full items-center justify-between gap-3 rounded-lg px-2 py-2 text-left text-xs text-slate-300 transition hover:bg-white/5"
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <span className={`h-4 w-4 rounded border ${categoryFilter === category ? 'border-brand-accent bg-brand-accent' : 'border-slate-600'}`} />
+                          {category}
+                        </span>
+                        <span className="text-slate-500">{count}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="py-5 border-b border-white/10">
+                <div className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-400">Confianza</div>
+                <div className="flex items-center justify-between rounded-xl bg-brand-accent/10 px-3 py-3 text-xs font-bold text-brand-accent">
+                  <span className="inline-flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4" />
+                    Proveedor verificado
+                  </span>
+                  <span className="h-5 w-9 rounded-full bg-brand-accent p-0.5">
+                    <span className="block h-4 w-4 translate-x-4 rounded-full bg-brand-ink" />
+                  </span>
+                </div>
+              </div>
+
+              <div className="pt-5">
+                <div className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-400">Entrega en</div>
+                {['Menos de 24 horas', '24 a 48 horas', 'Coordinar con proveedor'].map((item) => (
+                  <div key={item} className="flex items-center gap-2 py-2 text-xs text-slate-400">
+                    <Clock3 className="h-4 w-4 text-slate-600" />
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </aside>
+
+          <div>
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-sm text-slate-400">
+                Mostrando <span className="font-bold text-white">{filteredProducts.length}</span> resultados
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-500">Ordenar por</span>
+                <button type="button" className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-bold text-white">
+                  Mas relevantes
+                </button>
+                <button type="button" className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-brand-accent">
+                  <LayoutGrid className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
           {catalogLoading ? (
-            <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center text-sm text-gray-400">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-8 text-center text-sm text-slate-400">
               Cargando marketplace...
             </div>
           ) : filteredProducts.length > 0 ? (
@@ -707,7 +803,7 @@ export default function Marketplace() {
               {filteredProducts.map((product) => (
                 <div
                   key={product.id}
-                  className={`bg-white rounded-2xl border border-gray-100 overflow-hidden card-premium cursor-pointer group ${
+                  className={`bg-white rounded-xl border border-white/10 overflow-hidden card-premium cursor-pointer group ${
                     openingSupplierId === product.id ? 'opacity-90' : ''
                   }`}
                   onClick={() => openSupplierFromProduct(product)}
@@ -722,13 +818,17 @@ export default function Marketplace() {
                           <div className="absolute bottom-4 right-4 w-20 h-20 bg-white/20 rounded-full blur-2xl" />
                         </div>
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="text-4xl md:text-5xl filter drop-shadow-lg transform group-hover:scale-110 transition-transform duration-500">
-                            {product.emoji}
+                          <div className="grid h-16 w-16 place-items-center rounded-2xl bg-white/20 text-white shadow-lg transition-transform duration-500 group-hover:scale-110">
+                            <Package className="h-8 w-8" />
                           </div>
                         </div>
                       </>
                     )}
                     <div className="absolute top-2 left-2 flex flex-col items-start gap-1.5">
+                      <div className="inline-flex items-center gap-1 rounded-full bg-emerald-950/80 px-2 py-1 text-[9px] font-black uppercase tracking-wide text-emerald-300 shadow-sm">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Verificado
+                      </div>
                       {product.hasTrackedPriceAlert && (
                         <div className="text-[9px] font-bold bg-white/90 text-brand-ink px-2 py-0.5 rounded-full shadow-sm">
                           Alerta activa
@@ -749,6 +849,14 @@ export default function Marketplace() {
                         Stock bajo
                       </div>
                     )}
+                    <button
+                      type="button"
+                      onClick={(event) => event.stopPropagation()}
+                      className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-white/85 text-brand-ink shadow-sm transition hover:text-rose-500"
+                      aria-label="Guardar producto"
+                    >
+                      <Heart className="h-4 w-4" />
+                    </button>
                   </div>
 
                   <div className="p-2.5 md:p-3.5">
@@ -761,10 +869,11 @@ export default function Marketplace() {
                       <div className="mt-2 rounded-xl border border-gray-100 bg-brand-canvas px-2.5 py-2">
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-[11px] font-semibold text-brand-ink">{product.recentPriceAlert.impactLabel}</span>
-                          <span className={`text-[10px] font-bold ${
+                          <span className={`inline-flex items-center gap-1 text-[10px] font-bold ${
                             product.recentPriceAlert.change === 'down' ? 'text-emerald-600' : 'text-rose-600'
                           }`}>
-                            {product.recentPriceAlert.change === 'down' ? '↓' : '↑'} {product.recentPriceAlert.currentPrice}
+                            {product.recentPriceAlert.change === 'down' ? <TrendingDown className="h-3 w-3" /> : <TrendingUp className="h-3 w-3" />}
+                            {product.recentPriceAlert.currentPrice}
                           </span>
                         </div>
                         <p className="text-[10px] text-gray-400 mt-1">
@@ -781,8 +890,19 @@ export default function Marketplace() {
                           <p className="text-[10px] md:text-[11px] font-semibold text-gray-600 truncate">{product.supplierName}</p>
                           <span className="text-[9px] md:text-[10px] text-gray-400">Ver proveedor</span>
                         </div>
+                        <span className="h-2 w-2 rounded-full bg-emerald-400" />
                       </div>
                     )}
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-[10px] text-slate-500">
+                      <span className="inline-flex items-center gap-1">
+                        <Boxes className="h-3.5 w-3.5" />
+                        {product.stock}
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <Truck className="h-3.5 w-3.5" />
+                        Entrega 24-48 hrs
+                      </span>
+                    </div>
                     <button
                       type="button"
                       onClick={(e) => {
@@ -798,16 +918,36 @@ export default function Marketplace() {
               ))}
             </div>
           ) : (
-            <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
-              <div className="w-16 h-16 bg-brand-canvas rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                </svg>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-12 text-center">
+              <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Search className="h-8 w-8 text-slate-500" />
               </div>
-              <h3 className="text-lg font-bold text-brand-ink">No hay resultados para ese filtro</h3>
-              <p className="text-sm text-gray-400 mt-2">Prueba cambiando categoria, proveedor o termino de busqueda.</p>
+              <h3 className="text-lg font-bold text-white">No hay resultados para ese filtro</h3>
+              <p className="text-sm text-slate-400 mt-2">Prueba cambiando categoria, proveedor o termino de busqueda.</p>
             </div>
           )}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-brand-inkDark px-4 pb-12">
+        <div className="mx-auto grid max-w-6xl gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-white md:grid-cols-4">
+          {[
+            { title: 'Proveedores verificados', desc: 'Evaluados por nuestro equipo', Icon: ShieldCheck },
+            { title: 'Precios transparentes', desc: 'Sin costos ocultos', Icon: Package },
+            { title: 'Respuesta rapida', desc: 'Cotiza en minutos', Icon: Clock3 },
+            { title: 'Entregas confiables', desc: 'Cobertura en Chile', Icon: Truck },
+          ].map((item) => (
+            <div key={item.title} className="flex items-center gap-3 px-3 py-2 md:border-r md:border-white/10 last:border-r-0">
+              <div className="grid h-10 w-10 place-items-center rounded-xl bg-brand-accent/10 text-brand-accent">
+                <item.Icon className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="text-sm font-black">{item.title}</div>
+                <div className="text-xs text-slate-500">{item.desc}</div>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
       {showAuthModal && <AuthChoiceModal role="comprador" onClose={() => setShowAuthModal(false)} />}

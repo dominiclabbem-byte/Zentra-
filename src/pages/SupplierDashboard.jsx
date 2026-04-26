@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
+import { CheckCircle2, Package, UploadCloud } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Toast from '../components/Toast';
 import Modal from '../components/Modal';
@@ -17,7 +18,6 @@ import {
   normalizeUserRecord,
 } from '../lib/profileAdapters';
 import {
-  PRODUCT_EMOJIS as productEmojis,
   PRODUCT_GRADIENTS as productGradients,
   buildProductFormFromCard,
   createEmptyProductForm,
@@ -1530,7 +1530,8 @@ export default function SupplierDashboard() {
                       : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300'
                   }`}
                 >
-                  <span className="mr-1.5">📁</span> Subir imagen
+                  <UploadCloud className="mr-1.5 inline h-4 w-4" />
+                  Subir imagen
                 </button>
                 <button
                   type="button"
@@ -1652,7 +1653,7 @@ export default function SupplierDashboard() {
                   <img src={productForm.imagePreviews[0]} alt="Preview" className="w-12 h-12 rounded-xl object-cover" />
                 ) : (
                   <div className={`w-12 h-12 bg-gradient-to-br ${productGradients[products.length % productGradients.length]} rounded-xl flex items-center justify-center text-2xl`}>
-                    {productEmojis[productForm.category] || '🍽️'}
+                    <Package className="h-12 w-12 text-white drop-shadow" />
                   </div>
                 )}
                 <div>
@@ -2134,8 +2135,9 @@ export default function SupplierDashboard() {
                           <p className="text-xs text-gray-400 truncate">{opportunity.productName}</p>
                         </div>
                       </div>
-                      <div className="text-[10px] font-semibold text-amber-600 bg-amber-50 rounded-lg px-2.5 py-1.5 mb-3">
-                        ✅ Venta verificada — Evalúa al comprador
+                      <div className="flex items-center gap-1.5 text-[10px] font-semibold text-amber-600 bg-amber-50 rounded-lg px-2.5 py-1.5 mb-3">
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        Venta verificada - Evalua al comprador
                       </div>
                       <button
                         type="button"
