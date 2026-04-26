@@ -87,7 +87,7 @@ export default function VoiceCall({ agent, profile, onClose }) {
           interim = e.results[i][0].transcript;
         }
       }
-      
+
       const currentText = final || interim;
       setTranscript(currentText);
       setDebug(final ? `Captado: "${final}"` : `Escuchando: "${interim}"`);
@@ -223,9 +223,9 @@ export default function VoiceCall({ agent, profile, onClose }) {
 
   return (
     <RenderProfiler id="VoiceCall">
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0a1628]/90 backdrop-blur-md animate-fade-in">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-inkDark/90 backdrop-blur-md animate-fade-in">
         <div className="w-full max-w-sm mx-4">
-          <div className="transform-gpu bg-gradient-to-b from-[#0D1F3C] to-[#162d54] rounded-3xl p-8 shadow-2xl border border-white/5">
+          <div className="transform-gpu bg-gradient-to-b from-brand-ink to-[#162d54] rounded-3xl p-8 shadow-2xl border border-white/5">
 
           {/* Avatar */}
           <div className="flex flex-col items-center mb-6">
@@ -268,7 +268,7 @@ export default function VoiceCall({ agent, profile, onClose }) {
               {phase === 'speaking' && (
                 <div className="flex items-end gap-[3px]">
                   {[0,1,2,3,4,5,6].map((i) => (
-                    <div key={i} className="w-[3px] bg-[#2ECAD5] rounded-full" style={{ animation: 'waveform 0.8s ease-in-out infinite alternate', animationDelay: `${i*80}ms`, height: '4px' }} />
+                    <div key={i} className="w-[3px] bg-brand-accent rounded-full" style={{ animation: 'waveform 0.8s ease-in-out infinite alternate', animationDelay: `${i*80}ms`, height: '4px' }} />
                   ))}
                 </div>
               )}
@@ -278,7 +278,7 @@ export default function VoiceCall({ agent, profile, onClose }) {
               <p className="text-sm text-white/80">{transcript || <span className="text-gray-500 italic">Habla ahora...</span>}</p>
             )}
             {phase === 'speaking' && agentText && (
-              <p className="text-sm text-[#2ECAD5]">{agentText}</p>
+              <p className="text-sm text-brand-accent">{agentText}</p>
             )}
             {phase === 'thinking' && (
               <p className="text-sm text-gray-500 italic">Procesando...</p>
@@ -295,7 +295,7 @@ export default function VoiceCall({ agent, profile, onClose }) {
             <div className="bg-white/5 rounded-2xl p-3 mb-4 max-h-[100px] overflow-y-auto">
               {callLog.slice(-4).map((msg, i) => (
                 <div key={i} className="flex gap-2 items-start mb-1 last:mb-0">
-                  <span className={`text-[10px] font-bold uppercase ${msg.role === 'user' ? 'text-emerald-400' : 'text-[#2ECAD5]'}`}>
+                  <span className={`text-[10px] font-bold uppercase ${msg.role === 'user' ? 'text-emerald-400' : 'text-brand-accent'}`}>
                     {msg.role === 'user' ? 'Tu' : 'Carlos'}:
                   </span>
                   <span className="text-[11px] text-gray-400 line-clamp-1">{msg.text}</span>

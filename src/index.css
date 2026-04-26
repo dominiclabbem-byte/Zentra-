@@ -4,6 +4,56 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    --color-brand-ink: theme('colors.brand.ink');
+    --color-brand-ink-light: theme('colors.brand.inkLight');
+    --color-brand-ink-dark: theme('colors.brand.inkDark');
+    --color-brand-accent: theme('colors.brand.accent');
+    --color-brand-canvas: theme('colors.brand.canvas');
+    --color-brand-panel: theme('colors.brand.panel');
+    --color-brand-panel-border: theme('colors.brand.panelBorder');
+  }
+}
+
+@layer components {
+  .ui-page {
+    @apply min-h-screen bg-brand-canvas bg-grid;
+  }
+
+  .ui-card {
+    @apply bg-white rounded-2xl border border-gray-100 shadow-sm;
+  }
+
+  .ui-card-interactive {
+    @apply bg-white rounded-2xl border border-gray-100 card-premium text-left hover:border-brand-accent/40 hover:shadow-md transition-all;
+  }
+
+  .ui-input {
+    @apply w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all;
+  }
+
+  .ui-select {
+    @apply w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-accent bg-white transition-all;
+  }
+
+  .ui-textarea {
+    @apply w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 resize-none transition-all;
+  }
+
+  .ui-btn-primary {
+    @apply bg-gradient-to-r from-brand-ink to-brand-inkLight text-white font-bold rounded-xl hover:shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed;
+  }
+
+  .ui-btn-secondary {
+    @apply border border-brand-accent/30 text-brand-accent font-semibold rounded-xl hover:bg-brand-accent/5 transition-all;
+  }
+
+  .ui-chip {
+    @apply text-[10px] font-semibold bg-brand-panel text-brand-ink border border-brand-panelBorder px-2 py-0.5 rounded-full;
+  }
+}
+
 body {
   margin: 0;
   font-family: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
@@ -69,7 +119,7 @@ body {
 
 /* Premium gradient text */
 .gradient-text {
-  background: linear-gradient(135deg, #2ECAD5 0%, #6366f1 50%, #2ECAD5 100%);
+  background: linear-gradient(135deg, var(--color-brand-accent) 0%, #6366f1 50%, var(--color-brand-accent) 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;

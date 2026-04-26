@@ -7,6 +7,18 @@ export default {
   theme: {
     extend: {
       colors: {
+        brand: {
+          ink: '#0D1F3C',
+          inkLight: '#1a3260',
+          inkDark: '#0a1628',
+          accent: '#2ECAD5',
+          accentLight: '#5DD9E2',
+          accentDark: '#1BA8B2',
+          canvas: '#f8fafc',
+          panel: '#f2f7fb',
+          panelBorder: '#dce9f2',
+          mint: '#f0fdfa',
+        },
         navy: {
           DEFAULT: '#0D1F3C',
           light: '#1a3260',

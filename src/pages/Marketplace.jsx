@@ -316,16 +316,16 @@ export default function Marketplace() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc]">
+    <div className="min-h-screen bg-brand-canvas">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       {viewingSupplier && (
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-[#0D1F3C]/50 backdrop-blur-sm p-4 animate-fade-in overflow-y-auto"
+          className="fixed inset-0 z-50 flex items-start justify-center bg-brand-ink/50 backdrop-blur-sm p-4 animate-fade-in overflow-y-auto"
           onClick={(event) => event.target === event.currentTarget && setViewingSupplier(null)}
         >
-          <div className="transform-gpu bg-[#f8fafc] rounded-2xl shadow-2xl shadow-[#0D1F3C]/20 w-full max-w-4xl my-8 animate-fade-in-up overflow-hidden">
-            <div className="h-28 bg-gradient-to-r from-[#0D1F3C] via-[#1a3260] to-[#0D1F3C] relative">
+          <div className="transform-gpu bg-brand-canvas rounded-2xl shadow-2xl shadow-brand-ink/20 w-full max-w-4xl my-8 animate-fade-in-up overflow-hidden">
+            <div className="h-28 bg-gradient-to-r from-brand-ink via-brand-inkLight to-brand-ink relative">
               <div className="absolute inset-0 bg-grid opacity-20" />
               <button
                 onClick={() => setViewingSupplier(null)}
@@ -338,13 +338,13 @@ export default function Marketplace() {
             </div>
 
             <div className="px-6 pb-6 relative">
-              <div className="w-20 h-20 bg-gradient-to-br from-[#0D1F3C] to-[#1a3260] rounded-2xl flex items-center justify-center text-[#2ECAD5] text-2xl font-extrabold border-4 border-white shadow-lg -mt-10 relative z-10">
+              <div className="w-20 h-20 bg-gradient-to-br from-brand-ink to-brand-inkLight rounded-2xl flex items-center justify-center text-brand-accent text-2xl font-extrabold border-4 border-white shadow-lg -mt-10 relative z-10">
                 {viewingSupplier.initials}
               </div>
 
               <div className="mt-4 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                 <div>
-                  <h2 className="text-2xl font-extrabold text-[#0D1F3C]">{viewingSupplier.name}</h2>
+                  <h2 className="text-2xl font-extrabold text-brand-ink">{viewingSupplier.name}</h2>
                   <p className="text-sm text-gray-500 mt-1">{viewingSupplier.description}</p>
                   <div className="flex items-center gap-2 mt-3 flex-wrap">
                     <span className="text-xs font-bold bg-gradient-to-r from-emerald-400 to-blue-500 text-white px-3 py-1 rounded-full">
@@ -378,37 +378,37 @@ export default function Marketplace() {
                   ].map((item) => (
                     <div key={item.label} className="bg-white rounded-xl border border-gray-100 p-4">
                       <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{item.label}</div>
-                      <div className="text-lg font-extrabold text-[#0D1F3C] mt-1">{item.value}</div>
+                      <div className="text-lg font-extrabold text-brand-ink mt-1">{item.value}</div>
                     </div>
                   ))}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
-                <div className="lg:col-span-2 rounded-2xl border border-[#2ECAD5]/15 bg-[#f0fdfa] px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="lg:col-span-2 rounded-2xl border border-brand-accent/15 bg-brand-mint px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
-                    <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#2ECAD5]">Trust layer</div>
-                    <p className="text-sm font-semibold text-[#0D1F3C] mt-1">
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-brand-accent">Trust layer</div>
+                    <p className="text-sm font-semibold text-brand-ink mt-1">
                       {viewingSupplier.verified
                         ? 'Proveedor con verificacion comercial aprobada y reputacion basada en operaciones reales.'
                         : 'Proveedor visible en marketplace con verificacion todavia en revision.'}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <span className="text-xs font-semibold bg-white text-[#0D1F3C] border border-[#2ECAD5]/20 px-3 py-1.5 rounded-full">
+                    <span className="text-xs font-semibold bg-white text-brand-ink border border-brand-accent/20 px-3 py-1.5 rounded-full">
                       Rating {Number(viewingSupplier.rating || 0).toFixed(1)}
                     </span>
-                    <span className="text-xs font-semibold bg-white text-[#0D1F3C] border border-[#2ECAD5]/20 px-3 py-1.5 rounded-full">
+                    <span className="text-xs font-semibold bg-white text-brand-ink border border-brand-accent/20 px-3 py-1.5 rounded-full">
                       {viewingSupplier.totalReviews} reseñas
                     </span>
-                    <span className="text-xs font-semibold bg-white text-[#0D1F3C] border border-[#2ECAD5]/20 px-3 py-1.5 rounded-full">
+                    <span className="text-xs font-semibold bg-white text-brand-ink border border-brand-accent/20 px-3 py-1.5 rounded-full">
                       {viewingSupplier.verified ? 'RUT validado' : 'Revision pendiente'}
                     </span>
                   </div>
                 </div>
 
                 <div className="bg-white rounded-xl border border-gray-100 p-4">
-                  <h4 className="text-sm font-bold text-[#0D1F3C] mb-3">Informacion comercial</h4>
+                  <h4 className="text-sm font-bold text-brand-ink mb-3">Informacion comercial</h4>
                   <div className="space-y-3 text-sm">
                     {[
                       { label: 'RUT', value: viewingSupplier.rut },
@@ -418,7 +418,7 @@ export default function Marketplace() {
                     ].map((item) => (
                       <div key={item.label} className="flex justify-between gap-3 border-b border-gray-50 pb-3 last:border-0 last:pb-0">
                         <span className="text-gray-400">{item.label}</span>
-                        <span className="font-semibold text-[#0D1F3C] text-right">
+                        <span className="font-semibold text-brand-ink text-right">
                           <ExternalContactValue label={item.label} value={item.value} />
                         </span>
                       </div>
@@ -427,7 +427,7 @@ export default function Marketplace() {
                 </div>
 
                 <div className="bg-white rounded-xl border border-gray-100 p-4">
-                  <h4 className="text-sm font-bold text-[#0D1F3C] mb-3">Contacto</h4>
+                  <h4 className="text-sm font-bold text-brand-ink mb-3">Contacto</h4>
                   <div className="space-y-3 text-sm">
                     {[
                       { label: 'Email', value: viewingSupplier.email },
@@ -437,7 +437,7 @@ export default function Marketplace() {
                     ].map((item) => (
                       <div key={item.label} className="flex justify-between gap-3 border-b border-gray-50 pb-3 last:border-0 last:pb-0">
                         <span className="text-gray-400">{item.label}</span>
-                        <span className="font-semibold text-[#0D1F3C] text-right">{item.value || '-'}</span>
+                        <span className="font-semibold text-brand-ink text-right">{item.value || '-'}</span>
                       </div>
                     ))}
                   </div>
@@ -445,11 +445,11 @@ export default function Marketplace() {
               </div>
 
               <div className="mt-6">
-                <h4 className="text-sm font-bold text-[#0D1F3C] mb-3">Categorias</h4>
+                <h4 className="text-sm font-bold text-brand-ink mb-3">Categorias</h4>
                 <div className="flex flex-wrap gap-2">
                   {viewingSupplier.categories.length > 0 ? (
                     viewingSupplier.categories.map((category) => (
-                      <span key={category} className="text-xs font-medium bg-[#f0fdfa] text-[#0D1F3C] border border-[#2ECAD5]/20 px-3 py-1.5 rounded-lg">
+                      <span key={category} className="text-xs font-medium bg-brand-mint text-brand-ink border border-brand-accent/20 px-3 py-1.5 rounded-lg">
                         {category}
                       </span>
                     ))
@@ -461,7 +461,7 @@ export default function Marketplace() {
 
               <div className="mt-6">
                 <div className="flex items-center justify-between gap-3 mb-3">
-                  <h4 className="text-sm font-bold text-[#0D1F3C]">Catalogo publicado</h4>
+                  <h4 className="text-sm font-bold text-brand-ink">Catalogo publicado</h4>
                   <span className="text-xs text-gray-400">{viewingSupplier.products.length} productos visibles</span>
                 </div>
 
@@ -484,10 +484,10 @@ export default function Marketplace() {
                           )}
                         </div>
                         <div className="p-3">
-                          <h5 className="text-sm font-bold text-[#0D1F3C] truncate">{product.name}</h5>
+                          <h5 className="text-sm font-bold text-brand-ink truncate">{product.name}</h5>
                           <p className="text-[11px] text-gray-400 mt-0.5">{product.category}</p>
                           <div className="flex items-center justify-between mt-3">
-                            <span className="text-sm font-extrabold text-[#0D1F3C]">{product.price}</span>
+                            <span className="text-sm font-extrabold text-brand-ink">{product.price}</span>
                             <span className="text-[11px] text-gray-400">{product.stock}</span>
                           </div>
                         </div>
@@ -507,12 +507,12 @@ export default function Marketplace() {
 
       <section className="relative overflow-hidden bg-[#09172a] text-white px-4 pt-8 pb-8 md:pt-16 md:pb-16">
         <div className="absolute inset-0 bg-grid opacity-30" />
-        <div className="absolute top-0 left-[15%] w-56 h-56 md:w-80 md:h-80 bg-[#2ECAD5]/10 rounded-full blur-[70px] md:blur-[90px]" />
+        <div className="absolute top-0 left-[15%] w-56 h-56 md:w-80 md:h-80 bg-brand-accent/10 rounded-full blur-[70px] md:blur-[90px]" />
         <div className="absolute bottom-0 right-[10%] w-56 h-56 md:w-80 md:h-80 bg-emerald-500/10 rounded-full blur-[80px] md:blur-[100px]" />
 
         <div className="max-w-6xl mx-auto relative z-10">
           <div className="max-w-3xl">
-            <span className="inline-flex items-center gap-2 text-[10px] md:text-xs font-semibold uppercase tracking-[0.18em] md:tracking-[0.24em] text-[#2ECAD5]">
+            <span className="inline-flex items-center gap-2 text-[10px] md:text-xs font-semibold uppercase tracking-[0.18em] md:tracking-[0.24em] text-brand-accent">
               Marketplace publico
             </span>
             <h1 className="text-2xl sm:text-3xl md:text-5xl font-extrabold leading-tight mt-3 md:mt-4 max-w-[14ch] md:max-w-none">
@@ -525,7 +525,7 @@ export default function Marketplace() {
               <div className="flex flex-col sm:flex-row gap-2.5 md:gap-3 mt-5 md:mt-8">
                 <Link
                   to="/ingresar?role=comprador"
-                  className="bg-gradient-to-r from-emerald-400 to-blue-500 text-[#0D1F3C] font-bold px-5 py-2.5 md:px-6 md:py-3 rounded-xl transition-all hover:scale-[1.02] shadow-xl shadow-emerald-400/20 text-center text-sm md:text-base"
+                  className="bg-gradient-to-r from-emerald-400 to-blue-500 text-brand-ink font-bold px-5 py-2.5 md:px-6 md:py-3 rounded-xl transition-all hover:scale-[1.02] shadow-xl shadow-emerald-400/20 text-center text-sm md:text-base"
                 >
                   Quiero Comprar
                 </Link>
@@ -584,14 +584,14 @@ export default function Marketplace() {
                 placeholder="Buscar por producto, categoria o proveedor"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                className="w-full bg-[#f8fafc] border border-gray-100 rounded-2xl pl-12 pr-4 py-3 md:py-4 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                className="w-full bg-brand-canvas border border-gray-100 rounded-2xl pl-12 pr-4 py-3 md:py-4 text-sm focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all"
               />
             </label>
 
             <select
               value={supplierFilter}
               onChange={(event) => setSupplierFilter(event.target.value)}
-              className="w-full bg-[#f8fafc] border border-gray-100 rounded-2xl px-4 py-3 md:py-4 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+              className="w-full bg-brand-canvas border border-gray-100 rounded-2xl px-4 py-3 md:py-4 text-sm focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all"
             >
               {supplierOptions.map((supplier) => (
                 <option key={supplier} value={supplier}>
@@ -610,7 +610,7 @@ export default function Marketplace() {
                 className={`px-3 py-1.5 md:px-4 md:py-2 rounded-xl text-xs md:text-sm font-semibold whitespace-nowrap transition-all ${
                   categoryFilter === category
                     ? 'bg-gradient-to-r from-emerald-400 to-blue-500 text-white shadow-md shadow-emerald-400/20'
-                    : 'bg-white border border-gray-100 text-gray-500 hover:border-[#2ECAD5]/30 hover:text-[#0D1F3C]'
+                    : 'bg-white border border-gray-100 text-gray-500 hover:border-brand-accent/30 hover:text-brand-ink'
                 }`}
               >
                 {category}
@@ -647,13 +647,13 @@ export default function Marketplace() {
         return (
           <section className="px-4 pt-8 pb-0">
             <div className="max-w-6xl mx-auto">
-              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0a1628] to-[#0d2040] border border-[#2ECAD5]/20 px-6 py-5">
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-brand-inkDark to-[#0d2040] border border-brand-accent/20 px-6 py-5">
                 <div className="absolute inset-0 bg-grid opacity-10" />
-                <div className="absolute top-0 right-0 w-64 h-full bg-gradient-to-l from-[#2ECAD5]/5 to-transparent" />
+                <div className="absolute top-0 right-0 w-64 h-full bg-gradient-to-l from-brand-accent/5 to-transparent" />
                 <div className="relative z-10">
                   <div className="flex items-center gap-2 mb-4">
-                    <div className="w-2 h-2 bg-[#2ECAD5] rounded-full animate-pulse" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-[#2ECAD5]">Movimientos de mercado en tus seguimientos</span>
+                    <div className="w-2 h-2 bg-brand-accent rounded-full animate-pulse" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-brand-accent">Movimientos de mercado en tus seguimientos</span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {relevantAlerts.map((alert) => {
@@ -730,7 +730,7 @@ export default function Marketplace() {
                     )}
                     <div className="absolute top-2 left-2 flex flex-col items-start gap-1.5">
                       {product.hasTrackedPriceAlert && (
-                        <div className="text-[9px] font-bold bg-white/90 text-[#0D1F3C] px-2 py-0.5 rounded-full shadow-sm">
+                        <div className="text-[9px] font-bold bg-white/90 text-brand-ink px-2 py-0.5 rounded-full shadow-sm">
                           Alerta activa
                         </div>
                       )}
@@ -752,15 +752,15 @@ export default function Marketplace() {
                   </div>
 
                   <div className="p-2.5 md:p-3.5">
-                    <h3 className="text-[13px] md:text-sm font-bold text-[#0D1F3C] truncate">{product.name}</h3>
+                    <h3 className="text-[13px] md:text-sm font-bold text-brand-ink truncate">{product.name}</h3>
                     <p className="text-[10px] md:text-xs text-gray-400 mt-0.5 truncate">{product.category}</p>
                     <div className="flex items-center justify-between mt-2 md:mt-3">
-                      <span className="text-sm md:text-base font-extrabold text-[#0D1F3C]">{product.price}</span>
+                      <span className="text-sm md:text-base font-extrabold text-brand-ink">{product.price}</span>
                     </div>
                     {product.recentPriceAlert && (
-                      <div className="mt-2 rounded-xl border border-gray-100 bg-[#f8fafc] px-2.5 py-2">
+                      <div className="mt-2 rounded-xl border border-gray-100 bg-brand-canvas px-2.5 py-2">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-[11px] font-semibold text-[#0D1F3C]">{product.recentPriceAlert.impactLabel}</span>
+                          <span className="text-[11px] font-semibold text-brand-ink">{product.recentPriceAlert.impactLabel}</span>
                           <span className={`text-[10px] font-bold ${
                             product.recentPriceAlert.change === 'down' ? 'text-emerald-600' : 'text-rose-600'
                           }`}>
@@ -774,7 +774,7 @@ export default function Marketplace() {
                     )}
                     {product.supplierName && (
                       <div className="flex items-center gap-2 mt-2.5 pt-2.5 md:mt-3 md:pt-3 border-t border-gray-50">
-                        <div className="w-5 h-5 md:w-6 md:h-6 bg-gradient-to-br from-[#0D1F3C] to-[#1a3260] rounded-md flex items-center justify-center text-[#2ECAD5] text-[8px] font-bold flex-shrink-0">
+                        <div className="w-5 h-5 md:w-6 md:h-6 bg-gradient-to-br from-brand-ink to-brand-inkLight rounded-md flex items-center justify-center text-brand-accent text-[8px] font-bold flex-shrink-0">
                           {product.supplierName.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()}
                         </div>
                         <div className="min-w-0 flex-1">
@@ -789,7 +789,7 @@ export default function Marketplace() {
                         e.stopPropagation();
                         handleQuoteAction(product);
                       }}
-                      className="mt-2.5 md:mt-3 w-full bg-gradient-to-r from-[#0D1F3C] to-[#1a3260] hover:from-[#1a3260] hover:to-[#0D1F3C] text-white font-bold px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm transition-all hover:scale-[1.02] shadow-md"
+                      className="mt-2.5 md:mt-3 w-full bg-gradient-to-r from-brand-ink to-brand-inkLight hover:from-brand-inkLight hover:to-brand-ink text-white font-bold px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm transition-all hover:scale-[1.02] shadow-md"
                     >
                       {currentUser?.is_buyer ? 'Cotizar' : currentUser ? 'Activar comprador' : 'Cotizar'}
                     </button>
@@ -799,12 +799,12 @@ export default function Marketplace() {
             </div>
           ) : (
             <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
-              <div className="w-16 h-16 bg-[#f8fafc] rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-brand-canvas rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-bold text-[#0D1F3C]">No hay resultados para ese filtro</h3>
+              <h3 className="text-lg font-bold text-brand-ink">No hay resultados para ese filtro</h3>
               <p className="text-sm text-gray-400 mt-2">Prueba cambiando categoria, proveedor o termino de busqueda.</p>
             </div>
           )}

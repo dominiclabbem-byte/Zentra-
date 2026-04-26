@@ -16,7 +16,7 @@ export default function ExternalContactValue({ label, value, className = '' }) {
       href={normalizeExternalUrl(value)}
       target="_blank"
       rel="noreferrer"
-      className={`text-[#2ECAD5] hover:underline break-all ${className}`.trim()}
+      className={`text-brand-accent hover:underline break-all ${className}`.trim()}
       onClick={(event) => event.stopPropagation()}
     >
       {value}

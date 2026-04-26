@@ -24,18 +24,18 @@ export default function Modal({
   const modalContent = (
     <RenderProfiler id={`Modal:${title}`}>
       <div
-        className={`fixed inset-0 z-50 flex justify-center bg-[#0D1F3C]/50 backdrop-blur-sm p-4 animate-fade-in modal-overlay ${
+        className={`fixed inset-0 z-50 flex justify-center bg-brand-ink/50 backdrop-blur-sm p-4 animate-fade-in modal-overlay ${
           align === 'top' ? 'items-start overflow-y-auto' : 'items-center'
         }`}
         onClick={(e) => e.target === e.currentTarget && onClose()}
       >
         <div
-          className={`transform-gpu bg-white rounded-2xl shadow-2xl shadow-[#0D1F3C]/20 w-full max-w-md max-h-[90vh] flex flex-col animate-fade-in-up overscroll-contain modal-shell ${panelClassName}`}
+          className={`transform-gpu bg-white rounded-2xl shadow-2xl shadow-brand-ink/20 w-full max-w-md max-h-[90vh] flex flex-col animate-fade-in-up overscroll-contain modal-shell ${panelClassName}`}
           onClick={(e) => e.stopPropagation()}
         >
           {!hideHeader && (
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
-              <h3 className="text-lg font-bold text-[#0D1F3C]">{title}</h3>
+              <h3 className="text-lg font-bold text-brand-ink">{title}</h3>
               <button
                 onClick={onClose}
                 className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all"

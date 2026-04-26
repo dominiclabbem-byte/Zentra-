@@ -69,7 +69,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-[#0a1628]/95 backdrop-blur-xl text-white shadow-[0_1px_0_rgba(46,202,213,0.1)] sticky top-0 z-50">
+    <nav className="bg-brand-inkDark/95 backdrop-blur-xl text-white shadow-[0_1px_0_rgba(46,202,213,0.1)] sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center flex-shrink-0 group transition-all hover:scale-105">
@@ -115,7 +115,7 @@ export default function Navbar() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9a6 6 0 00-12 0v.05-.05v.7a8.967 8.967 0 01-2.31 6.022c1.733.64 3.56 1.084 5.454 1.31m5.713 0a24.255 24.255 0 01-5.713 0m5.713 0a3 3 0 11-5.713 0" />
                     </svg>
                     {unreadNotificationsCount > 0 && (
-                      <span className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-emerald-400 text-[#0D1F3C] text-[10px] font-bold flex items-center justify-center">
+                      <span className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-emerald-400 text-brand-ink text-[10px] font-bold flex items-center justify-center">
                         {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
                       </span>
                     )}
@@ -131,7 +131,7 @@ export default function Navbar() {
                         <button
                           type="button"
                           onClick={() => readAllNotifications()}
-                          className="text-[11px] font-semibold text-[#2ECAD5] hover:text-white transition-colors"
+                          className="text-[11px] font-semibold text-brand-accent hover:text-white transition-colors"
                         >
                           Marcar todas
                         </button>
@@ -204,7 +204,7 @@ export default function Navbar() {
       </div>
 
       {menuOpen && (
-        <div className="md:hidden bg-[#0a1628]/98 backdrop-blur-xl border-t border-[#2ECAD5]/10 animate-fade-in">
+        <div className="md:hidden bg-brand-inkDark/98 backdrop-blur-xl border-t border-brand-accent/10 animate-fade-in">
           <div className="py-2 px-3">
             {navLinks.map((link) => (
               <Link
@@ -213,7 +213,7 @@ export default function Navbar() {
                 onClick={() => setMenuOpen(false)}
                 className={`block px-4 py-3 rounded-lg text-sm font-medium my-0.5 transition-all ${
                   location.pathname === link.to
-                    ? 'text-[#2ECAD5] bg-[#2ECAD5]/10'
+                    ? 'text-brand-accent bg-brand-accent/10'
                     : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`}
               >
@@ -270,7 +270,7 @@ export default function Navbar() {
                 onClick={() => setMenuOpen(false)}
                 className={`block px-4 py-3 rounded-lg text-sm font-medium my-0.5 transition-all ${
                   location.pathname === '/ingresar'
-                    ? 'text-[#2ECAD5] bg-[#2ECAD5]/10'
+                    ? 'text-brand-accent bg-brand-accent/10'
                     : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`}
               >

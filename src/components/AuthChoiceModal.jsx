@@ -19,10 +19,10 @@ export default function AuthChoiceModal({ role, onClose }) {
         onClick={(event) => event.stopPropagation()}
       >
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-[#0D1F3C] to-[#1a3260] rounded-2xl mb-4 shadow-xl shadow-[#0D1F3C]/20">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-brand-ink to-brand-inkLight rounded-2xl mb-4 shadow-xl shadow-brand-ink/20">
             <span className="text-3xl" aria-hidden="true">{emoji}</span>
           </div>
-          <h2 className="text-2xl font-extrabold text-[#0D1F3C]">{label}</h2>
+          <h2 className="text-2xl font-extrabold text-brand-ink">{label}</h2>
           <p className="text-sm text-gray-400 mt-1">Que deseas hacer?</p>
         </div>
 
@@ -47,9 +47,9 @@ export default function AuthChoiceModal({ role, onClose }) {
               onClose();
               navigate(registerPath);
             }}
-            className="w-full bg-white border-2 border-gray-100 hover:border-[#2ECAD5]/40 text-[#0D1F3C] font-bold px-6 py-4 rounded-2xl text-base transition-all hover:scale-[1.02] flex items-center justify-center gap-2"
+            className="w-full bg-white border-2 border-gray-100 hover:border-brand-accent/40 text-brand-ink font-bold px-6 py-4 rounded-2xl text-base transition-all hover:scale-[1.02] flex items-center justify-center gap-2"
           >
-            <svg className="w-5 h-5 text-[#2ECAD5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="w-5 h-5 text-brand-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
             </svg>
             Registrarse

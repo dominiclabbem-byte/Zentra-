@@ -247,10 +247,10 @@ export default function SupplierDashboard() {
     }
     const reader = new FileReader();
     reader.onload = (ev) => {
-      setProductForm((prev) => ({ 
-        ...prev, 
-        images: [...prev.images, file], 
-        imagePreviews: [...prev.imagePreviews, ev.target.result] 
+      setProductForm((prev) => ({
+        ...prev,
+        images: [...prev.images, file],
+        imagePreviews: [...prev.imagePreviews, ev.target.result]
       }));
     };
     reader.readAsDataURL(file);
@@ -975,7 +975,7 @@ export default function SupplierDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] bg-grid">
+    <div className="ui-page">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       {statDetail && (
@@ -990,15 +990,15 @@ export default function SupplierDashboard() {
 
       {quoteModal && (
         <Modal title={`Cotizar -- ${quoteModal.productName}`} onClose={closeQuoteOfferModal}>
-          <div className="bg-[#f8fafc] rounded-xl p-4 mb-5 text-sm space-y-1.5">
-            <p><span className="font-medium text-gray-400 text-xs uppercase tracking-wide">Comprador</span><br /><span className="text-[#0D1F3C] font-semibold">{quoteModal.buyerName}</span></p>
-            <p><span className="font-medium text-gray-400 text-xs uppercase tracking-wide">Producto</span><br /><span className="text-[#0D1F3C]">{quoteModal.productName}</span></p>
-            <p><span className="font-medium text-gray-400 text-xs uppercase tracking-wide">Cantidad</span><br /><span className="text-[#0D1F3C]">{quoteModal.quantityLabel}</span></p>
-            <p><span className="font-medium text-gray-400 text-xs uppercase tracking-wide">Entrega</span><br /><span className="text-[#0D1F3C]">{quoteModal.deliveryDateLabel}</span></p>
+          <div className="bg-brand-canvas rounded-xl p-4 mb-5 text-sm space-y-1.5">
+            <p><span className="font-medium text-gray-400 text-xs uppercase tracking-wide">Comprador</span><br /><span className="text-brand-ink font-semibold">{quoteModal.buyerName}</span></p>
+            <p><span className="font-medium text-gray-400 text-xs uppercase tracking-wide">Producto</span><br /><span className="text-brand-ink">{quoteModal.productName}</span></p>
+            <p><span className="font-medium text-gray-400 text-xs uppercase tracking-wide">Cantidad</span><br /><span className="text-brand-ink">{quoteModal.quantityLabel}</span></p>
+            <p><span className="font-medium text-gray-400 text-xs uppercase tracking-wide">Entrega</span><br /><span className="text-brand-ink">{quoteModal.deliveryDateLabel}</span></p>
             {quoteModal.notes && (
               <div className="mt-2 pt-2 border-t border-gray-200">
                 <span className="font-medium text-gray-400 text-xs uppercase tracking-wide">Notas</span>
-                <p className="text-[#0D1F3C] text-base font-semibold mt-1 leading-snug">{quoteModal.notes}</p>
+                <p className="text-brand-ink text-base font-semibold mt-1 leading-snug">{quoteModal.notes}</p>
               </div>
             )}
           </div>
@@ -1017,7 +1017,7 @@ export default function SupplierDashboard() {
                   placeholder="4.200"
                   value={offerForm.price}
                   onChange={(e) => setOfferForm({ ...offerForm, price: e.target.value })}
-                  className="w-full border border-gray-200 rounded-xl pl-8 pr-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                  className="w-full border border-gray-200 rounded-xl pl-8 pr-4 py-3 text-sm focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all"
                 />
               </div>
             </div>
@@ -1031,7 +1031,7 @@ export default function SupplierDashboard() {
                 placeholder="Ej: 48 horas, 3 dias habiles"
                 value={offerForm.estimatedLeadTime}
                 onChange={(e) => setOfferForm({ ...offerForm, estimatedLeadTime: e.target.value })}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                className="ui-input"
               />
             </div>
             <div>
@@ -1044,7 +1044,7 @@ export default function SupplierDashboard() {
                 placeholder="Ej: Disponibilidad inmediata. Entrega en 48hrs. Incluye flete a Santiago."
                 value={offerForm.notes}
                 onChange={(e) => setOfferForm({ ...offerForm, notes: e.target.value })}
-                className="w-full border-2 border-[#2ECAD5]/40 rounded-xl px-4 py-3 text-base focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 resize-none transition-all"
+                className="w-full border-2 border-brand-accent/40 rounded-xl px-4 py-3 text-base focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 resize-none transition-all"
               />
             </div>
             <div className="flex gap-3 pt-1">
@@ -1128,19 +1128,19 @@ export default function SupplierDashboard() {
 
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-[#f8fafc] rounded-xl p-3.5">
+              <div className="bg-brand-canvas rounded-xl p-3.5">
                 <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Precio</span>
-                <p className="text-lg font-extrabold text-[#0D1F3C] mt-0.5">{productDetail.price}</p>
+                <p className="text-lg font-extrabold text-brand-ink mt-0.5">{productDetail.price}</p>
               </div>
-              <div className="bg-[#f8fafc] rounded-xl p-3.5">
+              <div className="bg-brand-canvas rounded-xl p-3.5">
                 <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Stock</span>
-                <p className="text-lg font-extrabold text-[#0D1F3C] mt-0.5">{productDetail.stock}</p>
+                <p className="text-lg font-extrabold text-brand-ink mt-0.5">{productDetail.stock}</p>
               </div>
-              <div className="bg-[#f8fafc] rounded-xl p-3.5">
+              <div className="bg-brand-canvas rounded-xl p-3.5">
                 <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Categoria</span>
-                <p className="text-sm font-semibold text-[#0D1F3C] mt-0.5">{productDetail.category}</p>
+                <p className="text-sm font-semibold text-brand-ink mt-0.5">{productDetail.category}</p>
               </div>
-              <div className="bg-[#f8fafc] rounded-xl p-3.5">
+              <div className="bg-brand-canvas rounded-xl p-3.5">
                 <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Estado</span>
                 <p className={`text-sm font-semibold mt-0.5 ${productDetail.status === 'active' ? 'text-emerald-600' : 'text-amber-600'}`}>
                   {productDetail.status === 'active' ? 'Disponible' : 'Stock bajo'}
@@ -1148,7 +1148,7 @@ export default function SupplierDashboard() {
               </div>
             </div>
 
-            <div className="bg-[#f8fafc] rounded-xl p-3.5">
+            <div className="bg-brand-canvas rounded-xl p-3.5">
               <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Descripcion</span>
               <p className="text-sm text-gray-700 mt-1 leading-relaxed">{productDetail.description}</p>
             </div>
@@ -1184,7 +1184,7 @@ export default function SupplierDashboard() {
           <form onSubmit={handleSupplierReviewSubmit} className="space-y-5">
             <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3">
               <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-600">Venta verificada</div>
-              <div className="text-sm font-bold text-[#0D1F3C] mt-1">{supplierReviewForm.buyerName}</div>
+              <div className="text-sm font-bold text-brand-ink mt-1">{supplierReviewForm.buyerName}</div>
               <p className="text-sm text-gray-600 mt-1">
                 Comparte como fue la venta de {supplierReviewForm.productName} para fortalecer la confianza del marketplace.
               </p>
@@ -1198,7 +1198,7 @@ export default function SupplierDashboard() {
                 id="supplier-review-rating"
                 value={supplierReviewForm.rating}
                 onChange={(event) => setSupplierReviewForm((current) => ({ ...current, rating: Number(event.target.value) }))}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] bg-white transition-all"
+                className="ui-select"
               >
                 {[5, 4, 3, 2, 1].map((value) => (
                   <option key={value} value={value}>{value} estrella{value > 1 ? 's' : ''}</option>
@@ -1218,7 +1218,7 @@ export default function SupplierDashboard() {
                 placeholder="Ej: rapido en el pago, buena comunicacion, comprador recomendado..."
                 value={supplierReviewForm.comment}
                 onChange={(event) => setSupplierReviewForm((current) => ({ ...current, comment: event.target.value }))}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 resize-none transition-all"
+                className="ui-textarea"
               />
             </div>
 
@@ -1233,7 +1233,7 @@ export default function SupplierDashboard() {
               <button
                 type="submit"
                 disabled={isSubmittingSupplierReview}
-                className="flex-1 bg-gradient-to-r from-[#0D1F3C] to-[#1a3260] text-white font-bold py-3 rounded-xl hover:shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                className="flex-1 ui-btn-primary py-3"
               >
                 {isSubmittingSupplierReview ? 'Publicando...' : 'Publicar reseña'}
               </button>
@@ -1256,7 +1256,7 @@ export default function SupplierDashboard() {
                     required
                     value={profileForm.companyName}
                     onChange={(e) => setProfileForm({ ...profileForm, companyName: e.target.value })}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all"
                   />
                 </div>
                 <div>
@@ -1265,7 +1265,7 @@ export default function SupplierDashboard() {
                     type="text"
                     value={profileForm.description}
                     onChange={(e) => setProfileForm({ ...profileForm, description: e.target.value })}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -1275,7 +1275,7 @@ export default function SupplierDashboard() {
                       type="text"
                       value={profileForm.rut}
                       onChange={(e) => setProfileForm({ ...profileForm, rut: e.target.value })}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all"
                     />
                   </div>
                   <div>
@@ -1284,7 +1284,7 @@ export default function SupplierDashboard() {
                       type="text"
                       value={profileForm.city}
                       onChange={(e) => setProfileForm({ ...profileForm, city: e.target.value })}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all"
                     />
                   </div>
                 </div>
@@ -1294,7 +1294,7 @@ export default function SupplierDashboard() {
                     type="text"
                     value={profileForm.address}
                     onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all"
                   />
                 </div>
                 <div>
@@ -1303,7 +1303,7 @@ export default function SupplierDashboard() {
                     type="text"
                     value={profileForm.giro}
                     onChange={(e) => setProfileForm({ ...profileForm, giro: e.target.value })}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all"
                   />
                 </div>
               </div>
@@ -1329,7 +1329,7 @@ export default function SupplierDashboard() {
                       type="tel"
                       value={profileForm.phone}
                       onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all"
                     />
                   </div>
                   <div>
@@ -1338,7 +1338,7 @@ export default function SupplierDashboard() {
                       type="tel"
                       value={profileForm.whatsapp}
                       onChange={(e) => setProfileForm({ ...profileForm, whatsapp: e.target.value })}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all"
                     />
                   </div>
                 </div>
@@ -1348,7 +1348,7 @@ export default function SupplierDashboard() {
                     type="text"
                     value={profileForm.website}
                     onChange={(e) => setProfileForm({ ...profileForm, website: e.target.value })}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all"
                   />
                 </div>
               </div>
@@ -1359,7 +1359,7 @@ export default function SupplierDashboard() {
               <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Categorias</h4>
               <div className="flex flex-wrap gap-2 mb-3">
                 {profileForm.categories.map((cat) => (
-                  <span key={cat} className="text-sm font-medium bg-[#f0fdfa] text-[#0D1F3C] border border-[#2ECAD5]/20 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                  <span key={cat} className="text-sm font-medium bg-brand-mint text-brand-ink border border-brand-accent/20 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
                     {cat}
                     <button
                       type="button"
@@ -1377,7 +1377,7 @@ export default function SupplierDashboard() {
                 <select
                   value={selectedCategoryId || categoryOptions.find((category) => !profileForm.categories.includes(category.name))?.id || ''}
                   onChange={(e) => setSelectedCategoryId(e.target.value)}
-                  className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 bg-white transition-all"
+                  className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 bg-white transition-all"
                 >
                   {categoryOptions
                     .filter((category) => !profileForm.categories.includes(category.name))
@@ -1389,7 +1389,7 @@ export default function SupplierDashboard() {
                   type="button"
                   onClick={handleAddCategory}
                   disabled={categoryOptions.filter((category) => !profileForm.categories.includes(category.name)).length === 0}
-                  className="border border-[#2ECAD5] text-[#2ECAD5] font-semibold px-4 py-2.5 rounded-xl hover:bg-[#2ECAD5]/5 transition-all text-sm"
+                  className="border border-brand-accent text-brand-accent font-semibold px-4 py-2.5 rounded-xl hover:bg-brand-accent/5 transition-all text-sm"
                 >
                   Agregar
                 </button>
@@ -1430,7 +1430,7 @@ export default function SupplierDashboard() {
                 placeholder="Ej: Queso mozzarella, Aceite vegetal..."
                 value={productForm.name}
                 onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                className="ui-input"
               />
             </div>
             <div>
@@ -1440,7 +1440,7 @@ export default function SupplierDashboard() {
               <select
                 value={productForm.category}
                 onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] bg-white transition-all"
+                className="ui-select"
               >
                 {categoryOptions.map((category) => <option key={category.id} value={category.name}>{category.name}</option>)}
               </select>
@@ -1459,7 +1459,7 @@ export default function SupplierDashboard() {
                     placeholder="4.500"
                     value={productForm.price}
                     onChange={(e) => setProductForm({ ...productForm, price: e.target.value })}
-                    className="w-full border border-gray-200 rounded-xl pl-8 pr-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                    className="w-full border border-gray-200 rounded-xl pl-8 pr-4 py-3 text-sm focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all"
                   />
                 </div>
               </div>
@@ -1468,7 +1468,7 @@ export default function SupplierDashboard() {
                 <select
                   value={productForm.priceUnit}
                   onChange={(e) => setProductForm({ ...productForm, priceUnit: e.target.value })}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] bg-white transition-all"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:border-brand-accent bg-white transition-all"
                 >
                   {['kg', 'lt', 'unidad', 'caja', 'saco'].map((u) => <option key={u}>{u}</option>)}
                 </select>
@@ -1486,7 +1486,7 @@ export default function SupplierDashboard() {
                   placeholder="1000"
                   value={productForm.stock}
                   onChange={(e) => setProductForm({ ...productForm, stock: e.target.value })}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                  className="ui-input"
                 />
               </div>
               <div className="w-24">
@@ -1494,7 +1494,7 @@ export default function SupplierDashboard() {
                 <select
                   value={productForm.stockUnit}
                   onChange={(e) => setProductForm({ ...productForm, stockUnit: e.target.value })}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] bg-white transition-all"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:border-brand-accent bg-white transition-all"
                 >
                   {['kg', 'lt', 'unidades', 'cajas', 'sacos'].map((u) => <option key={u}>{u}</option>)}
                 </select>
@@ -1509,7 +1509,7 @@ export default function SupplierDashboard() {
                 placeholder="Describe el producto: origen, calibre, certificaciones, formato de venta..."
                 value={productForm.description}
                 onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 resize-none transition-all"
+                className="ui-textarea"
               />
             </div>
 
@@ -1526,7 +1526,7 @@ export default function SupplierDashboard() {
                   onClick={() => setImageMode('upload')}
                   className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium border-2 transition-all ${
                     imageMode === 'upload'
-                      ? 'border-[#2ECAD5] bg-[#2ECAD5]/10 text-[#0D1F3C]'
+                      ? 'border-brand-accent bg-brand-accent/10 text-brand-ink'
                       : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300'
                   }`}
                 >
@@ -1571,9 +1571,9 @@ export default function SupplierDashboard() {
 
               {/* Upload mode */}
               {productForm.imagePreviews.length < 4 && imageMode === 'upload' && (
-                <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-[#2ECAD5] hover:bg-[#2ECAD5]/5 transition-all group mb-3">
+                <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-brand-accent hover:bg-brand-accent/5 transition-all group mb-3">
                   <div className="flex flex-col items-center justify-center pt-2 pb-3">
-                    <svg className="w-8 h-8 text-gray-300 group-hover:text-[#2ECAD5] transition-colors mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <svg className="w-8 h-8 text-gray-300 group-hover:text-brand-accent transition-colors mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21zm14.25-15.75a1.125 1.125 0 11-2.25 0 1.125 1.125 0 012.25 0z" />
                     </svg>
                     <p className="text-sm font-medium text-gray-400 group-hover:text-gray-600">Subir foto del producto ({productForm.imagePreviews.length}/4)</p>
@@ -1645,7 +1645,7 @@ export default function SupplierDashboard() {
             </div>
 
             {/* Preview */}
-            <div className="bg-[#f8fafc] rounded-xl p-4">
+            <div className="bg-brand-canvas rounded-xl p-4">
               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Vista previa</p>
               <div className="flex items-center gap-3">
                 {productForm.imagePreviews?.[0] ? (
@@ -1656,7 +1656,7 @@ export default function SupplierDashboard() {
                   </div>
                 )}
                 <div>
-                  <p className="text-sm font-bold text-[#0D1F3C]">{productForm.name || 'Nombre del producto'}</p>
+                  <p className="text-sm font-bold text-brand-ink">{productForm.name || 'Nombre del producto'}</p>
                   <p className="text-xs text-gray-400">{productForm.category}{productForm.price ? ` / $${productForm.price}/${productForm.priceUnit}` : ''}</p>
                 </div>
               </div>
@@ -1685,11 +1685,11 @@ export default function SupplierDashboard() {
       {/* Buyer profile modal */}
       {viewingBuyer && (
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-[#0D1F3C]/50 backdrop-blur-sm p-4 animate-fade-in overflow-y-auto"
+          className="fixed inset-0 z-50 flex items-start justify-center bg-brand-ink/50 backdrop-blur-sm p-4 animate-fade-in overflow-y-auto"
           onClick={(e) => e.target === e.currentTarget && setViewingBuyer(null)}
         >
-          <div className="transform-gpu bg-[#f8fafc] rounded-2xl shadow-2xl shadow-[#0D1F3C]/20 w-full max-w-3xl my-8 animate-fade-in-up overflow-hidden">
-            <div className="h-28 bg-gradient-to-r from-[#0D1F3C] via-[#1a3260] to-[#0D1F3C] relative">
+          <div className="transform-gpu bg-brand-canvas rounded-2xl shadow-2xl shadow-brand-ink/20 w-full max-w-3xl my-8 animate-fade-in-up overflow-hidden">
+            <div className="h-28 bg-gradient-to-r from-brand-ink via-brand-inkLight to-brand-ink relative">
               <div className="absolute inset-0 bg-grid opacity-20" />
               <button
                 onClick={() => setViewingBuyer(null)}
@@ -1702,12 +1702,12 @@ export default function SupplierDashboard() {
             </div>
 
             <div className="px-6 pb-6 relative">
-              <div className="w-20 h-20 bg-gradient-to-br from-[#0D1F3C] to-[#1a3260] rounded-2xl flex items-center justify-center text-[#2ECAD5] text-2xl font-extrabold border-4 border-white shadow-lg -mt-10 relative z-10">
+              <div className="w-20 h-20 bg-gradient-to-br from-brand-ink to-brand-inkLight rounded-2xl flex items-center justify-center text-brand-accent text-2xl font-extrabold border-4 border-white shadow-lg -mt-10 relative z-10">
                 {viewingBuyer.initials}
               </div>
               <div className="mt-3 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 <div>
-                  <h2 className="text-xl font-extrabold text-[#0D1F3C]">{viewingBuyer.name}</h2>
+                  <h2 className="text-xl font-extrabold text-brand-ink">{viewingBuyer.name}</h2>
                   <p className="text-gray-500 text-sm">{viewingBuyer.description}</p>
                   <div className="flex items-center gap-2 mt-2 flex-wrap">
                     <span className="text-[10px] font-bold bg-indigo-50 text-indigo-600 border border-indigo-100 px-2.5 py-0.5 rounded-full uppercase">
@@ -1766,7 +1766,7 @@ export default function SupplierDashboard() {
                   <div key={s.label} className="bg-white rounded-xl border border-gray-100 p-3.5">
                     <div className="flex items-center gap-1.5 mb-1.5">{s.icon}</div>
                     <div className="flex items-baseline gap-1">
-                      <span className="text-lg font-extrabold text-[#0D1F3C]">{s.value}</span>
+                      <span className="text-lg font-extrabold text-brand-ink">{s.value}</span>
                       {s.sub && <span className="text-[10px] text-gray-400">{s.sub}</span>}
                     </div>
                     <div className="text-[10px] text-gray-400 mt-0.5">{s.label}</div>
@@ -1776,7 +1776,7 @@ export default function SupplierDashboard() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="bg-white rounded-xl border border-gray-100 p-4">
-                  <h4 className="text-sm font-bold text-[#0D1F3C] mb-3">Informacion del negocio</h4>
+                  <h4 className="text-sm font-bold text-brand-ink mb-3">Informacion del negocio</h4>
                   <div className="space-y-2.5 text-sm">
                     {[
                       { label: 'RUT', value: viewingBuyer.rut },
@@ -1787,13 +1787,13 @@ export default function SupplierDashboard() {
                     ].map((item) => (
                       <div key={item.label} className="flex justify-between border-b border-gray-50 last:border-0 pb-2 last:pb-0">
                         <span className="text-gray-400 text-xs">{item.label}</span>
-                        <span className="font-semibold text-[#0D1F3C] text-xs text-right">{item.value}</span>
+                        <span className="font-semibold text-brand-ink text-xs text-right">{item.value}</span>
                       </div>
                     ))}
                   </div>
                 </div>
                 <div className="bg-white rounded-xl border border-gray-100 p-4">
-                  <h4 className="text-sm font-bold text-[#0D1F3C] mb-3">Contacto</h4>
+                  <h4 className="text-sm font-bold text-brand-ink mb-3">Contacto</h4>
                   <div className="space-y-2.5 text-sm">
                     {[
                       { label: 'Email', value: viewingBuyer.email },
@@ -1802,7 +1802,7 @@ export default function SupplierDashboard() {
                     ].map((item) => (
                       <div key={item.label} className="flex justify-between border-b border-gray-50 last:border-0 pb-2 last:pb-0">
                         <span className="text-gray-400 text-xs">{item.label}</span>
-                        <span className="font-semibold text-[#0D1F3C] text-xs">{item.value}</span>
+                        <span className="font-semibold text-brand-ink text-xs">{item.value}</span>
                       </div>
                     ))}
                   </div>
@@ -1810,11 +1810,11 @@ export default function SupplierDashboard() {
               </div>
 
               <div>
-                <h4 className="text-sm font-bold text-[#0D1F3C] mb-2">Categorias de interes</h4>
+                <h4 className="text-sm font-bold text-brand-ink mb-2">Categorias de interes</h4>
                 <div className="flex flex-wrap gap-2">
                   {viewingBuyer.categories.length > 0 ? (
                     viewingBuyer.categories.map((category) => (
-                      <span key={category} className="text-xs font-medium bg-[#f0fdfa] text-[#0D1F3C] border border-[#2ECAD5]/20 px-3 py-1.5 rounded-lg">
+                      <span key={category} className="text-xs font-medium bg-brand-mint text-brand-ink border border-brand-accent/20 px-3 py-1.5 rounded-lg">
                         {category}
                       </span>
                     ))
@@ -1825,23 +1825,23 @@ export default function SupplierDashboard() {
               </div>
 
               <div>
-                <h4 className="text-sm font-bold text-[#0D1F3C] mb-3">Solicitud de Cotización actual</h4>
+                <h4 className="text-sm font-bold text-brand-ink mb-3">Solicitud de Cotización actual</h4>
                 <div className="bg-white rounded-xl border border-gray-100 p-4 space-y-3">
                   <div className="flex justify-between gap-3">
                     <span className="text-sm text-gray-400">Producto</span>
-                    <span className="text-sm font-semibold text-[#0D1F3C] text-right">{viewingBuyer.quote.productName}</span>
+                    <span className="text-sm font-semibold text-brand-ink text-right">{viewingBuyer.quote.productName}</span>
                   </div>
                   <div className="flex justify-between gap-3">
                     <span className="text-sm text-gray-400">Cantidad</span>
-                    <span className="text-sm font-semibold text-[#0D1F3C] text-right">{viewingBuyer.quote.quantityLabel}</span>
+                    <span className="text-sm font-semibold text-brand-ink text-right">{viewingBuyer.quote.quantityLabel}</span>
                   </div>
                   <div className="flex justify-between gap-3">
                     <span className="text-sm text-gray-400">Entrega</span>
-                    <span className="text-sm font-semibold text-[#0D1F3C] text-right">{viewingBuyer.quote.deliveryDateLabel}</span>
+                    <span className="text-sm font-semibold text-brand-ink text-right">{viewingBuyer.quote.deliveryDateLabel}</span>
                   </div>
                   <div>
                     <span className="text-sm text-gray-400">Notas</span>
-                    <p className="text-sm text-[#0D1F3C] mt-1">{viewingBuyer.quote.notes || 'Sin notas adicionales.'}</p>
+                    <p className="text-sm text-brand-ink mt-1">{viewingBuyer.quote.notes || 'Sin notas adicionales.'}</p>
                   </div>
                 </div>
               </div>
@@ -1858,7 +1858,7 @@ export default function SupplierDashboard() {
         action={{
           onClick: () => navigate(currentUser?.is_buyer ? '/dashboard-comprador' : '/registro-comprador'),
           label: currentUser?.is_buyer ? 'Ir a comprador' : 'Activar comprador',
-          className: 'flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-400 to-blue-500 text-[#0D1F3C] font-bold transition-all whitespace-nowrap hover:scale-[1.02] shadow-lg shadow-emerald-400/20 hover:shadow-emerald-400/40',
+          className: 'flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-400 to-blue-500 text-brand-ink font-bold transition-all whitespace-nowrap hover:scale-[1.02] shadow-lg shadow-emerald-400/20 hover:shadow-emerald-400/40',
           icon: (
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
@@ -1866,7 +1866,7 @@ export default function SupplierDashboard() {
           ),
         }}
         tabs={headerTabs}
-        accentBlobClass="bg-[#2ECAD5]/5"
+        accentBlobClass="bg-brand-accent/5"
       />
 
       <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
@@ -1877,9 +1877,9 @@ export default function SupplierDashboard() {
             {/* Profile header card */}
             <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden card-premium">
               {/* Cover / banner */}
-              <div className="h-32 bg-gradient-to-r from-[#0D1F3C] via-[#1a3260] to-[#0D1F3C] relative">
+              <div className="h-32 bg-gradient-to-r from-brand-ink via-brand-inkLight to-brand-ink relative">
                 <div className="absolute inset-0 bg-grid opacity-20" />
-                <div className="absolute top-4 right-4 w-40 h-40 bg-[#2ECAD5]/10 rounded-full blur-[60px]" />
+                <div className="absolute top-4 right-4 w-40 h-40 bg-brand-accent/10 rounded-full blur-[60px]" />
               </div>
               <div className="px-6 pb-6 relative">
                 {/* Avatar */}
@@ -1898,7 +1898,7 @@ export default function SupplierDashboard() {
                 </label>
                 <div className="mt-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                   <div>
-                    <h2 className="text-2xl font-extrabold text-[#0D1F3C]">{profile.companyName}</h2>
+                    <h2 className="text-2xl font-extrabold text-brand-ink">{profile.companyName}</h2>
                     <p className="text-gray-500 text-sm mt-1">{profile.description}</p>
                     <div className="flex items-center gap-3 mt-3 flex-wrap">
                       <span className="text-xs font-bold bg-gradient-to-r from-emerald-400 to-blue-500 text-white px-3 py-1 rounded-full">Plan {currentPlanLabel}</span>
@@ -1946,12 +1946,12 @@ export default function SupplierDashboard() {
                   </svg>
                 )},
               ].map((s) => (
-                <button key={s.label} type="button" onClick={() => setStatDetail({ title: s.label, value: `${s.value}${s.sub ? ' ' + s.sub : ''}`, items: s.items, emptyText: s.emptyText })} className="bg-white rounded-2xl border border-gray-100 p-5 card-premium text-left hover:border-[#2ECAD5]/40 hover:shadow-md transition-all group">
-                  <div className="w-9 h-9 bg-[#f8fafc] rounded-xl flex items-center justify-center text-gray-400 mb-3 group-hover:bg-[#2ECAD5]/10 group-hover:text-[#2ECAD5] transition-colors">
+                <button key={s.label} type="button" onClick={() => setStatDetail({ title: s.label, value: `${s.value}${s.sub ? ' ' + s.sub : ''}`, items: s.items, emptyText: s.emptyText })} className="ui-card-interactive p-5 group">
+                  <div className="w-9 h-9 bg-brand-canvas rounded-xl flex items-center justify-center text-gray-400 mb-3 group-hover:bg-brand-accent/10 group-hover:text-brand-accent transition-colors">
                     {s.icon}
                   </div>
                   <div className="flex items-baseline gap-1.5">
-                    <span className="text-2xl font-extrabold text-[#0D1F3C]">{s.value}</span>
+                    <span className="text-2xl font-extrabold text-brand-ink">{s.value}</span>
                     <span className="text-xs text-gray-400">{s.sub}</span>
                   </div>
                   <div className="text-xs text-gray-400 mt-1">{s.label}</div>
@@ -1962,8 +1962,8 @@ export default function SupplierDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Company info */}
               <div className="bg-white rounded-2xl border border-gray-100 p-6 card-premium">
-                <h3 className="text-lg font-extrabold text-[#0D1F3C] mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-[#2ECAD5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <h3 className="text-lg font-extrabold text-brand-ink mb-4 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-brand-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 7.5h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z" />
                   </svg>
                   Informacion de la empresa
@@ -1978,7 +1978,7 @@ export default function SupplierDashboard() {
                   ].map((item) => (
                     <div key={item.label} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
                       <span className="text-sm text-gray-400">{item.label}</span>
-                      <span className="text-sm font-semibold text-[#0D1F3C]">{item.value}</span>
+                      <span className="text-sm font-semibold text-brand-ink">{item.value}</span>
                     </div>
                   ))}
                 </div>
@@ -1986,8 +1986,8 @@ export default function SupplierDashboard() {
 
               {/* Contact info */}
               <div className="bg-white rounded-2xl border border-gray-100 p-6 card-premium">
-                <h3 className="text-lg font-extrabold text-[#0D1F3C] mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-[#2ECAD5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <h3 className="text-lg font-extrabold text-brand-ink mb-4 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-brand-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
                   </svg>
                   Contacto
@@ -2019,7 +2019,7 @@ export default function SupplierDashboard() {
                       {item.icon}
                       <div className="flex-1">
                         <span className="text-xs text-gray-400 block">{item.label}</span>
-                        <span className="text-sm font-semibold text-[#0D1F3C]">{item.value}</span>
+                        <span className="text-sm font-semibold text-brand-ink">{item.value}</span>
                       </div>
                     </div>
                   ))}
@@ -2029,8 +2029,8 @@ export default function SupplierDashboard() {
 
             {/* Categories */}
             <div className="bg-white rounded-2xl border border-gray-100 p-6 card-premium">
-              <h3 className="text-lg font-extrabold text-[#0D1F3C] mb-4 flex items-center gap-2">
-                <svg className="w-5 h-5 text-[#2ECAD5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <h3 className="text-lg font-extrabold text-brand-ink mb-4 flex items-center gap-2">
+                <svg className="w-5 h-5 text-brand-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" />
                 </svg>
@@ -2038,7 +2038,7 @@ export default function SupplierDashboard() {
               </h3>
               <div className="flex flex-wrap gap-2">
                 {profile.categories.map((cat) => (
-                  <span key={cat} className="text-sm font-medium bg-[#f0fdfa] text-[#0D1F3C] border border-[#2ECAD5]/20 px-4 py-2 rounded-xl">
+                  <span key={cat} className="text-sm font-medium bg-brand-mint text-brand-ink border border-brand-accent/20 px-4 py-2 rounded-xl">
                     {cat}
                   </span>
                 ))}
@@ -2047,14 +2047,14 @@ export default function SupplierDashboard() {
 
             {/* Recent reviews */}
             <div className="bg-white rounded-2xl border border-gray-100 p-6 card-premium">
-              <h3 className="text-lg font-extrabold text-[#0D1F3C] mb-4 flex items-center gap-2">
-                <svg className="w-5 h-5 text-[#2ECAD5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <h3 className="text-lg font-extrabold text-brand-ink mb-4 flex items-center gap-2">
+                <svg className="w-5 h-5 text-brand-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
                 </svg>
                 Resenas recientes
               </h3>
               {insightsLoading ? (
-                <div className="rounded-2xl bg-[#f8fafc] px-4 py-6 text-sm text-gray-400">
+                <div className="rounded-2xl bg-brand-canvas px-4 py-6 text-sm text-gray-400">
                   Cargando resenas...
                 </div>
               ) : profileReviews.length ? (
@@ -2063,11 +2063,11 @@ export default function SupplierDashboard() {
                     <div key={review.id} className="border-b border-gray-50 last:border-0 pb-4 last:pb-0">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 bg-gradient-to-br from-[#0D1F3C] to-[#1a3260] rounded-xl flex items-center justify-center text-white text-xs font-bold">
+                          <div className="w-9 h-9 bg-gradient-to-br from-brand-ink to-brand-inkLight rounded-xl flex items-center justify-center text-white text-xs font-bold">
                             {review.buyer.charAt(0)}
                           </div>
                           <div>
-                            <span className="text-sm font-bold text-[#0D1F3C]">
+                            <span className="text-sm font-bold text-brand-ink">
                               {review.buyer}
                             </span>
                             <div className="flex items-center gap-0.5">
@@ -2086,7 +2086,7 @@ export default function SupplierDashboard() {
                   ))}
                 </div>
               ) : (
-                <div className="rounded-2xl bg-[#f8fafc] px-4 py-6 text-sm text-gray-400">
+                <div className="rounded-2xl bg-brand-canvas px-4 py-6 text-sm text-gray-400">
                   Aun no hay resenas publicadas para este proveedor.
                 </div>
               )}
@@ -2099,13 +2099,13 @@ export default function SupplierDashboard() {
           <div className="space-y-8 animate-fade-in">
             <div className="grid grid-cols-2 xl:grid-cols-5 gap-4">
               {[
-                { label: 'Solicitudes de Cotización', value: workspaceSummary.openRelevantQuotes, color: 'text-[#0D1F3C]', items: openQuotes.map(q => ({ label: q.productName, value: q.statusLabel, sub: `${q.buyerName} · ${q.quantityLabel}` })), emptyText: 'Sin solicitudes abiertas' },
-                { label: 'Ofertas enviadas', value: workspaceSummary.submittedOffers, color: 'text-[#2ECAD5]', items: supplierOffers.map(o => ({ label: o.quote?.productName || 'Producto', value: o.priceLabel, sub: `${o.buyerName} · ${o.statusLabel}` })), emptyText: 'Sin ofertas enviadas aun' },
+                { label: 'Solicitudes de Cotización', value: workspaceSummary.openRelevantQuotes, color: 'text-brand-ink', items: openQuotes.map(q => ({ label: q.productName, value: q.statusLabel, sub: `${q.buyerName} · ${q.quantityLabel}` })), emptyText: 'Sin solicitudes abiertas' },
+                { label: 'Ofertas enviadas', value: workspaceSummary.submittedOffers, color: 'text-brand-accent', items: supplierOffers.map(o => ({ label: o.quote?.productName || 'Producto', value: o.priceLabel, sub: `${o.buyerName} · ${o.statusLabel}` })), emptyText: 'Sin ofertas enviadas aun' },
                 { label: 'Ofertas aceptadas', value: workspaceSummary.acceptedOffers, color: 'text-emerald-500', items: supplierOffers.filter(o => o.status === 'accepted').map(o => ({ label: o.quote?.productName || 'Producto', value: o.priceLabel, sub: `${o.buyerName} · ${o.createdAtLabel}` })), emptyText: 'Sin ofertas aceptadas aun' },
                 { label: 'Win rate', value: workspaceSummary.winRateLabel, color: 'text-indigo-500', items: [{ label: 'Ofertas aceptadas', value: String(workspaceSummary.acceptedOffers) }, { label: 'Ofertas enviadas', value: String(workspaceSummary.submittedOffers) }, { label: 'Win rate calculado', value: workspaceSummary.winRateLabel }], emptyText: 'Sin datos aun' },
                 { label: 'Tasa de respuesta', value: workspaceSummary.responseRateLabel, color: 'text-amber-500', items: [{ label: 'Ofertas enviadas', value: String(workspaceSummary.submittedOffers) }, { label: 'Oportunidades totales', value: String(workspaceSummary.opportunityCount) }, { label: 'Tasa calculada', value: workspaceSummary.responseRateLabel }], emptyText: 'Sin datos aun' },
               ].map((stat) => (
-                <button key={stat.label} type="button" onClick={() => setStatDetail({ title: stat.label, value: stat.value, items: stat.items, emptyText: stat.emptyText })} className="bg-white rounded-2xl border border-gray-100 p-6 card-premium text-left hover:border-[#2ECAD5]/40 hover:shadow-md transition-all group">
+                <button key={stat.label} type="button" onClick={() => setStatDetail({ title: stat.label, value: stat.value, items: stat.items, emptyText: stat.emptyText })} className="ui-card-interactive p-6 group">
                   <div className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-2">{stat.label}</div>
                   <div className={`text-3xl font-extrabold ${stat.color}`}>{stat.value}</div>
                 </button>
@@ -2115,7 +2115,7 @@ export default function SupplierDashboard() {
             {supplierReviewOpportunities.length > 0 && (
               <div>
                 <div className="flex items-center gap-3 mb-4">
-                  <h2 className="text-xl font-extrabold text-[#0D1F3C]">Reseñas pendientes</h2>
+                  <h2 className="text-xl font-extrabold text-brand-ink">Reseñas pendientes</h2>
                   <span className="text-[10px] font-bold bg-amber-400 text-amber-900 px-2.5 py-1 rounded-full animate-pulse">
                     {supplierReviewOpportunities.length} pendiente{supplierReviewOpportunities.length !== 1 ? 's' : ''}
                   </span>
@@ -2130,7 +2130,7 @@ export default function SupplierDashboard() {
                           </svg>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-[#0D1F3C] truncate">{opportunity.buyerName}</p>
+                          <p className="text-sm font-bold text-brand-ink truncate">{opportunity.buyerName}</p>
                           <p className="text-xs text-gray-400 truncate">{opportunity.productName}</p>
                         </div>
                       </div>
@@ -2152,7 +2152,7 @@ export default function SupplierDashboard() {
 
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-extrabold text-[#0D1F3C]">Solicitudes de Cotización</h2>
+                <h2 className="text-xl font-extrabold text-brand-ink">Solicitudes de Cotización</h2>
                 <span className="text-xs text-gray-400 bg-gray-100 px-3 py-1 rounded-full font-medium">{openQuotes.length} solicitudes abiertas</span>
               </div>
 
@@ -2184,7 +2184,7 @@ export default function SupplierDashboard() {
                               className={`transition-colors ${
                                 highlightedQuoteId === quote.id
                                   ? 'bg-emerald-50'
-                                  : 'hover:bg-[#f8fafc]'
+                                  : 'hover:bg-brand-canvas'
                               }`}
                             >
                               <td className="px-6 py-4">
@@ -2193,16 +2193,16 @@ export default function SupplierDashboard() {
                                   disabled={loadingBuyerId === quote.buyerId}
                                   className="flex items-center gap-3 group/buyer disabled:opacity-60"
                                 >
-                                  <div className="w-9 h-9 bg-gradient-to-br from-[#0D1F3C] to-[#1a3260] rounded-lg flex items-center justify-center text-[#2ECAD5] text-xs font-bold">
+                                  <div className="w-9 h-9 bg-gradient-to-br from-brand-ink to-brand-inkLight rounded-lg flex items-center justify-center text-brand-accent text-xs font-bold">
                                     {quote.buyerName.charAt(0)}
                                   </div>
-                                  <span className="font-semibold text-[#0D1F3C] text-sm group-hover/buyer:text-[#2ECAD5] transition-colors underline decoration-transparent group-hover/buyer:decoration-[#2ECAD5]">
+                                  <span className="font-semibold text-brand-ink text-sm group-hover/buyer:text-brand-accent transition-colors underline decoration-transparent group-hover/buyer:decoration-brand-accent">
                                     {loadingBuyerId === quote.buyerId ? 'Cargando...' : quote.buyerName}
                                   </span>
                                 </button>
                               </td>
                               <td className="px-6 py-4">
-                                <p className="text-sm font-semibold text-[#0D1F3C]">{quote.productName}</p>
+                                <p className="text-sm font-semibold text-brand-ink">{quote.productName}</p>
                                 <p className="text-xs text-gray-400">{quote.categoryName}</p>
                               </td>
                               <td className="px-6 py-4 text-sm text-gray-600">{quote.quantityLabel}</td>
@@ -2223,7 +2223,7 @@ export default function SupplierDashboard() {
                                     </span>
                                     <button
                                       onClick={() => loadConversationForSupplier({ quoteId: quote.id })}
-                                      className="text-[10px] font-semibold px-3 py-1 rounded-full border border-[#2ECAD5]/30 text-[#2ECAD5] hover:bg-[#2ECAD5]/5 transition-all"
+                                      className="text-[10px] font-semibold px-3 py-1 rounded-full border border-brand-accent/30 text-brand-accent hover:bg-brand-accent/5 transition-all"
                                     >
                                       Abrir conversacion
                                     </button>
@@ -2232,7 +2232,7 @@ export default function SupplierDashboard() {
                                   entitlements.canRespondToQuotes ? (
                                     <button
                                       onClick={() => openQuoteOfferModal(quote)}
-                                      className="bg-gradient-to-r from-emerald-400 to-blue-500 hover:shadow-lg hover:shadow-emerald-400/20 text-[#0D1F3C] font-bold text-sm px-4 py-2 rounded-lg transition-all"
+                                      className="bg-gradient-to-r from-emerald-400 to-blue-500 hover:shadow-lg hover:shadow-emerald-400/20 text-brand-ink font-bold text-sm px-4 py-2 rounded-lg transition-all"
                                     >
                                       Ver Cotización
                                     </button>
@@ -2264,7 +2264,7 @@ export default function SupplierDashboard() {
                               <button
                                 onClick={() => openBuyerSummary(quote)}
                                 disabled={loadingBuyerId === quote.buyerId}
-                                className="font-bold text-[#0D1F3C] hover:text-[#2ECAD5] transition-colors text-left disabled:opacity-60"
+                                className="font-bold text-brand-ink hover:text-brand-accent transition-colors text-left disabled:opacity-60"
                               >
                                 {loadingBuyerId === quote.buyerId ? 'Cargando...' : quote.buyerName}
                               </button>
@@ -2281,7 +2281,7 @@ export default function SupplierDashboard() {
                                 </span>
                                 <button
                                   onClick={() => loadConversationForSupplier({ quoteId: quote.id })}
-                                  className="text-[10px] font-semibold px-3 py-1 rounded-full border border-[#2ECAD5]/30 text-[#2ECAD5] hover:bg-[#2ECAD5]/5 transition-all"
+                                  className="text-[10px] font-semibold px-3 py-1 rounded-full border border-brand-accent/30 text-brand-accent hover:bg-brand-accent/5 transition-all"
                                 >
                                   Abrir conversacion
                                 </button>
@@ -2311,7 +2311,7 @@ export default function SupplierDashboard() {
                 </>
               ) : (
                 <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
-                  <h3 className="text-lg font-bold text-[#0D1F3C]">No hay Solicitudes de Cotización abiertas ahora mismo</h3>
+                  <h3 className="text-lg font-bold text-brand-ink">No hay Solicitudes de Cotización abiertas ahora mismo</h3>
                   <p className="text-sm text-gray-400 mt-2">Cuando un comprador publique una necesidad, aparecerá en este inbox.</p>
                 </div>
               )}
@@ -2319,7 +2319,7 @@ export default function SupplierDashboard() {
 
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-extrabold text-[#0D1F3C]">Mis ofertas</h2>
+                <h2 className="text-xl font-extrabold text-brand-ink">Mis ofertas</h2>
                 <span className="text-xs text-gray-400 bg-gray-100 px-3 py-1 rounded-full font-medium">{supplierOffers.length} ofertas enviadas</span>
               </div>
 
@@ -2337,7 +2337,7 @@ export default function SupplierDashboard() {
                       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                         <div>
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="text-base font-bold text-[#0D1F3C]">{offer.quote?.productName || 'Solicitud de Oferta'}</h3>
+                            <h3 className="text-base font-bold text-brand-ink">{offer.quote?.productName || 'Solicitud de Oferta'}</h3>
                             <span className={`text-[10px] font-semibold px-3 py-1 rounded-full ${offer.statusClass}`}>
                               {offer.statusLabel}
                             </span>
@@ -2352,12 +2352,12 @@ export default function SupplierDashboard() {
                           <p className="text-sm text-gray-600 mt-3">{offer.notes || 'Sin notas adicionales.'}</p>
                         </div>
                         <div className="lg:text-right">
-                          <div className="text-2xl font-extrabold text-[#0D1F3C]">{offer.priceLabel}</div>
+                          <div className="text-2xl font-extrabold text-brand-ink">{offer.priceLabel}</div>
                           <div className="text-xs text-gray-400 mt-1">{offer.createdAtLabel}</div>
                           <button
                             type="button"
                             onClick={() => loadConversationForSupplier({ quoteId: offer.quoteId })}
-                            className="mt-4 border border-[#2ECAD5]/30 text-[#2ECAD5] font-semibold px-4 py-2 rounded-xl hover:bg-[#2ECAD5]/5 transition-all text-sm"
+                            className="mt-4 border border-brand-accent/30 text-brand-accent font-semibold px-4 py-2 rounded-xl hover:bg-brand-accent/5 transition-all text-sm"
                           >
                             Abrir conversacion
                           </button>
@@ -2371,7 +2371,7 @@ export default function SupplierDashboard() {
                                 value={offer.pipelineStatus}
                                 disabled={isUpdatingOfferId === offer.id}
                                 onChange={(event) => handleOfferPipelineChange(offer.id, event.target.value)}
-                                className="min-w-[180px] rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-[#0D1F3C] focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 disabled:opacity-60"
+                                className="min-w-[180px] rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-brand-ink focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 disabled:opacity-60"
                               >
                                 {EDITABLE_OFFER_PIPELINE_OPTIONS.map((option) => (
                                   <option key={option.value} value={option.value}>
@@ -2388,7 +2388,7 @@ export default function SupplierDashboard() {
                 </div>
               ) : (
                 <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
-                  <h3 className="text-lg font-bold text-[#0D1F3C]">Todavia no envias ofertas</h3>
+                  <h3 className="text-lg font-bold text-brand-ink">Todavia no envias ofertas</h3>
                   <p className="text-sm text-gray-400 mt-2">Abre una Solicitud de Cotización y responde con precio, notas y tiempo de entrega.</p>
                 </div>
               )}
@@ -2404,10 +2404,10 @@ export default function SupplierDashboard() {
               {[
                 { label: 'Productos activos', value: products.filter(p => p.status === 'active').length, color: 'text-emerald-500', items: products.filter(p => p.status === 'active').map(p => ({ label: p.name, value: p.priceLabel || '', sub: p.category || '' })), emptyText: 'Sin productos activos' },
                 { label: 'Stock bajo', value: products.filter(p => p.status === 'low_stock').length, color: 'text-amber-500', items: products.filter(p => p.status === 'low_stock').map(p => ({ label: p.name, value: p.priceLabel || '', sub: p.category || '' })), emptyText: 'Sin productos con stock bajo' },
-                { label: 'Categorias', value: [...new Set(products.map(p => p.category))].length, color: 'text-[#2ECAD5]', items: [...new Set(products.map(p => p.category))].filter(Boolean).map(cat => ({ label: cat, value: `${products.filter(p => p.category === cat).length} productos` })), emptyText: 'Sin categorias' },
-                { label: 'Total productos', value: products.length, color: 'text-[#0D1F3C]', items: products.map(p => ({ label: p.name, value: p.priceLabel || '', sub: p.category || '' })), emptyText: 'Sin productos en el catalogo' },
+                { label: 'Categorias', value: [...new Set(products.map(p => p.category))].length, color: 'text-brand-accent', items: [...new Set(products.map(p => p.category))].filter(Boolean).map(cat => ({ label: cat, value: `${products.filter(p => p.category === cat).length} productos` })), emptyText: 'Sin categorias' },
+                { label: 'Total productos', value: products.length, color: 'text-brand-ink', items: products.map(p => ({ label: p.name, value: p.priceLabel || '', sub: p.category || '' })), emptyText: 'Sin productos en el catalogo' },
               ].map((s) => (
-                <button key={s.label} type="button" onClick={() => setStatDetail({ title: s.label, value: s.value, items: s.items, emptyText: s.emptyText })} className="bg-white rounded-2xl border border-gray-100 p-5 card-premium text-left hover:border-[#2ECAD5]/40 hover:shadow-md transition-all group">
+                <button key={s.label} type="button" onClick={() => setStatDetail({ title: s.label, value: s.value, items: s.items, emptyText: s.emptyText })} className="ui-card-interactive p-5 group">
                   <div className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-2">{s.label}</div>
                   <div className={`text-2xl font-extrabold ${s.color}`}>{s.value}</div>
                 </button>
@@ -2417,7 +2417,7 @@ export default function SupplierDashboard() {
             {/* Section header */}
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-extrabold text-[#0D1F3C]">Catalogo de productos</h2>
+                <h2 className="text-xl font-extrabold text-brand-ink">Catalogo de productos</h2>
                 <p className="text-sm text-gray-400 mt-1">
                   Imagenes generadas con IA (Nano Banana Pro 2) / {formatLimitLabel(entitlements.productLimit, 'productos')}
                 </p>
@@ -2513,10 +2513,10 @@ export default function SupplierDashboard() {
                   <div className="p-5">
                     <div className="flex items-start justify-between mb-2">
                       <div>
-                        <h3 className="font-bold text-[#0D1F3C] text-sm group-hover:text-[#2ECAD5] transition-colors">{product.name}</h3>
+                        <h3 className="font-bold text-brand-ink text-sm group-hover:text-brand-accent transition-colors">{product.name}</h3>
                         <span className="text-xs text-gray-400">{product.category}</span>
                       </div>
-                      <span className="text-lg font-extrabold text-[#0D1F3C]">{product.price}</span>
+                      <span className="text-lg font-extrabold text-brand-ink">{product.price}</span>
                     </div>
                     <p className="text-xs text-gray-500 line-clamp-2 mb-3">{product.description}</p>
                     <div className="flex items-center justify-between">
@@ -2539,7 +2539,7 @@ export default function SupplierDashboard() {
                             <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
                           </svg>
                         </button>
-                        <span className="text-xs font-semibold text-[#2ECAD5] group-hover:underline">Ver detalle →</span>
+                        <span className="text-xs font-semibold text-brand-accent group-hover:underline">Ver detalle →</span>
                       </div>
                     </div>
                   </div>
@@ -2555,12 +2555,12 @@ export default function SupplierDashboard() {
           <div className="space-y-8 animate-fade-in">
             <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
               {[
-                { label: 'Compradores activos', value: workspaceSummary.activeBuyers, color: 'text-[#0D1F3C]', items: buyerRelationships.map(b => ({ label: b.buyerName, value: `${b.submittedOffers} ofertas`, sub: b.buyerCity || '' })), emptyText: 'Sin compradores activos' },
+                { label: 'Compradores activos', value: workspaceSummary.activeBuyers, color: 'text-brand-ink', items: buyerRelationships.map(b => ({ label: b.buyerName, value: `${b.submittedOffers} ofertas`, sub: b.buyerCity || '' })), emptyText: 'Sin compradores activos' },
                 { label: 'Clientes ganados', value: buyerRelationships.filter((buyer) => buyer.acceptedOffers > 0).length, color: 'text-emerald-500', items: buyerRelationships.filter(b => b.acceptedOffers > 0).map(b => ({ label: b.buyerName, value: `${b.acceptedOffers} aceptadas`, sub: b.buyerCity || '' })), emptyText: 'Aun no ganaste clientes' },
                 { label: 'Seguimientos abiertos', value: buyerRelationships.filter((buyer) => buyer.pendingOffers > 0).length, color: 'text-amber-500', items: buyerRelationships.filter(b => b.pendingOffers > 0).map(b => ({ label: b.buyerName, value: `${b.pendingOffers} pendientes`, sub: b.buyerCity || '' })), emptyText: 'Sin seguimientos abiertos' },
-                { label: 'Favoritos buyer-side', value: supplierStats.recurringClients, color: 'text-[#2ECAD5]', items: [], emptyText: 'Sin datos disponibles' },
+                { label: 'Favoritos buyer-side', value: supplierStats.recurringClients, color: 'text-brand-accent', items: [], emptyText: 'Sin datos disponibles' },
               ].map((stat) => (
-                <button key={stat.label} type="button" onClick={() => setStatDetail({ title: stat.label, value: stat.value, items: stat.items, emptyText: stat.emptyText })} className="bg-white rounded-2xl border border-gray-100 p-6 card-premium text-left hover:border-[#2ECAD5]/40 hover:shadow-md transition-all group">
+                <button key={stat.label} type="button" onClick={() => setStatDetail({ title: stat.label, value: stat.value, items: stat.items, emptyText: stat.emptyText })} className="ui-card-interactive p-6 group">
                   <div className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-2">{stat.label}</div>
                   <div className={`text-3xl font-extrabold ${stat.color}`}>{stat.value}</div>
                 </button>
@@ -2587,7 +2587,7 @@ export default function SupplierDashboard() {
                             })}
                             className="text-left"
                           >
-                            <h3 className="text-base font-bold text-[#0D1F3C] hover:text-[#2ECAD5] transition-colors">
+                            <h3 className="text-base font-bold text-brand-ink hover:text-brand-accent transition-colors">
                               {buyer.buyerName}
                             </h3>
                           </button>
@@ -2605,26 +2605,26 @@ export default function SupplierDashboard() {
                         </p>
                         <div className="flex flex-wrap gap-2 mt-3">
                           {buyer.categories.length ? buyer.categories.map((category) => (
-                            <span key={category} className="text-xs font-medium bg-[#f8fafc] text-gray-500 px-3 py-1 rounded-full border border-gray-100">
+                            <span key={category} className="text-xs font-medium bg-brand-canvas text-gray-500 px-3 py-1 rounded-full border border-gray-100">
                               {category}
                             </span>
                           )) : (
-                            <span className="text-xs font-medium bg-[#f8fafc] text-gray-400 px-3 py-1 rounded-full border border-gray-100">
+                            <span className="text-xs font-medium bg-brand-canvas text-gray-400 px-3 py-1 rounded-full border border-gray-100">
                               Sin categorias aun
                             </span>
                           )}
                         </div>
                       </div>
                       <div className="grid grid-cols-3 gap-3 text-center min-w-[280px]">
-                        <div className="rounded-2xl bg-[#f8fafc] px-4 py-3">
-                          <div className="text-xl font-extrabold text-[#0D1F3C]">{buyer.openRfqs}</div>
+                        <div className="rounded-2xl bg-brand-canvas px-4 py-3">
+                          <div className="text-xl font-extrabold text-brand-ink">{buyer.openRfqs}</div>
                           <div className="text-[10px] text-gray-400 uppercase tracking-wide mt-1">Solicitudes abiertas</div>
                         </div>
-                        <div className="rounded-2xl bg-[#f8fafc] px-4 py-3">
-                          <div className="text-xl font-extrabold text-[#2ECAD5]">{buyer.submittedOffers}</div>
+                        <div className="rounded-2xl bg-brand-canvas px-4 py-3">
+                          <div className="text-xl font-extrabold text-brand-accent">{buyer.submittedOffers}</div>
                           <div className="text-[10px] text-gray-400 uppercase tracking-wide mt-1">Ofertas</div>
                         </div>
-                        <div className="rounded-2xl bg-[#f8fafc] px-4 py-3">
+                        <div className="rounded-2xl bg-brand-canvas px-4 py-3">
                           <div className="text-xl font-extrabold text-emerald-500">{buyer.acceptedOffers}</div>
                           <div className="text-[10px] text-gray-400 uppercase tracking-wide mt-1">Ganadas</div>
                         </div>
@@ -2635,7 +2635,7 @@ export default function SupplierDashboard() {
               </div>
             ) : (
               <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
-                <h3 className="text-lg font-bold text-[#0D1F3C]">Todavia no tienes relaciones buyer activas</h3>
+                <h3 className="text-lg font-bold text-brand-ink">Todavia no tienes relaciones buyer activas</h3>
                 <p className="text-sm text-gray-400 mt-2">A medida que respondas Solicitudes de Cotización relevantes y cierres ofertas, este espacio se convierte en tu cartera comercial.</p>
               </div>
             )}
@@ -2649,15 +2649,15 @@ export default function SupplierDashboard() {
               <div className="bg-white rounded-2xl border border-gray-100 p-6 card-premium">
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                   <div>
-                    <span className="text-xs font-semibold uppercase tracking-widest text-[#2ECAD5]">Workspace activo</span>
-                    <h2 className="text-2xl font-extrabold text-[#0D1F3C] mt-2">
+                    <span className="text-xs font-semibold uppercase tracking-widest text-brand-accent">Workspace activo</span>
+                    <h2 className="text-2xl font-extrabold text-brand-ink mt-2">
                       Plan {currentPlanCard?.name ?? currentPlanLabel}
                     </h2>
                     <p className="text-sm text-gray-500 mt-2 max-w-2xl">
                       Este plan gobierna capacidades operativas del panel supplier, catalogo y cotizaciones. Puedes seguir usando activacion interna para desarrollo, y en paralelo dejar preparado el billing con Flow.
                     </p>
                   </div>
-                  <div className="rounded-2xl bg-[#0D1F3C] px-5 py-4 text-white min-w-[180px]">
+                  <div className="rounded-2xl bg-brand-ink px-5 py-4 text-white min-w-[180px]">
                     <div className="text-xs uppercase tracking-wide text-white/60">Precio referencial</div>
                     <div className="text-2xl font-extrabold mt-1">{currentPlanCard?.price ?? '$0'}</div>
                     <div className="text-xs text-white/60 mt-1">{currentPlanCard?.period ?? '/mes'}</div>
@@ -2671,9 +2671,9 @@ export default function SupplierDashboard() {
                     { label: 'CRM / export', enabled: Boolean(currentPlanDetails?.has_crm) },
                     { label: 'API', enabled: Boolean(currentPlanDetails?.has_api) },
                   ].map((feature) => (
-                    <div key={feature.label} className={`rounded-2xl border px-4 py-4 ${feature.enabled ? 'border-emerald-100 bg-emerald-50' : 'border-gray-100 bg-[#f8fafc]'}`}>
+                    <div key={feature.label} className={`rounded-2xl border px-4 py-4 ${feature.enabled ? 'border-emerald-100 bg-emerald-50' : 'border-gray-100 bg-brand-canvas'}`}>
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-semibold text-[#0D1F3C]">{feature.label}</span>
+                        <span className="text-sm font-semibold text-brand-ink">{feature.label}</span>
                         <span className={`w-2.5 h-2.5 rounded-full ${feature.enabled ? 'bg-emerald-400' : 'bg-gray-300'}`} />
                       </div>
                       <p className={`text-xs mt-2 ${feature.enabled ? 'text-emerald-700' : 'text-gray-400'}`}>
@@ -2685,14 +2685,14 @@ export default function SupplierDashboard() {
               </div>
 
               <div className="bg-white rounded-2xl border border-gray-100 p-6 card-premium">
-                <h3 className="text-lg font-extrabold text-[#0D1F3C]">Impacto del plan</h3>
+                <h3 className="text-lg font-extrabold text-brand-ink">Impacto del plan</h3>
                 <div className="space-y-4 mt-4">
-                  <div className="rounded-2xl bg-[#f8fafc] px-4 py-4">
+                  <div className="rounded-2xl bg-brand-canvas px-4 py-4">
                     <div className="text-xs font-semibold uppercase tracking-wide text-gray-400">Productos activos</div>
-                    <div className="text-2xl font-extrabold text-[#0D1F3C] mt-1">{usageSummary.activeProducts}</div>
+                    <div className="text-2xl font-extrabold text-brand-ink mt-1">{usageSummary.activeProducts}</div>
                     <div className="text-xs text-gray-400 mt-1">{formatLimitLabel(entitlements.productLimit, 'productos')}</div>
                   </div>
-                  <div className="rounded-2xl bg-[#f8fafc] px-4 py-4">
+                  <div className="rounded-2xl bg-brand-canvas px-4 py-4">
                     <div className="text-xs font-semibold uppercase tracking-wide text-gray-400">Cotizaciones respondidas</div>
                     <div className="text-2xl font-extrabold text-emerald-500 mt-1">{usageSummary.quoteResponsesThisMonth}</div>
                     <div className="text-xs text-gray-400 mt-1">{formatLimitLabel(entitlements.quoteResponseLimit, 'cotizaciones')}</div>
@@ -2700,11 +2700,11 @@ export default function SupplierDashboard() {
                   {usageLoading && <div className="text-xs text-gray-400">Actualizando uso mensual...</div>}
                 </div>
 
-                <div className="mt-5 rounded-2xl border border-dashed border-[#2ECAD5]/30 bg-[#f0fdfa] px-4 py-4">
+                <div className="mt-5 rounded-2xl border border-dashed border-brand-accent/30 bg-brand-mint px-4 py-4">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <div className="text-xs font-semibold uppercase tracking-wide text-[#2ECAD5]">Billing Flow</div>
-                      <div className="text-sm font-bold text-[#0D1F3C] mt-1">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-brand-accent">Billing Flow</div>
+                      <div className="text-sm font-bold text-brand-ink mt-1">
                         {pendingPlanRequest
                           ? `Solicitud pendiente para Plan ${pendingPlanRequest.plans?.name ?? pendingPlanRequest.plan_id}`
                           : 'Aun no hay una solicitud de cobro preparada'}
@@ -2731,10 +2731,10 @@ export default function SupplierDashboard() {
                 const hasPendingFlowRequest = pendingPlanRequest?.plan_id === plan.id;
 
                 return (
-                  <div key={plan.id} className={`rounded-2xl border p-6 ${isCurrent ? 'border-[#2ECAD5] bg-[#2ECAD5]/5 shadow-lg shadow-emerald-400/10' : 'border-gray-100 bg-white card-premium'}`}>
+                  <div key={plan.id} className={`rounded-2xl border p-6 ${isCurrent ? 'border-brand-accent bg-brand-accent/5 shadow-lg shadow-emerald-400/10' : 'border-gray-100 bg-white card-premium'}`}>
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <h3 className="text-xl font-extrabold text-[#0D1F3C]">{plan.name}</h3>
+                        <h3 className="text-xl font-extrabold text-brand-ink">{plan.name}</h3>
                         <p className="text-sm text-gray-400 mt-1">{plan.price}{plan.period}</p>
                       </div>
                       {isCurrent ? (
@@ -2751,20 +2751,20 @@ export default function SupplierDashboard() {
                     <div className="space-y-3 mt-5">
                       {plan.features.map((feature) => (
                         <div key={feature} className="flex items-start gap-2 text-sm text-gray-600">
-                          <span className="mt-1 w-1.5 h-1.5 rounded-full bg-[#2ECAD5]" />
+                          <span className="mt-1 w-1.5 h-1.5 rounded-full bg-brand-accent" />
                           <span>{feature}</span>
                         </div>
                       ))}
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 mt-5">
-                      <div className="rounded-xl bg-[#f8fafc] px-3 py-2">
+                      <div className="rounded-xl bg-brand-canvas px-3 py-2">
                         <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Productos</div>
-                        <div className="text-sm font-bold text-[#0D1F3C] mt-1">{plan.maxActiveProducts ?? 'Ilimitado'}</div>
+                        <div className="text-sm font-bold text-brand-ink mt-1">{plan.maxActiveProducts ?? 'Ilimitado'}</div>
                       </div>
-                      <div className="rounded-xl bg-[#f8fafc] px-3 py-2">
+                      <div className="rounded-xl bg-brand-canvas px-3 py-2">
                         <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Cotizaciones / mes</div>
-                        <div className="text-sm font-bold text-[#0D1F3C] mt-1">{plan.maxQuoteResponsesPerMonth ?? 'Ilimitado'}</div>
+                        <div className="text-sm font-bold text-brand-ink mt-1">{plan.maxQuoteResponsesPerMonth ?? 'Ilimitado'}</div>
                       </div>
                     </div>
 
@@ -2776,7 +2776,7 @@ export default function SupplierDashboard() {
                         className={`w-full rounded-xl py-3 text-sm font-bold transition-all ${
                           isCurrent
                             ? 'bg-gray-100 text-gray-400 cursor-default'
-                            : 'bg-gradient-to-r from-emerald-400 to-blue-500 text-[#0D1F3C] hover:shadow-lg hover:shadow-emerald-400/20'
+                            : 'bg-gradient-to-r from-emerald-400 to-blue-500 text-brand-ink hover:shadow-lg hover:shadow-emerald-400/20'
                         } ${isChangingPlan ? 'opacity-60 cursor-not-allowed' : ''}`}
                       >
                         {isCurrent ? 'Plan actual' : isChangingPlan ? 'Actualizando...' : `Cambiar a ${plan.name}`}
@@ -2790,7 +2790,7 @@ export default function SupplierDashboard() {
                           className={`w-full rounded-xl py-3 text-sm font-semibold border transition-all ${
                             hasPendingFlowRequest
                               ? 'border-amber-200 bg-amber-50 text-amber-700 cursor-default'
-                              : 'border-[#2ECAD5]/30 text-[#0D1F3C] hover:bg-[#2ECAD5]/5'
+                              : 'border-brand-accent/30 text-brand-ink hover:bg-brand-accent/5'
                           } ${isPreparingBilling ? 'opacity-60 cursor-not-allowed' : ''}`}
                         >
                           {hasPendingFlowRequest ? 'Flow pendiente para este plan' : isPreparingBilling ? 'Preparando Flow...' : 'Preparar pago con Flow'}

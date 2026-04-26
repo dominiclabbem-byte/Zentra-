@@ -175,24 +175,24 @@ export default function BuyerRegistration() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] bg-grid py-10 px-4">
+    <div className="ui-page py-10 px-4">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-10 animate-fade-in-up">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-[#0D1F3C] to-[#1a3260] rounded-2xl mb-4 shadow-xl shadow-[#0D1F3C]/20">
-            <svg className="w-8 h-8 text-[#2ECAD5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-brand-ink to-brand-inkLight rounded-2xl mb-4 shadow-xl shadow-brand-ink/20">
+            <svg className="w-8 h-8 text-brand-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
             </svg>
           </div>
-          <h1 className="text-3xl font-extrabold text-[#0D1F3C]">{title}</h1>
+          <h1 className="text-3xl font-extrabold text-brand-ink">{title}</h1>
           <p className="text-gray-500 mt-2">{subtitle}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 space-y-8">
           {!currentUser && (
             <div>
-              <h2 className="text-lg font-bold text-[#0D1F3C] mb-5 flex items-center gap-3">
+              <h2 className="text-lg font-bold text-brand-ink mb-5 flex items-center gap-3">
                 <span className="w-7 h-7 bg-gradient-to-r from-emerald-400 to-blue-500 text-white rounded-lg flex items-center justify-center text-sm font-bold shadow-sm">1</span>
                 Cuenta de acceso
               </h2>
@@ -205,7 +205,7 @@ export default function BuyerRegistration() {
                     required
                     value={form.email}
                     onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                    className="ui-input"
                     placeholder="compras@empresa.cl"
                   />
                 </div>
@@ -218,7 +218,7 @@ export default function BuyerRegistration() {
                     minLength={8}
                     value={form.password}
                     onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                    className="ui-input"
                     placeholder="Minimo 8 caracteres"
                   />
                 </div>
@@ -231,7 +231,7 @@ export default function BuyerRegistration() {
                     minLength={8}
                     value={form.confirmPassword}
                     onChange={(event) => setForm((current) => ({ ...current, confirmPassword: event.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                    className="ui-input"
                     placeholder="Repite tu contrasena"
                   />
                 </div>
@@ -240,7 +240,7 @@ export default function BuyerRegistration() {
           )}
 
           <div>
-            <h2 className="text-lg font-bold text-[#0D1F3C] mb-5 flex items-center gap-3">
+            <h2 className="text-lg font-bold text-brand-ink mb-5 flex items-center gap-3">
               <span className="w-7 h-7 bg-gradient-to-r from-emerald-400 to-blue-500 text-white rounded-lg flex items-center justify-center text-sm font-bold shadow-sm">{currentUser ? '1' : '2'}</span>
               Datos de la empresa
             </h2>
@@ -253,7 +253,7 @@ export default function BuyerRegistration() {
                   required
                   value={form.companyName}
                   onChange={(event) => setForm((current) => ({ ...current, companyName: event.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                  className="ui-input"
                   placeholder="Ej: Pasteleria Mozart"
                 />
               </div>
@@ -265,7 +265,7 @@ export default function BuyerRegistration() {
                   required
                   value={form.rut}
                   onChange={(event) => setForm((current) => ({ ...current, rut: event.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                  className="ui-input"
                   placeholder="76.123.456-7"
                 />
               </div>
@@ -277,7 +277,7 @@ export default function BuyerRegistration() {
                   required
                   value={form.city}
                   onChange={(event) => setForm((current) => ({ ...current, city: event.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                  className="ui-input"
                   placeholder="Ej: Santiago"
                 />
               </div>
@@ -287,7 +287,7 @@ export default function BuyerRegistration() {
                   type="text"
                   value={form.address}
                   onChange={(event) => setForm((current) => ({ ...current, address: event.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                  className="ui-input"
                   placeholder="Av. Italia 1580, Nunoa"
                 />
               </div>
@@ -297,7 +297,7 @@ export default function BuyerRegistration() {
                   rows={3}
                   value={form.description}
                   onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all resize-none"
+                  className="ui-input resize-none"
                   placeholder="Describe tu negocio y como compras normalmente."
                 />
               </div>
@@ -308,7 +308,7 @@ export default function BuyerRegistration() {
                   required
                   value={form.businessType}
                   onChange={(event) => setForm((current) => ({ ...current, businessType: event.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 bg-white transition-all"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 bg-white transition-all"
                 >
                   <option value="">Selecciona tu tipo de negocio</option>
                   {BUSINESS_TYPE_OPTIONS.map((option) => (
@@ -322,7 +322,7 @@ export default function BuyerRegistration() {
                   type="text"
                   value={form.monthlyVolume}
                   onChange={(event) => setForm((current) => ({ ...current, monthlyVolume: event.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                  className="ui-input"
                   placeholder="Ej: 2.000 kg/mes"
                 />
               </div>
@@ -332,7 +332,7 @@ export default function BuyerRegistration() {
                   type="tel"
                   value={form.phone}
                   onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                  className="ui-input"
                   placeholder="+56 2 1234 5678"
                 />
               </div>
@@ -342,7 +342,7 @@ export default function BuyerRegistration() {
                   type="tel"
                   value={form.whatsapp}
                   onChange={(event) => setForm((current) => ({ ...current, whatsapp: event.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                  className="ui-input"
                   placeholder="+56 9 1234 5678"
                 />
               </div>
@@ -350,7 +350,7 @@ export default function BuyerRegistration() {
           </div>
 
           <div>
-            <h2 className="text-lg font-bold text-[#0D1F3C] mb-2 flex items-center gap-3">
+            <h2 className="text-lg font-bold text-brand-ink mb-2 flex items-center gap-3">
               <span className="w-7 h-7 bg-gradient-to-r from-emerald-400 to-blue-500 text-white rounded-lg flex items-center justify-center text-sm font-bold shadow-sm">{currentUser ? '2' : '3'}</span>
               Categorias de interes
             </h2>
@@ -365,11 +365,11 @@ export default function BuyerRegistration() {
                     onClick={() => handleCategory(category.id)}
                     className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all text-left ${
                       selected
-                        ? 'border-[#2ECAD5] bg-[#2ECAD5]/5 text-[#0D1F3C] shadow-sm shadow-emerald-400/10'
+                        ? 'border-brand-accent bg-brand-accent/5 text-brand-ink shadow-sm shadow-emerald-400/10'
                         : 'border-gray-200 text-gray-600 hover:border-gray-300'
                     }`}
                   >
-                    <span className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 ${selected ? 'bg-[#2ECAD5] text-white' : 'bg-gray-100'}`}>
+                    <span className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 ${selected ? 'bg-brand-accent text-white' : 'bg-gray-100'}`}>
                       {selected && (
                         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
@@ -384,7 +384,7 @@ export default function BuyerRegistration() {
           </div>
 
           <div>
-            <h2 className="text-lg font-bold text-[#0D1F3C] mb-4 flex items-center gap-3">
+            <h2 className="text-lg font-bold text-brand-ink mb-4 flex items-center gap-3">
               <span className="w-7 h-7 bg-gradient-to-r from-emerald-400 to-blue-500 text-white rounded-lg flex items-center justify-center text-sm font-bold shadow-sm">{currentUser ? '3' : '4'}</span>
               Medio de contacto preferido
             </h2>
@@ -396,7 +396,7 @@ export default function BuyerRegistration() {
                   onClick={() => setForm((current) => ({ ...current, contactMethod: method.value }))}
                   className={`flex items-center gap-2 px-5 py-3 rounded-xl border-2 text-sm font-medium transition-all ${
                     form.contactMethod === method.value
-                      ? 'border-[#2ECAD5] bg-[#2ECAD5]/5 text-[#0D1F3C] shadow-sm shadow-emerald-400/10'
+                      ? 'border-brand-accent bg-brand-accent/5 text-brand-ink shadow-sm shadow-emerald-400/10'
                       : 'border-gray-200 text-gray-600 hover:border-gray-300'
                   }`}
                 >
@@ -407,14 +407,14 @@ export default function BuyerRegistration() {
           </div>
 
           {!currentUser && (
-            <div className="bg-[#f0fafb] rounded-xl p-5 border border-[#2ECAD5]/10">
+            <div className="bg-[#f0fafb] rounded-xl p-5 border border-brand-accent/10">
               <label htmlFor="buyer-register-consent" className="flex items-start gap-3 cursor-pointer">
                 <input
                   id="buyer-register-consent"
                   type="checkbox"
                   checked={form.consent}
                   onChange={(event) => setForm((current) => ({ ...current, consent: event.target.checked }))}
-                  className="mt-1 w-4 h-4 text-[#2ECAD5] rounded border-gray-300 focus:ring-[#2ECAD5]"
+                  className="mt-1 w-4 h-4 text-brand-accent rounded border-gray-300 focus:ring-brand-accent"
                 />
                 <span className="text-sm text-gray-600 leading-relaxed">
                   Acepto usar mis datos de empresa para crear mi perfil en Zentra y recibir ofertas de proveedores relevantes.
@@ -426,20 +426,20 @@ export default function BuyerRegistration() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-gradient-to-r from-[#0D1F3C] to-[#1a3260] hover:from-[#1a3260] hover:to-[#0D1F3C] text-white font-bold py-4 rounded-xl text-lg transition-all hover:shadow-xl hover:shadow-[#0D1F3C]/20 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full bg-gradient-to-r from-brand-ink to-brand-inkLight hover:from-brand-inkLight hover:to-brand-ink text-white font-bold py-4 rounded-xl text-lg transition-all hover:shadow-xl hover:shadow-brand-ink/20 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {isSubmitting ? 'Guardando...' : buttonLabel}
           </button>
 
           <p className="text-center text-sm text-gray-400">
             {currentUser ? (
-              <Link to="/dashboard-comprador" className="text-[#2ECAD5] hover:underline font-medium">
+              <Link to="/dashboard-comprador" className="text-brand-accent hover:underline font-medium">
                 Ir a mi dashboard comprador
               </Link>
             ) : (
               <>
                 Ya tienes cuenta?{' '}
-                <Link to="/ingresar" className="text-[#2ECAD5] hover:underline font-medium">
+                <Link to="/ingresar" className="text-brand-accent hover:underline font-medium">
                   Ingresar
                 </Link>
               </>

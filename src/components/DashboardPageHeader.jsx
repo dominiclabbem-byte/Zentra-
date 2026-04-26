@@ -8,7 +8,7 @@ export default function DashboardPageHeader({
   accentBlobClass = 'bg-indigo-500/5',
 }) {
   return (
-    <div className="relative bg-[#0a1628] text-white py-8 px-4 overflow-hidden">
+    <div className="relative bg-brand-inkDark text-white py-8 px-4 overflow-hidden">
       <div className="absolute inset-0 bg-grid opacity-30" />
       <div className={`absolute top-0 right-0 w-[300px] h-[300px] rounded-full blur-[80px] ${accentBlobClass}`} />
 
@@ -16,7 +16,7 @@ export default function DashboardPageHeader({
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-2">
-              <span className="text-xs font-semibold uppercase tracking-widest text-[#2ECAD5]">{eyebrow}</span>
+              <span className="text-xs font-semibold uppercase tracking-widest text-brand-accent">{eyebrow}</span>
               {badges.map((badge) => (
                 <span
                   key={`${badge.label}-${badge.tone ?? 'default'}`}
@@ -33,7 +33,7 @@ export default function DashboardPageHeader({
           {action ? (
             <button
               onClick={action.onClick}
-              className={action.className ?? 'flex items-center gap-2 bg-gradient-to-r from-emerald-400 to-blue-500 text-[#0D1F3C] font-bold px-6 py-3 rounded-xl transition-all whitespace-nowrap hover:scale-[1.02]'}
+              className={action.className ?? 'flex items-center gap-2 bg-gradient-to-r from-emerald-400 to-blue-500 text-brand-ink font-bold px-6 py-3 rounded-xl transition-all whitespace-nowrap hover:scale-[1.02]'}
             >
               {action.icon}
               {action.label}
@@ -55,7 +55,7 @@ export default function DashboardPageHeader({
               {tab.icon}
               {tab.label}
               {tab.badge ? (
-                <span className={tab.badgeClassName ?? 'text-[10px] font-bold bg-white/10 text-[#2ECAD5] px-2 py-0.5 rounded-full'}>
+                <span className={tab.badgeClassName ?? 'text-[10px] font-bold bg-white/10 text-brand-accent px-2 py-0.5 rounded-full'}>
                   {tab.badge}
                 </span>
               ) : null}

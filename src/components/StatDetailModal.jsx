@@ -9,7 +9,7 @@ export default function StatDetailModal({ title, value, items, emptyText, onClos
         <div className="flex items-start justify-between p-6 border-b border-gray-100">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">{title}</p>
-            <p className="text-3xl font-extrabold text-[#0D1F3C] mt-1">{value}</p>
+            <p className="text-3xl font-extrabold text-brand-ink mt-1">{value}</p>
           </div>
           <button
             type="button"
@@ -31,10 +31,10 @@ export default function StatDetailModal({ title, value, items, emptyText, onClos
               {items.map((item, i) => (
                 <div
                   key={i}
-                  className="flex items-start justify-between gap-3 p-3 rounded-xl bg-[#f8fafc] border border-gray-100"
+                  className="flex items-start justify-between gap-3 p-3 rounded-xl bg-brand-canvas border border-gray-100"
                 >
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-[#0D1F3C]">{item.label}</p>
+                    <p className="text-sm font-semibold text-brand-ink">{item.label}</p>
                     {item.sub && <p className="text-xs text-gray-400 mt-0.5">{item.sub}</p>}
                   </div>
                   {item.value && (

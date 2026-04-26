@@ -7,9 +7,9 @@ export default function ProtectedRoute({ role, children }) {
 
   if (isLoading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center bg-[#f8fafc]">
+      <div className="min-h-[60vh] flex items-center justify-center bg-brand-canvas">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#2ECAD5]/20 border-t-[#2ECAD5] rounded-full animate-spin mx-auto" />
+          <div className="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin mx-auto" />
           <p className="mt-4 text-sm text-gray-500">Cargando tu cuenta...</p>
         </div>
       </div>

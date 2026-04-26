@@ -788,12 +788,12 @@ export default function BuyerDashboard() {
         )}
         <div className="absolute top-2 left-2 flex flex-col items-start gap-1.5">
           {showRecommendationMeta && product.recommendationScore > 0 && (
-            <div className="text-[9px] font-bold bg-[#0D1F3C]/90 text-white px-2 py-0.5 rounded-full shadow-sm">
+            <div className="text-[9px] font-bold bg-brand-ink/90 text-white px-2 py-0.5 rounded-full shadow-sm">
               Para ti
             </div>
           )}
           {product.hasTrackedPriceAlert && (
-            <div className="text-[9px] font-bold bg-white/90 text-[#0D1F3C] px-2 py-0.5 rounded-full shadow-sm">
+            <div className="text-[9px] font-bold bg-white/90 text-brand-ink px-2 py-0.5 rounded-full shadow-sm">
               Alerta activa
             </div>
           )}
@@ -817,24 +817,24 @@ export default function BuyerDashboard() {
       </div>
 
       <div className={`${showRecommendationMeta ? 'p-2.5 flex-1 flex flex-col' : 'p-3.5'}`}>
-        <h3 className={`${showRecommendationMeta ? 'text-[13px]' : 'text-sm'} font-bold text-[#0D1F3C] truncate`}>{product.name}</h3>
+        <h3 className={`${showRecommendationMeta ? 'text-[13px]' : 'text-sm'} font-bold text-brand-ink truncate`}>{product.name}</h3>
         <p className={`${showRecommendationMeta ? 'text-[10px]' : 'text-xs'} text-gray-400 mt-0.5 truncate`}>{product.category}</p>
         <div className={`flex items-center justify-between ${showRecommendationMeta ? 'mt-2' : 'mt-3'}`}>
-          <span className={`${showRecommendationMeta ? 'text-sm' : 'text-base'} font-extrabold text-[#0D1F3C]`}>{product.price}</span>
+          <span className={`${showRecommendationMeta ? 'text-sm' : 'text-base'} font-extrabold text-brand-ink`}>{product.price}</span>
         </div>
         {showRecommendationMeta && product.recommendationReasons?.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1 min-h-[40px] content-start">
             {product.recommendationReasons.slice(0, 2).map((reason) => (
-              <span key={`${product.id}-${reason}`} className="text-[9px] font-semibold bg-[#f2f7fb] text-[#0D1F3C] border border-[#dce9f2] px-1.5 py-0.5 rounded-full">
+              <span key={`${product.id}-${reason}`} className="text-[9px] font-semibold bg-brand-panel text-brand-ink border border-brand-panelBorder px-1.5 py-0.5 rounded-full">
                 {reason}
               </span>
             ))}
           </div>
         )}
         {product.recentPriceAlert && (
-          <div className={`mt-2 rounded-xl border border-gray-100 bg-[#f8fafc] ${showRecommendationMeta ? 'px-2 py-1.5' : 'px-3 py-2'}`}>
+          <div className={`mt-2 rounded-xl border border-gray-100 bg-brand-canvas ${showRecommendationMeta ? 'px-2 py-1.5' : 'px-3 py-2'}`}>
             <div className="flex items-center justify-between gap-2">
-              <span className={`${showRecommendationMeta ? 'text-[10px]' : 'text-[11px]'} font-semibold text-[#0D1F3C]`}>{product.recentPriceAlert.impactLabel}</span>
+              <span className={`${showRecommendationMeta ? 'text-[10px]' : 'text-[11px]'} font-semibold text-brand-ink`}>{product.recentPriceAlert.impactLabel}</span>
               <span className={`text-[10px] font-bold ${
                 product.recentPriceAlert.change === 'down' ? 'text-emerald-600' : 'text-rose-600'
               }`}>
@@ -849,7 +849,7 @@ export default function BuyerDashboard() {
         <div className="flex-1" />
         {product.supplierName && (
           <div className={`flex items-center gap-2 ${showRecommendationMeta ? 'mt-2.5 pt-2.5' : 'mt-3 pt-3'} border-t border-gray-50`}>
-            <div className={`${showRecommendationMeta ? 'w-5 h-5' : 'w-6 h-6'} bg-gradient-to-br from-[#0D1F3C] to-[#1a3260] rounded-md flex items-center justify-center text-[#2ECAD5] text-[8px] font-bold flex-shrink-0`}>
+            <div className={`${showRecommendationMeta ? 'w-5 h-5' : 'w-6 h-6'} bg-gradient-to-br from-brand-ink to-brand-inkLight rounded-md flex items-center justify-center text-brand-accent text-[8px] font-bold flex-shrink-0`}>
               {product.supplierName.split(' ').map((word) => word[0]).join('').slice(0, 2).toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
@@ -1305,18 +1305,18 @@ export default function BuyerDashboard() {
             ),
           },
         ].map((s) => (
-          <button key={s.label} type="button" onClick={() => setStatDetail({ title: s.label, value: s.value, items: s.items, emptyText: s.emptyText })} className="bg-white rounded-2xl border border-gray-100 p-5 card-premium text-left hover:border-[#2ECAD5]/40 hover:shadow-md transition-all group">
-            <div className="w-9 h-9 bg-[#f8fafc] rounded-xl flex items-center justify-center text-gray-400 mb-3 group-hover:bg-[#2ECAD5]/10 group-hover:text-[#2ECAD5] transition-colors">
+          <button key={s.label} type="button" onClick={() => setStatDetail({ title: s.label, value: s.value, items: s.items, emptyText: s.emptyText })} className="ui-card-interactive p-5 group">
+            <div className="w-9 h-9 bg-brand-canvas rounded-xl flex items-center justify-center text-gray-400 mb-3 group-hover:bg-brand-accent/10 group-hover:text-brand-accent transition-colors">
               {s.icon}
             </div>
-            <div className="text-2xl font-extrabold text-[#0D1F3C]">{s.value}</div>
+            <div className="text-2xl font-extrabold text-brand-ink">{s.value}</div>
             <div className="text-xs text-gray-400 mt-1">{s.label}</div>
           </button>
         ))}
       </div>
 
       <div>
-        <h2 className="text-xl font-extrabold text-[#0D1F3C] mb-4">Cotizaciones activas</h2>
+        <h2 className="text-xl font-extrabold text-brand-ink mb-4">Cotizaciones activas</h2>
         {quotesLoading ? (
           <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center text-sm text-gray-400">
             Cargando cotizaciones...
@@ -1329,8 +1329,8 @@ export default function BuyerDashboard() {
               return (
                 <div key={quote.id} className="bg-white rounded-2xl border border-gray-100 p-5 card-premium">
                   <div className="flex items-start justify-between mb-3 gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-[#2ECAD5]/10 to-[#2ECAD5]/5 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <svg className="w-5 h-5 text-[#2ECAD5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <div className="w-10 h-10 bg-gradient-to-br from-brand-accent/10 to-brand-accent/5 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <svg className="w-5 h-5 text-brand-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                       </svg>
                     </div>
@@ -1338,21 +1338,21 @@ export default function BuyerDashboard() {
                       {quote.statusLabel}
                     </span>
                   </div>
-                  <h3 className="font-bold text-[#0D1F3C] mb-1">{quote.productName}</h3>
+                  <h3 className="font-bold text-brand-ink mb-1">{quote.productName}</h3>
                   <p className="text-sm text-gray-500">{quote.quantityLabel}</p>
                   <p className="text-xs text-gray-400 mt-1">{quote.categoryName} / Entrega {quote.deliveryDateLabel}</p>
                   <p className="text-xs text-gray-400 mt-2">{quote.createdAtLabel}</p>
                   {quote.offers.length > 0 ? (
                     <div className="mt-3 flex flex-wrap gap-1.5">
                       {quote.offers.map((offer) => offer.supplierName).filter(Boolean).map((name) => (
-                        <span key={name} className="text-[10px] font-semibold bg-[#f2f7fb] text-[#0D1F3C] border border-[#dce9f2] px-2 py-0.5 rounded-full">
+                        <span key={name} className="text-[10px] font-semibold bg-brand-panel text-brand-ink border border-brand-panelBorder px-2 py-0.5 rounded-full">
                           🏪 {name}
                         </span>
                       ))}
                     </div>
                   ) : quote.targetSupplierName ? (
                     <div className="mt-3">
-                      <span className="text-[10px] font-semibold bg-[#f2f7fb] text-[#0D1F3C] border border-[#dce9f2] px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] font-semibold bg-brand-panel text-brand-ink border border-brand-panelBorder px-2 py-0.5 rounded-full">
                         🏪 Solicitado a {quote.targetSupplierName}
                       </span>
                     </div>
@@ -1360,7 +1360,7 @@ export default function BuyerDashboard() {
                   {acceptedOffer && (
                     <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 px-3.5 py-3">
                       <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-600">Oferta aceptada</div>
-                      <div className="text-sm font-bold text-[#0D1F3C] mt-1">{acceptedOffer.supplierName}</div>
+                      <div className="text-sm font-bold text-brand-ink mt-1">{acceptedOffer.supplierName}</div>
                       <div className="text-xs text-gray-500 mt-1">
                         {acceptedOffer.priceLabel} / Entrega estimada: {acceptedOffer.estimatedLeadTime}
                       </div>
@@ -1370,7 +1370,7 @@ export default function BuyerDashboard() {
                     <button
                       type="button"
                       onClick={() => handleOpenQuoteOffers(quote)}
-                      className="flex-1 text-sm text-[#2ECAD5] border border-[#2ECAD5]/30 hover:bg-[#2ECAD5]/5 font-semibold py-2.5 rounded-xl transition-all"
+                      className="flex-1 text-sm text-brand-accent border border-brand-accent/30 hover:bg-brand-accent/5 font-semibold py-2.5 rounded-xl transition-all"
                     >
                       Ver ofertas
                     </button>
@@ -1391,7 +1391,7 @@ export default function BuyerDashboard() {
           </div>
         ) : (
           <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
-            <h3 className="text-lg font-bold text-[#0D1F3C]">Aun no creas tu primera Solicitud de Cotización</h3>
+            <h3 className="text-lg font-bold text-brand-ink">Aun no creas tu primera Solicitud de Cotización</h3>
             <p className="text-sm text-gray-400 mt-2">Publica una necesidad de compra y empieza a comparar ofertas reales.</p>
             <button
               type="button"
@@ -1407,7 +1407,7 @@ export default function BuyerDashboard() {
       {reviewOpportunities.length > 0 && (
         <div>
           <div className="flex items-center gap-3 mb-4">
-            <h2 className="text-xl font-extrabold text-[#0D1F3C]">Reseñas pendientes</h2>
+            <h2 className="text-xl font-extrabold text-brand-ink">Reseñas pendientes</h2>
             <span className="text-[10px] font-bold bg-amber-400 text-amber-900 px-2.5 py-1 rounded-full animate-pulse">
               {reviewOpportunities.length} pendiente{reviewOpportunities.length !== 1 ? 's' : ''}
             </span>
@@ -1422,7 +1422,7 @@ export default function BuyerDashboard() {
                     </svg>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-[#0D1F3C] truncate">{opportunity.supplierName}</p>
+                    <p className="text-sm font-bold text-brand-ink truncate">{opportunity.supplierName}</p>
                     <p className="text-xs text-gray-400 truncate">{opportunity.productName}</p>
                   </div>
                 </div>
@@ -1443,7 +1443,7 @@ export default function BuyerDashboard() {
       )}
 
       <div>
-        <h2 className="text-xl font-extrabold text-[#0D1F3C] mb-4">Historial de cotizaciones</h2>
+        <h2 className="text-xl font-extrabold text-brand-ink mb-4">Historial de cotizaciones</h2>
         {quoteHistory.length > 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
             {quoteHistory.map((quote, index) => {
@@ -1452,7 +1452,7 @@ export default function BuyerDashboard() {
               return (
                 <div
                   key={quote.id}
-                  className={`flex items-center gap-4 px-5 py-4 hover:bg-[#f8fafc] transition-colors ${
+                  className={`flex items-center gap-4 px-5 py-4 hover:bg-brand-canvas transition-colors ${
                     index < quoteHistory.length - 1 ? 'border-b border-gray-50' : ''
                   }`}
                 >
@@ -1461,21 +1461,21 @@ export default function BuyerDashboard() {
                       ? 'bg-emerald-50'
                       : quote.status === 'cancelled'
                         ? 'bg-rose-50'
-                        : 'bg-[#f8fafc]'
+                        : 'bg-brand-canvas'
                   }`}>
                     <svg className={`w-5 h-5 ${
                       quote.status === 'closed'
                         ? 'text-emerald-500'
                         : quote.status === 'cancelled'
                           ? 'text-rose-500'
-                          : 'text-[#2ECAD5]'
+                          : 'text-brand-accent'
                     }`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                     </svg>
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-bold text-[#0D1F3C]">{quote.productName}</p>
+                      <p className="text-sm font-bold text-brand-ink">{quote.productName}</p>
                       <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${quote.statusClass}`}>
                         {quote.statusLabel}
                       </span>
@@ -1488,7 +1488,7 @@ export default function BuyerDashboard() {
                       {acceptedOffer ? ` / Mejor cierre ${acceptedOffer.priceLabel}` : ''}
                     </p>
                     {acceptedOffer?.supplierName ? (
-                      <p className="text-xs font-semibold text-[#0D1F3C] mt-0.5">🏪 {acceptedOffer.supplierName}</p>
+                      <p className="text-xs font-semibold text-brand-ink mt-0.5">🏪 {acceptedOffer.supplierName}</p>
                     ) : quote.offers.length > 0 ? (
                       <p className="text-xs text-gray-500 mt-0.5">
                         🏪 {quote.offers.map((o) => o.supplierName).filter(Boolean).join(', ')}
@@ -1500,7 +1500,7 @@ export default function BuyerDashboard() {
                   <button
                     type="button"
                     onClick={() => handleRepeatQuote(quote)}
-                    className="flex items-center gap-1.5 text-xs font-semibold text-[#2ECAD5] border border-[#2ECAD5]/30 hover:bg-[#2ECAD5]/5 px-3 py-2 rounded-xl transition-all whitespace-nowrap flex-shrink-0"
+                    className="flex items-center gap-1.5 text-xs font-semibold text-brand-accent border border-brand-accent/30 hover:bg-brand-accent/5 px-3 py-2 rounded-xl transition-all whitespace-nowrap flex-shrink-0"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
@@ -1556,7 +1556,7 @@ export default function BuyerDashboard() {
       onClick: () => setActiveTab('dashboard'),
       badge: unreadBuyerOfferNotifications || null,
       badgeClassName: unreadBuyerOfferNotifications
-        ? 'text-[10px] font-bold bg-emerald-400 text-[#0D1F3C] px-2 py-0.5 rounded-full animate-pulse'
+        ? 'text-[10px] font-bold bg-emerald-400 text-brand-ink px-2 py-0.5 rounded-full animate-pulse'
         : undefined,
       icon: (
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -1601,7 +1601,7 @@ export default function BuyerDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] bg-grid">
+    <div className="ui-page">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       {statDetail && (
@@ -1628,7 +1628,7 @@ export default function BuyerDashboard() {
                 placeholder="Ej: Harina extra fina, Aceite de oliva..."
                 value={quoteForm.product}
                 onChange={(e) => setQuoteForm({ ...quoteForm, product: e.target.value })}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                className="ui-input"
               />
             </div>
             <div>
@@ -1637,7 +1637,7 @@ export default function BuyerDashboard() {
                 id="quote-category"
                 value={quoteForm.categoryId}
                 onChange={(e) => setQuoteForm({ ...quoteForm, categoryId: e.target.value })}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] bg-white transition-all"
+                className="ui-select"
               >
                 <option value="">Selecciona una categoria</option>
                 {categoryOptions.map((category) => (
@@ -1658,7 +1658,7 @@ export default function BuyerDashboard() {
                   placeholder="500"
                   value={quoteForm.quantity}
                   onChange={(e) => setQuoteForm({ ...quoteForm, quantity: e.target.value })}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                  className="ui-input"
                 />
               </div>
               <div className="w-28">
@@ -1667,7 +1667,7 @@ export default function BuyerDashboard() {
                   id="quote-unit"
                   value={quoteForm.unit}
                   onChange={(e) => setQuoteForm({ ...quoteForm, unit: e.target.value })}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] bg-white transition-all"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:border-brand-accent bg-white transition-all"
                 >
                   {units.map((u) => <option key={u}>{u}</option>)}
                 </select>
@@ -1683,7 +1683,7 @@ export default function BuyerDashboard() {
                 required
                 value={quoteForm.deliveryDate}
                 onChange={(e) => setQuoteForm({ ...quoteForm, deliveryDate: e.target.value })}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                className="ui-input"
               />
             </div>
             <div>
@@ -1696,7 +1696,7 @@ export default function BuyerDashboard() {
                 placeholder="Ej: Marca preferida, calibre, formato de entrega, horario de recepcion..."
                 value={quoteForm.notes}
                 onChange={(e) => setQuoteForm({ ...quoteForm, notes: e.target.value })}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 resize-none transition-all"
+                className="ui-textarea"
               />
             </div>
             <div className="flex gap-3 pt-2">
@@ -1710,7 +1710,7 @@ export default function BuyerDashboard() {
               <button
                 type="submit"
                 disabled={isSubmittingQuote}
-                className="flex-1 bg-gradient-to-r from-[#0D1F3C] to-[#1a3260] text-white font-bold py-3 rounded-xl hover:shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                className="flex-1 ui-btn-primary py-3"
               >
                 {isSubmittingQuote ? 'Creando...' : 'Enviar cotizacion'}
               </button>
@@ -1721,11 +1721,11 @@ export default function BuyerDashboard() {
 
       {selectedQuote && (
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-[#0D1F3C]/50 backdrop-blur-sm p-4 animate-fade-in overflow-y-auto"
+          className="fixed inset-0 z-50 flex items-start justify-center bg-brand-ink/50 backdrop-blur-sm p-4 animate-fade-in overflow-y-auto"
           onClick={(event) => event.target === event.currentTarget && setSelectedQuote(null)}
         >
-          <div className="transform-gpu bg-[#f8fafc] rounded-2xl shadow-2xl shadow-[#0D1F3C]/20 w-full max-w-4xl my-8 animate-fade-in-up overflow-hidden">
-            <div className="h-28 bg-gradient-to-r from-[#0D1F3C] via-[#1a3260] to-[#0D1F3C] relative">
+          <div className="transform-gpu bg-brand-canvas rounded-2xl shadow-2xl shadow-brand-ink/20 w-full max-w-4xl my-8 animate-fade-in-up overflow-hidden">
+            <div className="h-28 bg-gradient-to-r from-brand-ink via-brand-inkLight to-brand-ink relative">
               <div className="absolute inset-0 bg-grid opacity-20" />
               <button
                 onClick={() => setSelectedQuote(null)}
@@ -1738,12 +1738,12 @@ export default function BuyerDashboard() {
             </div>
 
             <div className="px-6 pb-6 relative">
-              <div className="w-20 h-20 bg-gradient-to-br from-[#0D1F3C] to-[#1a3260] rounded-2xl flex items-center justify-center text-[#2ECAD5] text-2xl font-extrabold border-4 border-white shadow-lg -mt-10 relative z-10">
+              <div className="w-20 h-20 bg-gradient-to-br from-brand-ink to-brand-inkLight rounded-2xl flex items-center justify-center text-brand-accent text-2xl font-extrabold border-4 border-white shadow-lg -mt-10 relative z-10">
                 SC
               </div>
               <div className="mt-4 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                 <div>
-                  <h2 className="text-2xl font-extrabold text-[#0D1F3C]">{selectedQuote.productName}</h2>
+                  <h2 className="text-2xl font-extrabold text-brand-ink">{selectedQuote.productName}</h2>
                   <p className="text-sm text-gray-500 mt-1">{selectedQuote.quantityLabel} / Entrega {selectedQuote.deliveryDateLabel}</p>
                   <div className="flex items-center gap-2 mt-3 flex-wrap">
                     <span className={`text-xs font-semibold px-3 py-1 rounded-full ${selectedQuote.statusClass}`}>
@@ -1768,15 +1768,15 @@ export default function BuyerDashboard() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6">
                 <div className="bg-white rounded-xl border border-gray-100 p-4">
                   <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Categoria</div>
-                  <div className="text-lg font-extrabold text-[#0D1F3C] mt-1">{selectedQuote.categoryName}</div>
+                  <div className="text-lg font-extrabold text-brand-ink mt-1">{selectedQuote.categoryName}</div>
                 </div>
                 <div className="bg-white rounded-xl border border-gray-100 p-4">
                   <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Cantidad</div>
-                  <div className="text-lg font-extrabold text-[#0D1F3C] mt-1">{selectedQuote.quantityLabel}</div>
+                  <div className="text-lg font-extrabold text-brand-ink mt-1">{selectedQuote.quantityLabel}</div>
                 </div>
                 <div className="bg-white rounded-xl border border-gray-100 p-4">
                   <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Entrega</div>
-                  <div className="text-lg font-extrabold text-[#0D1F3C] mt-1">{selectedQuote.deliveryDateLabel}</div>
+                  <div className="text-lg font-extrabold text-brand-ink mt-1">{selectedQuote.deliveryDateLabel}</div>
                 </div>
               </div>
 
@@ -1787,7 +1787,7 @@ export default function BuyerDashboard() {
 
               <div className="mt-6">
                 <div className="flex items-center justify-between gap-3 mb-3">
-                  <h3 className="text-sm font-bold text-[#0D1F3C]">Comparar ofertas</h3>
+                  <h3 className="text-sm font-bold text-brand-ink">Comparar ofertas</h3>
                   <span className="text-xs text-gray-400">{selectedQuote.offerCount} proveedores</span>
                 </div>
 
@@ -1798,7 +1798,7 @@ export default function BuyerDashboard() {
                         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <h4 className="text-base font-bold text-[#0D1F3C]">{offer.supplierName}</h4>
+                              <h4 className="text-base font-bold text-brand-ink">{offer.supplierName}</h4>
                               <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full ${offer.statusClass}`}>
                                 {offer.statusLabel}
                               </span>
@@ -1813,10 +1813,10 @@ export default function BuyerDashboard() {
                           </div>
 
                           <div className="lg:text-right lg:min-w-[220px]">
-                            <div className="text-2xl font-extrabold text-[#0D1F3C]">{offer.priceLabel}</div>
+                            <div className="text-2xl font-extrabold text-brand-ink">{offer.priceLabel}</div>
                             <div className="text-sm text-gray-400 mt-1">Entrega estimada: {offer.estimatedLeadTime}</div>
                             <div className="flex items-center gap-2 lg:justify-end mt-2">
-                              <span className="text-[11px] font-semibold bg-[#f8fafc] text-[#0D1F3C] border border-gray-100 px-2.5 py-1 rounded-lg">
+                              <span className="text-[11px] font-semibold bg-brand-canvas text-brand-ink border border-gray-100 px-2.5 py-1 rounded-lg">
                                 Rating {Number(offer.supplierRating ?? 0).toFixed(1)}
                               </span>
                               {offer.supplierVerified && (
@@ -1833,7 +1833,7 @@ export default function BuyerDashboard() {
                                   supplierId: offer.supplierId,
                                   closeQuoteDetail: true,
                                 })}
-                                className="border border-[#2ECAD5]/30 text-[#2ECAD5] font-semibold px-5 py-2.5 rounded-xl hover:bg-[#2ECAD5]/5 transition-all"
+                                className="ui-btn-secondary px-5 py-2.5"
                               >
                                 Abrir conversacion
                               </button>
@@ -1851,7 +1851,7 @@ export default function BuyerDashboard() {
                                 <button
                                   type="button"
                                   onClick={() => openReviewModal(reviewOpportunityMap.get(offer.id))}
-                                  className="border border-[#2ECAD5]/30 text-[#2ECAD5] font-semibold px-5 py-2.5 rounded-xl hover:bg-[#2ECAD5]/5 transition-all"
+                                  className="ui-btn-secondary px-5 py-2.5"
                                 >
                                   Dejar reseña
                                 </button>
@@ -1878,7 +1878,7 @@ export default function BuyerDashboard() {
           <form onSubmit={handleReviewSubmit} className="space-y-5">
             <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3">
               <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-600">Operacion verificada</div>
-              <div className="text-sm font-bold text-[#0D1F3C] mt-1">{reviewForm.supplierName}</div>
+              <div className="text-sm font-bold text-brand-ink mt-1">{reviewForm.supplierName}</div>
               <p className="text-sm text-gray-600 mt-1">
                 Comparte como fue la compra de {reviewForm.productName} para fortalecer la confianza del marketplace.
               </p>
@@ -1892,7 +1892,7 @@ export default function BuyerDashboard() {
                 id="review-rating"
                 value={reviewForm.rating}
                 onChange={(event) => setReviewForm((current) => ({ ...current, rating: Number(event.target.value) }))}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] bg-white transition-all"
+                className="ui-select"
               >
                 {[5, 4, 3, 2, 1].map((value) => (
                   <option key={value} value={value}>{value} estrella{value > 1 ? 's' : ''}</option>
@@ -1912,7 +1912,7 @@ export default function BuyerDashboard() {
                 placeholder="Ej: entrega puntual, buena calidad, comunicación rapida..."
                 value={reviewForm.comment}
                 onChange={(event) => setReviewForm((current) => ({ ...current, comment: event.target.value }))}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 resize-none transition-all"
+                className="ui-textarea"
               />
             </div>
 
@@ -1927,7 +1927,7 @@ export default function BuyerDashboard() {
               <button
                 type="submit"
                 disabled={isSubmittingReview}
-                className="flex-1 bg-gradient-to-r from-[#0D1F3C] to-[#1a3260] text-white font-bold py-3 rounded-xl hover:shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                className="flex-1 ui-btn-primary py-3"
               >
                 {isSubmittingReview ? 'Publicando...' : 'Publicar reseña'}
               </button>
@@ -1950,7 +1950,7 @@ export default function BuyerDashboard() {
                     required
                     value={profileForm.companyName}
                     onChange={(e) => setProfileForm({ ...profileForm, companyName: e.target.value })}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all"
                   />
                 </div>
                 <div>
@@ -1959,7 +1959,7 @@ export default function BuyerDashboard() {
                     type="text"
                     value={profileForm.description}
                     onChange={(e) => setProfileForm({ ...profileForm, description: e.target.value })}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -1969,7 +1969,7 @@ export default function BuyerDashboard() {
                       type="text"
                       value={profileForm.rut}
                       onChange={(e) => setProfileForm({ ...profileForm, rut: e.target.value })}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all"
                     />
                   </div>
                   <div>
@@ -1978,7 +1978,7 @@ export default function BuyerDashboard() {
                       type="text"
                       value={profileForm.city}
                       onChange={(e) => setProfileForm({ ...profileForm, city: e.target.value })}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all"
                     />
                   </div>
                 </div>
@@ -1988,7 +1988,7 @@ export default function BuyerDashboard() {
                     type="text"
                     value={profileForm.address}
                     onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -2004,7 +2004,7 @@ export default function BuyerDashboard() {
                           businessType: option?.label ?? '',
                         });
                       }}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 bg-white transition-all"
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 bg-white transition-all"
                     >
                       {BUSINESS_TYPE_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>{option.label}</option>
@@ -2017,7 +2017,7 @@ export default function BuyerDashboard() {
                       type="text"
                       value={profileForm.monthlyVolume}
                       onChange={(e) => setProfileForm({ ...profileForm, monthlyVolume: e.target.value })}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all"
                     />
                   </div>
                 </div>
@@ -2044,7 +2044,7 @@ export default function BuyerDashboard() {
                       type="tel"
                       value={profileForm.phone}
                       onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all"
                     />
                   </div>
                   <div>
@@ -2053,7 +2053,7 @@ export default function BuyerDashboard() {
                       type="tel"
                       value={profileForm.whatsapp}
                       onChange={(e) => setProfileForm({ ...profileForm, whatsapp: e.target.value })}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all"
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all"
                     />
                   </div>
                 </div>
@@ -2069,7 +2069,7 @@ export default function BuyerDashboard() {
                         contactMethod: option?.label ?? '',
                       });
                     }}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 bg-white transition-all"
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 bg-white transition-all"
                   >
                     {CONTACT_METHOD_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>{option.label}</option>
@@ -2084,7 +2084,7 @@ export default function BuyerDashboard() {
               <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Categorias</h4>
               <div className="flex flex-wrap gap-2 mb-3">
                 {profileForm.categories.map((cat) => (
-                  <span key={cat} className="text-sm font-medium bg-[#f0fdfa] text-[#0D1F3C] border border-[#2ECAD5]/20 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                  <span key={cat} className="text-sm font-medium bg-brand-mint text-brand-ink border border-brand-accent/20 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
                     {cat}
                     <button
                       type="button"
@@ -2102,7 +2102,7 @@ export default function BuyerDashboard() {
                 <select
                   value={selectedCategoryId || availableProfileCategories[0]?.id || ''}
                   onChange={(e) => setSelectedCategoryId(e.target.value)}
-                  className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 bg-white transition-all"
+                  className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 bg-white transition-all"
                 >
                   {availableProfileCategories.map((category) => (
                     <option key={category.id} value={category.id}>{category.name}</option>
@@ -2112,7 +2112,7 @@ export default function BuyerDashboard() {
                   type="button"
                   onClick={handleAddCategory}
                   disabled={availableProfileCategories.length === 0}
-                  className="border border-[#2ECAD5] text-[#2ECAD5] font-semibold px-4 py-2.5 rounded-xl hover:bg-[#2ECAD5]/5 transition-all text-sm"
+                  className="border border-brand-accent text-brand-accent font-semibold px-4 py-2.5 rounded-xl hover:bg-brand-accent/5 transition-all text-sm"
                 >
                   Agregar
                 </button>
@@ -2142,12 +2142,12 @@ export default function BuyerDashboard() {
       {/* Supplier profile modal */}
       {viewingSupplier && (
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-[#0D1F3C]/50 backdrop-blur-sm p-4 animate-fade-in overflow-y-auto"
+          className="fixed inset-0 z-50 flex items-start justify-center bg-brand-ink/50 backdrop-blur-sm p-4 animate-fade-in overflow-y-auto"
           onClick={(e) => e.target === e.currentTarget && setViewingSupplier(null)}
         >
-          <div className="transform-gpu bg-[#f8fafc] rounded-2xl shadow-2xl shadow-[#0D1F3C]/20 w-full max-w-3xl my-8 animate-fade-in-up overflow-hidden">
+          <div className="transform-gpu bg-brand-canvas rounded-2xl shadow-2xl shadow-brand-ink/20 w-full max-w-3xl my-8 animate-fade-in-up overflow-hidden">
             {/* Header banner */}
-            <div className="h-28 bg-gradient-to-r from-[#0D1F3C] via-[#1a3260] to-[#0D1F3C] relative">
+            <div className="h-28 bg-gradient-to-r from-brand-ink via-brand-inkLight to-brand-ink relative">
               <div className="absolute inset-0 bg-grid opacity-20" />
               <button
                 onClick={() => setViewingSupplier(null)}
@@ -2166,7 +2166,7 @@ export default function BuyerDashboard() {
               </div>
               <div className="mt-3 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 <div>
-                  <h2 className="text-xl font-extrabold text-[#0D1F3C]">{viewingSupplier.name}</h2>
+                  <h2 className="text-xl font-extrabold text-brand-ink">{viewingSupplier.name}</h2>
                   <p className="text-gray-500 text-sm">{viewingSupplier.description}</p>
                   <div className="flex items-center gap-2 mt-2 flex-wrap">
                     <span className="text-[10px] font-bold bg-gradient-to-r from-emerald-400 to-blue-500 text-white px-2.5 py-0.5 rounded-full uppercase">
@@ -2189,7 +2189,7 @@ export default function BuyerDashboard() {
                     className={`flex items-center gap-2 font-semibold px-4 py-2.5 rounded-xl transition-all text-sm whitespace-nowrap border ${
                       viewingSupplier.isFavorite
                         ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
-                        : 'bg-white text-[#0D1F3C] border-gray-200 hover:bg-gray-50'
+                        : 'bg-white text-brand-ink border-gray-200 hover:bg-gray-50'
                     } disabled:opacity-60 disabled:cursor-not-allowed`}
                   >
                     <svg className="w-4 h-4" fill={viewingSupplier.isFavorite ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -2205,9 +2205,9 @@ export default function BuyerDashboard() {
                     type="button"
                     onClick={handleFollowCurrentSupplierCategory}
                     disabled={isSavingAlertSubscription}
-                    className="flex items-center gap-2 border border-[#2ECAD5]/30 text-[#0D1F3C] font-semibold px-4 py-2.5 rounded-xl hover:bg-[#2ECAD5]/5 transition-all text-sm whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 border border-brand-accent/30 text-brand-ink font-semibold px-4 py-2.5 rounded-xl hover:bg-brand-accent/5 transition-all text-sm whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    <svg className="w-4 h-4 text-[#2ECAD5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <svg className="w-4 h-4 text-brand-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M10.34 3.94c.09-.542.56-.94 1.11-.94h1.1c.55 0 1.02.398 1.11.94l.149.897c.052.313.245.585.52.735.299.163.64.266 1.007.3l.92.085a1.125 1.125 0 01.844 1.79l-.566.777a1.125 1.125 0 00-.182.918c.065.303.098.616.098.934 0 .318-.033.631-.098.934a1.125 1.125 0 00.182.918l.566.777a1.125 1.125 0 01-.844 1.79l-.92.085a2.822 2.822 0 00-1.007.3 1.125 1.125 0 00-.52.735l-.149.897c-.09.542-.56.94-1.11.94h-1.1c-.55 0-1.02-.398-1.11-.94l-.149-.897a1.125 1.125 0 00-.52-.735 2.822 2.822 0 00-1.007-.3l-.92-.085a1.125 1.125 0 01-.844-1.79l.566-.777a1.125 1.125 0 00.182-.918 4.473 4.473 0 010-1.868 1.125 1.125 0 00-.182-.918l-.566-.777a1.125 1.125 0 01.844-1.79l.92-.085c.367-.034.708-.137 1.007-.3.275-.15.468-.422.52-.735l.149-.897z" />
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
@@ -2236,23 +2236,23 @@ export default function BuyerDashboard() {
             </div>
 
             <div className="px-6 pb-6 space-y-5">
-              <div className="rounded-2xl border border-[#2ECAD5]/15 bg-[#f0fdfa] px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="rounded-2xl border border-brand-accent/15 bg-brand-mint px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#2ECAD5]">Trust layer</div>
-                  <p className="text-sm font-semibold text-[#0D1F3C] mt-1">
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-brand-accent">Trust layer</div>
+                  <p className="text-sm font-semibold text-brand-ink mt-1">
                     {viewingSupplier.verified
                       ? 'Proveedor validado con reputacion construida desde operaciones aceptadas y reseñas elegibles.'
                       : 'Proveedor visible en Zentra con verificacion comercial todavia en revision.'}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <span className="text-xs font-semibold bg-white text-[#0D1F3C] border border-[#2ECAD5]/20 px-3 py-1.5 rounded-full">
+                  <span className="text-xs font-semibold bg-white text-brand-ink border border-brand-accent/20 px-3 py-1.5 rounded-full">
                     Rating {Number(viewingSupplier.rating || 0).toFixed(1)}
                   </span>
-                  <span className="text-xs font-semibold bg-white text-[#0D1F3C] border border-[#2ECAD5]/20 px-3 py-1.5 rounded-full">
+                  <span className="text-xs font-semibold bg-white text-brand-ink border border-brand-accent/20 px-3 py-1.5 rounded-full">
                     {viewingSupplier.verified ? 'RUT validado' : 'Revision pendiente'}
                   </span>
-                  <span className="text-xs font-semibold bg-white text-[#0D1F3C] border border-[#2ECAD5]/20 px-3 py-1.5 rounded-full">
+                  <span className="text-xs font-semibold bg-white text-brand-ink border border-brand-accent/20 px-3 py-1.5 rounded-full">
                     {viewingSupplier.reviews?.length ?? 0} reseñas publicas
                   </span>
                 </div>
@@ -2285,7 +2285,7 @@ export default function BuyerDashboard() {
                   <div key={s.label} className="bg-white rounded-xl border border-gray-100 p-3.5">
                     <div className="flex items-center gap-1.5 mb-1.5">{s.icon}</div>
                     <div className="flex items-baseline gap-1">
-                      <span className="text-lg font-extrabold text-[#0D1F3C]">{s.value}</span>
+                      <span className="text-lg font-extrabold text-brand-ink">{s.value}</span>
                       {s.sub && <span className="text-[10px] text-gray-400">{s.sub}</span>}
                     </div>
                     <div className="text-[10px] text-gray-400 mt-0.5">{s.label}</div>
@@ -2296,7 +2296,7 @@ export default function BuyerDashboard() {
               {/* Info + Contact */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="bg-white rounded-xl border border-gray-100 p-4">
-                  <h4 className="text-sm font-bold text-[#0D1F3C] mb-3">Informacion</h4>
+                  <h4 className="text-sm font-bold text-brand-ink mb-3">Informacion</h4>
                   <div className="space-y-2.5 text-sm">
                     {[
                       { label: 'RUT', value: viewingSupplier.rut },
@@ -2306,13 +2306,13 @@ export default function BuyerDashboard() {
                     ].map((item) => (
                       <div key={item.label} className="flex justify-between border-b border-gray-50 last:border-0 pb-2 last:pb-0">
                         <span className="text-gray-400 text-xs">{item.label}</span>
-                        <span className="font-semibold text-[#0D1F3C] text-xs text-right">{item.value}</span>
+                        <span className="font-semibold text-brand-ink text-xs text-right">{item.value}</span>
                       </div>
                     ))}
                   </div>
                 </div>
                 <div className="bg-white rounded-xl border border-gray-100 p-4">
-                  <h4 className="text-sm font-bold text-[#0D1F3C] mb-3">Contacto</h4>
+                  <h4 className="text-sm font-bold text-brand-ink mb-3">Contacto</h4>
                   <div className="space-y-2.5 text-sm">
                     {[
                       { label: 'Email', value: viewingSupplier.email },
@@ -2322,7 +2322,7 @@ export default function BuyerDashboard() {
                     ].map((item) => (
                       <div key={item.label} className="flex justify-between border-b border-gray-50 last:border-0 pb-2 last:pb-0">
                         <span className="text-gray-400 text-xs">{item.label}</span>
-                        <span className="font-semibold text-[#0D1F3C] text-xs text-right">
+                        <span className="font-semibold text-brand-ink text-xs text-right">
                           <ExternalContactValue label={item.label} value={item.value} />
                         </span>
                       </div>
@@ -2333,10 +2333,10 @@ export default function BuyerDashboard() {
 
               {/* Categories */}
               <div>
-                <h4 className="text-sm font-bold text-[#0D1F3C] mb-2">Categorias</h4>
+                <h4 className="text-sm font-bold text-brand-ink mb-2">Categorias</h4>
                 <div className="flex flex-wrap gap-2">
                   {viewingSupplier.categories.map((cat) => (
-                    <span key={cat} className="text-xs font-medium bg-[#f0fdfa] text-[#0D1F3C] border border-[#2ECAD5]/20 px-3 py-1.5 rounded-lg">
+                    <span key={cat} className="text-xs font-medium bg-brand-mint text-brand-ink border border-brand-accent/20 px-3 py-1.5 rounded-lg">
                       {cat}
                     </span>
                   ))}
@@ -2345,7 +2345,7 @@ export default function BuyerDashboard() {
 
               {/* Products */}
               <div>
-                <h4 className="text-sm font-bold text-[#0D1F3C] mb-3">Productos disponibles</h4>
+                <h4 className="text-sm font-bold text-brand-ink mb-3">Productos disponibles</h4>
                 {viewingSupplier.products.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {viewingSupplier.products.map((product) => (
@@ -2365,10 +2365,10 @@ export default function BuyerDashboard() {
                           )}
                         </div>
                         <div className="p-3">
-                          <h5 className="text-xs font-bold text-[#0D1F3C] truncate">{product.name}</h5>
+                          <h5 className="text-xs font-bold text-brand-ink truncate">{product.name}</h5>
                           <p className="text-[10px] text-gray-400 mt-0.5">{product.category}</p>
                           <div className="flex items-center justify-between mt-2">
-                            <span className="text-sm font-extrabold text-[#0D1F3C]">{product.price}</span>
+                            <span className="text-sm font-extrabold text-brand-ink">{product.price}</span>
                             <span className="text-[10px] text-gray-400">{product.stock}</span>
                           </div>
                         </div>
@@ -2384,17 +2384,17 @@ export default function BuyerDashboard() {
 
               {/* Reviews */}
               <div>
-                <h4 className="text-sm font-bold text-[#0D1F3C] mb-3">Resenas</h4>
+                <h4 className="text-sm font-bold text-brand-ink mb-3">Resenas</h4>
                 {(viewingSupplier.reviews ?? []).length > 0 ? (
                   <div className="space-y-3">
                     {viewingSupplier.reviews.map((review, i) => (
                       <div key={i} className="bg-white rounded-xl border border-gray-100 p-4">
                         <div className="flex items-center justify-between mb-1.5">
                           <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 bg-gradient-to-br from-[#0D1F3C] to-[#1a3260] rounded-lg flex items-center justify-center text-white text-[10px] font-bold">
+                            <div className="w-7 h-7 bg-gradient-to-br from-brand-ink to-brand-inkLight rounded-lg flex items-center justify-center text-white text-[10px] font-bold">
                               {review.buyer.charAt(0)}
                             </div>
-                            <span className="text-xs font-bold text-[#0D1F3C]">{review.buyer}</span>
+                            <span className="text-xs font-bold text-brand-ink">{review.buyer}</span>
                           </div>
                           <span className="text-[10px] text-gray-400">{review.date}</span>
                         </div>
@@ -2439,7 +2439,7 @@ export default function BuyerDashboard() {
         action={{
           onClick: () => openQuoteModal(),
           label: 'Nueva cotizacion',
-          className: 'flex items-center gap-2 bg-gradient-to-r from-emerald-400 to-blue-500 hover:shadow-lg hover:shadow-emerald-400/20 text-[#0D1F3C] font-bold px-6 py-3 rounded-xl transition-all whitespace-nowrap hover:scale-[1.02]',
+          className: 'flex items-center gap-2 bg-gradient-to-r from-emerald-400 to-blue-500 hover:shadow-lg hover:shadow-emerald-400/20 text-brand-ink font-bold px-6 py-3 rounded-xl transition-all whitespace-nowrap hover:scale-[1.02]',
           icon: (
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -2465,7 +2465,7 @@ export default function BuyerDashboard() {
                 placeholder="Buscar productos, insumos, proveedores..."
                 value={catalogSearch}
                 onChange={(e) => setCatalogSearch(e.target.value)}
-                className="w-full bg-white border border-gray-100 rounded-2xl pl-12 pr-4 py-4 text-sm focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all shadow-sm"
+                className="w-full bg-white border border-gray-100 rounded-2xl pl-12 pr-4 py-4 text-sm focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all shadow-sm"
               />
             </div>
 
@@ -2478,7 +2478,7 @@ export default function BuyerDashboard() {
                   className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${
                     catalogFilter === cat
                       ? 'bg-gradient-to-r from-emerald-400 to-blue-500 text-white shadow-md shadow-emerald-400/20'
-                      : 'bg-white border border-gray-100 text-gray-500 hover:border-[#2ECAD5]/30 hover:text-[#0D1F3C]'
+                      : 'bg-white border border-gray-100 text-gray-500 hover:border-brand-accent/30 hover:text-brand-ink'
                   }`}
                 >
                   {cat}
@@ -2490,13 +2490,13 @@ export default function BuyerDashboard() {
               const relevantAlerts = buyerAlerts.filter((a) => a.productId).slice(0, 5);
               if (relevantAlerts.length === 0) return null;
               return (
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0a1628] to-[#0d2040] border border-[#2ECAD5]/20 px-6 py-5">
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-brand-inkDark to-[#0d2040] border border-brand-accent/20 px-6 py-5">
                   <div className="absolute inset-0 bg-grid opacity-10" />
-                  <div className="absolute top-0 right-0 w-64 h-full bg-gradient-to-l from-[#2ECAD5]/5 to-transparent" />
+                  <div className="absolute top-0 right-0 w-64 h-full bg-gradient-to-l from-brand-accent/5 to-transparent" />
                   <div className="relative z-10">
                     <div className="flex items-center gap-2 mb-4">
-                      <div className="w-2 h-2 bg-[#2ECAD5] rounded-full animate-pulse" />
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-[#2ECAD5]">Movimientos de mercado en tus seguimientos</span>
+                      <div className="w-2 h-2 bg-brand-accent rounded-full animate-pulse" />
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-brand-accent">Movimientos de mercado en tus seguimientos</span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                       {relevantAlerts.map((alert) => {
@@ -2534,12 +2534,12 @@ export default function BuyerDashboard() {
             })()}
 
             {showRecommendedCatalog && recommendedCatalogProducts.length > 0 && (
-              <section className="bg-gradient-to-br from-[#0D1F3C] to-[#102746] rounded-3xl p-4 sm:p-6 text-white overflow-hidden relative">
+              <section className="bg-gradient-to-br from-brand-ink to-[#102746] rounded-3xl p-4 sm:p-6 text-white overflow-hidden relative">
                 <div className="absolute inset-0 bg-grid opacity-20" />
                 <div className="relative z-10">
                   <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-5">
                     <div>
-                      <span className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.24em] text-[#2ECAD5]">
+                      <span className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.24em] text-brand-accent">
                         Para ti
                       </span>
                       <h2 className="text-xl sm:text-2xl font-extrabold mt-2">Sugerencias basadas en tu actividad</h2>
@@ -2589,7 +2589,7 @@ export default function BuyerDashboard() {
                 </div>
               ) : (
                 <div className="text-center py-16">
-                  <div className="w-16 h-16 bg-[#f8fafc] rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-brand-canvas rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
                     </svg>
@@ -2608,7 +2608,7 @@ export default function BuyerDashboard() {
             {/* Profile header card */}
             <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden card-premium">
               {/* Cover / banner */}
-              <div className="h-32 bg-gradient-to-r from-[#0D1F3C] via-[#1a3260] to-[#0D1F3C] relative">
+              <div className="h-32 bg-gradient-to-r from-brand-ink via-brand-inkLight to-brand-ink relative">
                 <div className="absolute inset-0 bg-grid opacity-20" />
                 <div className="absolute top-4 right-4 w-40 h-40 bg-indigo-500/10 rounded-full blur-[60px]" />
               </div>
@@ -2617,7 +2617,7 @@ export default function BuyerDashboard() {
                 <label className="w-24 h-24 rounded-2xl -mt-12 relative z-10 cursor-pointer group block">
                   {currentUser?.avatar_url
                     ? <img src={currentUser.avatar_url} alt="Avatar" className="w-24 h-24 rounded-2xl object-cover border-4 border-white shadow-lg" />
-                    : <div className="w-24 h-24 bg-gradient-to-br from-[#0D1F3C] to-[#1a3260] rounded-2xl flex items-center justify-center text-[#2ECAD5] text-3xl font-extrabold border-4 border-white shadow-lg">{buyerProfile.initials}</div>
+                    : <div className="w-24 h-24 bg-gradient-to-br from-brand-ink to-brand-inkLight rounded-2xl flex items-center justify-center text-brand-accent text-3xl font-extrabold border-4 border-white shadow-lg">{buyerProfile.initials}</div>
                   }
                   <div className="absolute inset-0 bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -2629,7 +2629,7 @@ export default function BuyerDashboard() {
                 </label>
                 <div className="mt-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                   <div>
-                    <h2 className="text-2xl font-extrabold text-[#0D1F3C]">{buyerProfile.companyName}</h2>
+                    <h2 className="text-2xl font-extrabold text-brand-ink">{buyerProfile.companyName}</h2>
                     <p className="text-gray-500 text-sm mt-1">{buyerProfile.description}</p>
                     <div className="flex items-center gap-3 mt-3 flex-wrap">
                       {buyerProfile.categories.map((cat) => (
@@ -2679,12 +2679,12 @@ export default function BuyerDashboard() {
                   </svg>
                 )},
               ].map((s) => (
-                <button key={s.label} type="button" onClick={() => setStatDetail({ title: s.label, value: `${s.value}${s.sub ? ' ' + s.sub : ''}`, items: s.items, emptyText: s.emptyText })} className="bg-white rounded-2xl border border-gray-100 p-5 card-premium text-left hover:border-[#2ECAD5]/40 hover:shadow-md transition-all group">
-                  <div className="w-9 h-9 bg-[#f8fafc] rounded-xl flex items-center justify-center text-gray-400 mb-3 group-hover:bg-[#2ECAD5]/10 group-hover:text-[#2ECAD5] transition-colors">
+                <button key={s.label} type="button" onClick={() => setStatDetail({ title: s.label, value: `${s.value}${s.sub ? ' ' + s.sub : ''}`, items: s.items, emptyText: s.emptyText })} className="ui-card-interactive p-5 group">
+                  <div className="w-9 h-9 bg-brand-canvas rounded-xl flex items-center justify-center text-gray-400 mb-3 group-hover:bg-brand-accent/10 group-hover:text-brand-accent transition-colors">
                     {s.icon}
                   </div>
                   <div className="flex items-baseline gap-1.5">
-                    <span className="text-2xl font-extrabold text-[#0D1F3C]">{s.value}</span>
+                    <span className="text-2xl font-extrabold text-brand-ink">{s.value}</span>
                     <span className="text-xs text-gray-400">{s.sub}</span>
                   </div>
                   <div className="text-xs text-gray-400 mt-1">{s.label}</div>
@@ -2695,8 +2695,8 @@ export default function BuyerDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Business info */}
               <div className="bg-white rounded-2xl border border-gray-100 p-6 card-premium">
-                <h3 className="text-lg font-extrabold text-[#0D1F3C] mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-[#2ECAD5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <h3 className="text-lg font-extrabold text-brand-ink mb-4 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-brand-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-4.72L4.318 3.44A1.5 1.5 0 015.378 3h13.243a1.5 1.5 0 011.06.44l1.19 1.189a3 3 0 01-.621 4.72m-13.5 8.65h3.75a.75.75 0 00.75-.75V13.5a.75.75 0 00-.75-.75H6.75a.75.75 0 00-.75.75v3.75c0 .415.336.75.75.75z" />
                   </svg>
                   Informacion del negocio
@@ -2712,7 +2712,7 @@ export default function BuyerDashboard() {
                   ].map((item) => (
                     <div key={item.label} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
                       <span className="text-sm text-gray-400">{item.label}</span>
-                      <span className="text-sm font-semibold text-[#0D1F3C]">{item.value}</span>
+                      <span className="text-sm font-semibold text-brand-ink">{item.value}</span>
                     </div>
                   ))}
                 </div>
@@ -2720,8 +2720,8 @@ export default function BuyerDashboard() {
 
               {/* Contact info */}
               <div className="bg-white rounded-2xl border border-gray-100 p-6 card-premium">
-                <h3 className="text-lg font-extrabold text-[#0D1F3C] mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-[#2ECAD5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <h3 className="text-lg font-extrabold text-brand-ink mb-4 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-brand-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
                   </svg>
                   Contacto
@@ -2753,7 +2753,7 @@ export default function BuyerDashboard() {
                       {item.icon}
                       <div className="flex-1">
                         <span className="text-xs text-gray-400 block">{item.label}</span>
-                        <span className="text-sm font-semibold text-[#0D1F3C]">{item.value}</span>
+                        <span className="text-sm font-semibold text-brand-ink">{item.value}</span>
                       </div>
                     </div>
                   ))}
@@ -2763,8 +2763,8 @@ export default function BuyerDashboard() {
 
             {buyerProfile.frequentProducts.length > 0 && (
               <div className="bg-white rounded-2xl border border-gray-100 p-6 card-premium">
-                <h3 className="text-lg font-extrabold text-[#0D1F3C] mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-[#2ECAD5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <h3 className="text-lg font-extrabold text-brand-ink mb-4 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-brand-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" />
                   </svg>
@@ -2772,7 +2772,7 @@ export default function BuyerDashboard() {
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {buyerProfile.frequentProducts.map((prod) => (
-                    <span key={prod} className="text-sm font-medium bg-[#f0fdfa] text-[#0D1F3C] border border-[#2ECAD5]/20 px-4 py-2 rounded-xl">
+                    <span key={prod} className="text-sm font-medium bg-brand-mint text-brand-ink border border-brand-accent/20 px-4 py-2 rounded-xl">
                       {prod}
                     </span>
                   ))}
@@ -2782,8 +2782,8 @@ export default function BuyerDashboard() {
 
             {/* Accepted offers summary */}
             <div className="bg-white rounded-2xl border border-gray-100 p-6 card-premium">
-              <h3 className="text-lg font-extrabold text-[#0D1F3C] mb-4 flex items-center gap-2">
-                <svg className="w-5 h-5 text-[#2ECAD5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <h3 className="text-lg font-extrabold text-brand-ink mb-4 flex items-center gap-2">
+                <svg className="w-5 h-5 text-brand-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m6 2.25a9 9 0 11-18 0 9 9 0 0118 0Z" />
                 </svg>
                 Ofertas aceptadas recientemente
@@ -2791,20 +2791,20 @@ export default function BuyerDashboard() {
               {acceptedOffers.length > 0 ? (
                 <div className="space-y-3">
                   {acceptedOffers.slice(0, 5).map((offer) => (
-                    <div key={offer.id} className="flex items-center gap-4 p-4 bg-[#f8fafc] rounded-xl">
+                    <div key={offer.id} className="flex items-center gap-4 p-4 bg-brand-canvas rounded-xl">
                       <div className="w-10 h-10 bg-gradient-to-br from-emerald-400/15 to-blue-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
                         <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75" />
                         </svg>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-[#0D1F3C]">{offer.quoteProductName}</p>
+                        <p className="text-sm font-bold text-brand-ink">{offer.quoteProductName}</p>
                         <p className="text-xs text-gray-400">
                           {offer.supplierName} / {offer.quoteQuantityLabel} / Entrega {offer.quoteDeliveryDateLabel}
                         </p>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className="text-sm font-bold text-[#0D1F3C]">{offer.priceLabel}</p>
+                        <p className="text-sm font-bold text-brand-ink">{offer.priceLabel}</p>
                         <div className="flex flex-col items-end gap-2 mt-1">
                           <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-0.5 rounded-full">
                             Aceptada
@@ -2813,7 +2813,7 @@ export default function BuyerDashboard() {
                             <button
                               type="button"
                               onClick={() => openReviewModal(reviewOpportunityMap.get(offer.id))}
-                              className="text-[11px] font-semibold text-[#2ECAD5] border border-[#2ECAD5]/30 hover:bg-[#2ECAD5]/5 px-3 py-1.5 rounded-lg transition-all"
+                              className="text-[11px] font-semibold text-brand-accent border border-brand-accent/30 hover:bg-brand-accent/5 px-3 py-1.5 rounded-lg transition-all"
                             >
                               Dejar reseña
                             </button>
@@ -2824,7 +2824,7 @@ export default function BuyerDashboard() {
                   ))}
                 </div>
               ) : (
-                <div className="bg-[#f8fafc] rounded-xl p-6 text-center text-sm text-gray-400">
+                <div className="bg-brand-canvas rounded-xl p-6 text-center text-sm text-gray-400">
                   Aun no aceptas ofertas. Cuando cierres tu primera Solicitud de Cotización, aparecerá aqui.
                 </div>
               )}
@@ -2841,7 +2841,7 @@ export default function BuyerDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-6">
               <form onSubmit={handleCreateAlertSubscription} className="bg-white rounded-2xl border border-gray-100 p-6 card-premium space-y-5">
                 <div>
-                  <h2 className="text-xl font-extrabold text-[#0D1F3C]">Seguir alertas de precio</h2>
+                  <h2 className="text-xl font-extrabold text-brand-ink">Seguir alertas de precio</h2>
                   <p className="text-sm text-gray-400 mt-1">Recibe cambios de precio por categoria o por producto especifico.</p>
                 </div>
 
@@ -2861,7 +2861,7 @@ export default function BuyerDashboard() {
                       className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
                         alertForm.mode === option.id
                           ? 'bg-gradient-to-r from-emerald-400 to-blue-500 text-white shadow-md shadow-emerald-400/20'
-                          : 'bg-[#f8fafc] text-gray-500 hover:text-[#0D1F3C]'
+                          : 'bg-brand-canvas text-gray-500 hover:text-brand-ink'
                       }`}
                     >
                       {option.label}
@@ -2876,7 +2876,7 @@ export default function BuyerDashboard() {
                       id="buyer-alert-category"
                       value={alertForm.categoryId}
                       onChange={(event) => setAlertForm({ ...alertForm, categoryId: event.target.value })}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] bg-white transition-all"
+                      className="ui-select"
                     >
                       <option value="">Selecciona una categoria</option>
                       {categoryOptions.map((category) => (
@@ -2891,7 +2891,7 @@ export default function BuyerDashboard() {
                       id="buyer-alert-product"
                       value={alertForm.productId}
                       onChange={(event) => setAlertForm({ ...alertForm, productId: event.target.value })}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#2ECAD5] bg-white transition-all"
+                      className="ui-select"
                     >
                       <option value="">Selecciona un producto</option>
                       {alertProductOptions.map((product) => (
@@ -2913,7 +2913,7 @@ export default function BuyerDashboard() {
               </form>
 
               <div className="bg-white rounded-2xl border border-gray-100 p-6 card-premium">
-                <h2 className="text-xl font-extrabold text-[#0D1F3C]">Seguimientos Activos</h2>
+                <h2 className="text-xl font-extrabold text-brand-ink">Seguimientos Activos</h2>
                 <p className="text-sm text-gray-400 mt-1 mb-5">Controla que señales de precio quieres seguir.</p>
                 {alertSubscriptions.length > 0 ? (
                   <div className="space-y-3">
@@ -2927,10 +2927,10 @@ export default function BuyerDashboard() {
                         : 'Categoria';
 
                       return (
-                        <div key={subscription.id} className="rounded-xl border border-gray-100 bg-[#f8fafc] px-4 py-3">
+                        <div key={subscription.id} className="rounded-xl border border-gray-100 bg-brand-canvas px-4 py-3">
                           <div className="flex items-start justify-between gap-3">
                             <div>
-                              <div className="text-sm font-bold text-[#0D1F3C]">{title}</div>
+                              <div className="text-sm font-bold text-brand-ink">{title}</div>
                               <div className="text-xs text-gray-400 mt-1">{meta}</div>
                             </div>
                             <button
@@ -2947,7 +2947,7 @@ export default function BuyerDashboard() {
                     })}
                   </div>
                 ) : (
-                  <div className="bg-[#f8fafc] rounded-xl p-6 text-center text-sm text-gray-400">
+                  <div className="bg-brand-canvas rounded-xl p-6 text-center text-sm text-gray-400">
                     Aun no sigues alertas. Crea tu primera suscripcion desde esta misma vista.
                   </div>
                 )}
@@ -2955,7 +2955,7 @@ export default function BuyerDashboard() {
             </div>
 
             <div>
-              <h2 className="text-xl font-extrabold text-[#0D1F3C] mb-4">Cambios recientes de precio</h2>
+              <h2 className="text-xl font-extrabold text-brand-ink mb-4">Cambios recientes de precio</h2>
               {alertsLoading ? (
                 <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center text-sm text-gray-400">
                   Cargando alertas...
@@ -2963,7 +2963,7 @@ export default function BuyerDashboard() {
               ) : buyerAlerts.length > 0 ? (
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
                   {buyerAlerts.map((alert) => (
-                    <div key={alert.id} className="flex items-center gap-4 p-5 hover:bg-[#f8fafc] transition-colors">
+                    <div key={alert.id} className="flex items-center gap-4 p-5 hover:bg-brand-canvas transition-colors">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
                         alert.change === 'down' ? 'bg-emerald-50' : 'bg-red-50'
                       }`}>
@@ -2978,7 +2978,7 @@ export default function BuyerDashboard() {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-[#0D1F3C] text-sm">{alert.productName}</p>
+                        <p className="font-semibold text-brand-ink text-sm">{alert.productName}</p>
                         <p className="text-xs text-gray-400 mt-0.5">
                           {alert.supplierName} / {alert.categoryName} / {alert.previousPrice} → {alert.currentPrice}
                         </p>
@@ -2994,7 +2994,7 @@ export default function BuyerDashboard() {
                 </div>
               ) : (
                 <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
-                  <h3 className="text-lg font-bold text-[#0D1F3C]">Todavia no hay cambios de precio para tus alertas</h3>
+                  <h3 className="text-lg font-bold text-brand-ink">Todavia no hay cambios de precio para tus alertas</h3>
                   <p className="text-sm text-gray-400 mt-2">Las alertas apareceran cuando un proveedor actualice el precio de un producto o categoria que sigues.</p>
                 </div>
               )}
@@ -3006,7 +3006,7 @@ export default function BuyerDashboard() {
         {activeTab === 'favorites' && (
           <div className="space-y-8 animate-fade-in">
             <div>
-              <h2 className="text-xl font-extrabold text-[#0D1F3C] mb-4">Proveedores favoritos</h2>
+              <h2 className="text-xl font-extrabold text-brand-ink mb-4">Proveedores favoritos</h2>
               {favoritesLoading ? (
                 <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center text-sm text-gray-400">
                   Cargando favoritos...
@@ -3016,21 +3016,21 @@ export default function BuyerDashboard() {
                   {favoriteSuppliers.map((supplier) => (
                     <div
                       key={supplier.id}
-                      className="bg-white rounded-2xl border border-gray-100 p-5 card-premium text-left transition-all hover:border-[#2ECAD5]/30 hover:shadow-md"
+                      className="bg-white rounded-2xl border border-gray-100 p-5 card-premium text-left transition-all hover:border-brand-accent/30 hover:shadow-md"
                     >
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-gradient-to-br from-[#0D1F3C] to-[#1a3260] rounded-xl flex items-center justify-center text-[#2ECAD5] flex-shrink-0 text-sm font-bold">
+                        <div className="w-12 h-12 bg-gradient-to-br from-brand-ink to-brand-inkLight rounded-xl flex items-center justify-center text-brand-accent flex-shrink-0 text-sm font-bold">
                           {supplier.initials}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="font-bold text-[#0D1F3C] text-sm">{supplier.name}</p>
+                          <p className="font-bold text-brand-ink text-sm">{supplier.name}</p>
                           <p className="text-xs text-gray-500 truncate">{supplier.description || 'Proveedor B2B'}</p>
                           <p className="text-xs text-gray-400 mt-1">{supplier.city}</p>
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-2 mt-4">
                         {supplier.categories.slice(0, 3).map((category) => (
-                          <span key={category} className="text-[10px] font-semibold bg-[#f0fdfa] text-[#0D1F3C] border border-[#2ECAD5]/20 px-2.5 py-1 rounded-full">
+                          <span key={category} className="text-[10px] font-semibold bg-brand-mint text-brand-ink border border-brand-accent/20 px-2.5 py-1 rounded-full">
                             {category}
                           </span>
                         ))}
@@ -3038,15 +3038,15 @@ export default function BuyerDashboard() {
                       <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-gray-50">
                         <div>
                           <div className="text-[10px] text-gray-400">Plan</div>
-                          <div className="text-xs font-bold text-[#0D1F3C] mt-1">{supplier.plan}</div>
+                          <div className="text-xs font-bold text-brand-ink mt-1">{supplier.plan}</div>
                         </div>
                         <div>
                           <div className="text-[10px] text-gray-400">Productos</div>
-                          <div className="text-xs font-bold text-[#0D1F3C] mt-1">{supplier.productCount}</div>
+                          <div className="text-xs font-bold text-brand-ink mt-1">{supplier.productCount}</div>
                         </div>
                         <div>
                           <div className="text-[10px] text-gray-400">Respuesta</div>
-                          <div className="text-xs font-bold text-[#0D1F3C] mt-1">{supplier.responseRate}%</div>
+                          <div className="text-xs font-bold text-brand-ink mt-1">{supplier.responseRate}%</div>
                         </div>
                       </div>
                       <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-50">
@@ -3062,7 +3062,7 @@ export default function BuyerDashboard() {
                         <button
                           type="button"
                           onClick={() => openSupplierProfile(supplier.id)}
-                          className="flex-1 text-sm text-[#2ECAD5] border border-[#2ECAD5]/30 hover:bg-[#2ECAD5]/5 font-semibold py-2.5 rounded-xl transition-all"
+                          className="flex-1 text-sm text-brand-accent border border-brand-accent/30 hover:bg-brand-accent/5 font-semibold py-2.5 rounded-xl transition-all"
                         >
                           Ver perfil
                         </button>
@@ -3080,7 +3080,7 @@ export default function BuyerDashboard() {
                 </div>
               ) : (
                 <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
-                  <h3 className="text-lg font-bold text-[#0D1F3C]">Aun no guardas proveedores favoritos</h3>
+                  <h3 className="text-lg font-bold text-brand-ink">Aun no guardas proveedores favoritos</h3>
                   <p className="text-sm text-gray-400 mt-2">Explora el catalogo, abre perfiles y guarda los proveedores con los que quieres trabajar recurrentemente.</p>
                   <button
                     type="button"

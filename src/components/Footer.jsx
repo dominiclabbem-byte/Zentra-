@@ -8,7 +8,7 @@ export default function Footer() {
   return (
     <footer className="bg-[#060e1a] text-gray-400 mt-auto relative overflow-hidden">
       {/* Subtle top accent line */}
-      <div className="h-px bg-gradient-to-r from-transparent via-[#2ECAD5]/30 to-transparent" />
+      <div className="h-px bg-gradient-to-r from-transparent via-brand-accent/30 to-transparent" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
@@ -34,7 +34,7 @@ export default function Footer() {
             <ul className="space-y-3 text-sm">
               {footerLinks.map((link) => (
                 <li key={link.to}>
-                  <Link to={link.to} className="hover:text-[#2ECAD5] transition-colors duration-200">
+                  <Link to={link.to} className="hover:text-brand-accent transition-colors duration-200">
                     {link.label}
                   </Link>
                 </li>

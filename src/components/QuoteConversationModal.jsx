@@ -7,7 +7,7 @@ function MessageBubble({ message, isOwnMessage }) {
         className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-sm ${
           isOwnMessage
             ? 'bg-gradient-to-r from-emerald-400 to-blue-500 text-white'
-            : 'bg-white border border-gray-100 text-[#0D1F3C]'
+            : 'bg-white border border-gray-100 text-brand-ink'
         }`}
       >
         <div className={`text-[11px] font-semibold uppercase tracking-wide ${isOwnMessage ? 'text-white/75' : 'text-gray-400'}`}>
@@ -68,11 +68,11 @@ export default function QuoteConversationModal({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-start justify-center bg-[#0D1F3C]/55 backdrop-blur-sm p-4 animate-fade-in overflow-y-auto"
+      className="fixed inset-0 z-[60] flex items-start justify-center bg-brand-ink/55 backdrop-blur-sm p-4 animate-fade-in overflow-y-auto"
       onClick={(event) => event.target === event.currentTarget && onClose()}
     >
-      <div className="w-full max-w-3xl my-8 bg-[#f8fafc] rounded-2xl shadow-2xl shadow-[#0D1F3C]/20 overflow-hidden animate-fade-in-up">
-        <div className="bg-gradient-to-r from-[#0D1F3C] via-[#1a3260] to-[#0D1F3C] px-6 py-5 text-white relative">
+      <div className="w-full max-w-3xl my-8 bg-brand-canvas rounded-2xl shadow-2xl shadow-brand-ink/20 overflow-hidden animate-fade-in-up">
+        <div className="bg-gradient-to-r from-brand-ink via-brand-inkLight to-brand-ink px-6 py-5 text-white relative">
           <button
             type="button"
             onClick={onClose}
@@ -83,7 +83,7 @@ export default function QuoteConversationModal({
             </svg>
           </button>
           <div className="pr-10">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#2ECAD5]">Solicitud de Cotización</div>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-brand-accent">Solicitud de Cotización</div>
             <h2 className="text-xl font-extrabold mt-2">{conversation?.quote?.productName ?? 'Cotizacion'}</h2>
             <p className="text-sm text-white/75 mt-1">
               {participantName ?? 'Participante'} / {conversation?.quote?.quantityLabel ?? 'Sin cantidad'} / Entrega {conversation?.quote?.deliveryDateLabel ?? 'Sin fecha'}
@@ -106,7 +106,7 @@ export default function QuoteConversationModal({
           )}
         </div>
 
-        <div className="px-6 py-5 bg-[#f8fafc]">
+        <div className="px-6 py-5 bg-brand-canvas">
           {isLoading ? (
             <div className="rounded-2xl border border-gray-100 bg-white p-10 text-center text-sm text-gray-400">
               Cargando conversacion...
@@ -141,7 +141,7 @@ export default function QuoteConversationModal({
             disabled={isSending || isClosed}
             onChange={(event) => setDraft(event.target.value)}
             placeholder={isClosed ? 'La conversacion esta cerrada.' : 'Escribe un mensaje sobre esta Solicitud de Cotización...'}
-            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:border-[#2ECAD5] focus:ring-2 focus:ring-[#2ECAD5]/20 transition-all disabled:bg-gray-50 disabled:text-gray-400"
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all disabled:bg-gray-50 disabled:text-gray-400"
           />
           <div className="mt-4 flex justify-end">
             <button
