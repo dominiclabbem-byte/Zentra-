@@ -94,7 +94,7 @@ export default function Navbar() {
                 to={link.to}
                 className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                   location.pathname === link.to
-                    ? 'bg-gradient-to-r from-emerald-400 to-blue-500 text-white shadow-lg shadow-emerald-400/20'
+                    ? 'border border-brand-accent/25 bg-brand-accent/10 text-brand-accent shadow-glow-sm'
                     : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`}
               >
@@ -184,7 +184,7 @@ export default function Navbar() {
                 to="/ingresar"
                 className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                   location.pathname === '/ingresar'
-                    ? 'bg-gradient-to-r from-emerald-400 to-blue-500 text-white shadow-lg shadow-emerald-400/20'
+                    ? 'border border-brand-accent/25 bg-brand-accent/10 text-brand-accent shadow-glow-sm'
                     : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`}
               >
