@@ -328,6 +328,7 @@ export default function Marketplace() {
           categoryId: product.categoryId ?? '',
           sourceProductId: product.id,
           sourceSupplierId: product.supplierId,
+          sourceSupplierName: product.supplierName,
           sourceContext: 'marketplace',
         },
       },

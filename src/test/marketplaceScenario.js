@@ -328,6 +328,7 @@ export function createMarketplaceScenario(overrides = {}) {
         id: `quote-${state.quoteRequests.length + 1}`,
         categories: category,
         users: buyer,
+        target_supplier: payload.target_supplier_id === supplier.id ? supplier : null,
         created_at: '2026-03-24T11:00:00Z',
         quote_offers: [],
       });

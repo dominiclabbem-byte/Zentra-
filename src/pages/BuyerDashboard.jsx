@@ -62,6 +62,7 @@ const initialQuoteForm = {
   notes: '',
   sourceProductId: '',
   sourceSupplierId: '',
+  sourceSupplierName: '',
   sourceContext: '',
 };
 
@@ -466,6 +467,9 @@ export default function BuyerDashboard() {
       quantity: quote.quantityValue ? String(quote.quantityValue) : '',
       unit: quote.unit ?? 'kg',
       notes: quote.notes ?? '',
+      sourceSupplierId: quote.targetSupplierId ?? '',
+      sourceSupplierName: quote.targetSupplierName ?? '',
+      sourceContext: quote.targetSupplierId ? 'repeat_targeted_quote' : 'repeat_quote',
     });
   }, [openQuoteModal]);
 
@@ -1336,23 +1340,31 @@ export default function BuyerDashboard() {
                   <p className="text-sm text-gray-500">{quote.quantityLabel}</p>
                   <p className="text-xs text-gray-400 mt-1">{quote.categoryName} / Entrega {quote.deliveryDateLabel}</p>
                   <p className="text-xs text-gray-400 mt-2">{quote.createdAtLabel}</p>
-                  {quote.offers.length > 0 ? (
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      {quote.offers.map((offer) => offer.supplierName).filter(Boolean).map((name) => (
-                        <span key={name} className="inline-flex items-center gap-1 text-[10px] font-semibold bg-brand-panel text-brand-ink border border-brand-panelBorder px-2 py-0.5 rounded-full">
-                          <Store className="h-3 w-3" />
-                          {name}
-                        </span>
-                      ))}
-                    </div>
-                  ) : quote.targetSupplierName ? (
-                    <div className="mt-3">
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-brand-panel text-brand-ink border border-brand-panelBorder px-2 py-0.5 rounded-full">
+                  {quote.targetSupplierName && (
+                    <div className="mt-3 rounded-xl border border-brand-accent/15 bg-brand-mint px-3 py-2">
+                      <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-brand-accent">
                         <Store className="h-3 w-3" />
-                        Solicitado a {quote.targetSupplierName}
-                      </span>
+                        Solicitado a
+                      </div>
+                      <div className="mt-0.5 text-sm font-bold text-brand-ink truncate">{quote.targetSupplierName}</div>
+                      {quote.targetSupplierCity && (
+                        <div className="text-xs text-gray-500 truncate">{quote.targetSupplierCity}</div>
+                      )}
                     </div>
-                  ) : null}
+                  )}
+                  {quote.offers.length > 0 && (
+                    <div className="mt-3">
+                      <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1.5">Ofertas de</div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {quote.offers.map((offer) => offer.supplierName).filter(Boolean).map((name) => (
+                          <span key={name} className="inline-flex items-center gap-1 text-[10px] font-semibold bg-brand-panel text-brand-ink border border-brand-panelBorder px-2 py-0.5 rounded-full">
+                            <Store className="h-3 w-3" />
+                            {name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   {acceptedOffer && (
                     <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 px-3.5 py-3">
                       <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-600">Oferta aceptada</div>
@@ -1484,15 +1496,19 @@ export default function BuyerDashboard() {
                       {quote.offerCount} {quote.offerCount === 1 ? 'oferta recibida' : 'ofertas recibidas'}
                       {acceptedOffer ? ` / Mejor cierre ${acceptedOffer.priceLabel}` : ''}
                     </p>
-                    {acceptedOffer?.supplierName ? (
-                      <p className="flex items-center gap-1 text-xs font-semibold text-brand-ink mt-0.5"><Store className="h-3 w-3" /> {acceptedOffer.supplierName}</p>
-                    ) : quote.offers.length > 0 ? (
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        <Store className="h-3 w-3" />
-                        {quote.offers.map((o) => o.supplierName).filter(Boolean).join(', ')}
+                    {quote.targetSupplierName && (
+                      <p className="flex items-center gap-1 text-xs font-semibold text-brand-ink mt-1">
+                        <Store className="h-3 w-3 flex-shrink-0" />
+                        <span className="truncate">Solicitado a {quote.targetSupplierName}</span>
                       </p>
-                    ) : quote.targetSupplierName ? (
-                      <p className="flex items-center gap-1 text-xs text-gray-500 mt-0.5"><Store className="h-3 w-3" /> Solicitado a {quote.targetSupplierName}</p>
+                    )}
+                    {acceptedOffer?.supplierName ? (
+                      <p className="flex items-center gap-1 text-xs text-gray-500 mt-0.5"><Store className="h-3 w-3 flex-shrink-0" /> Cierre con {acceptedOffer.supplierName}</p>
+                    ) : quote.offers.length > 0 ? (
+                      <p className="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
+                        <Store className="h-3 w-3 flex-shrink-0" />
+                        <span className="truncate">Ofertas de {quote.offers.map((o) => o.supplierName).filter(Boolean).join(', ')}</span>
+                      </p>
                     ) : null}
                   </div>
                   <button
@@ -1615,6 +1631,18 @@ export default function BuyerDashboard() {
       {showModal && (
         <Modal title="Nueva Cotizacion" onClose={() => setShowModal(false)}>
           <form onSubmit={handleQuoteSubmit} className="space-y-4">
+            {quoteForm.sourceSupplierName && (
+              <div className="flex items-start gap-3 rounded-2xl border border-brand-accent/20 bg-brand-mint px-4 py-3">
+                <div className="mt-0.5 grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-white text-brand-accent">
+                  <Store className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-accent">Cotizacion dirigida</div>
+                  <p className="text-sm font-bold text-brand-ink mt-0.5">{quoteForm.sourceSupplierName}</p>
+                  <p className="text-xs text-gray-500 mt-1">El proveedor quedara visible en tu seguimiento como empresa solicitada.</p>
+                </div>
+              </div>
+            )}
             <div>
               <label htmlFor="quote-product" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Producto necesitado <span className="text-red-500">*</span>
@@ -1777,6 +1805,23 @@ export default function BuyerDashboard() {
                   <div className="text-lg font-extrabold text-brand-ink mt-1">{selectedQuote.deliveryDateLabel}</div>
                 </div>
               </div>
+
+              {selectedQuote.targetSupplierName && (
+                <div className="mt-4 rounded-xl border border-brand-accent/15 bg-brand-mint p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-white text-brand-accent">
+                      <Store className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-semibold text-brand-accent uppercase tracking-wide">Empresa solicitada</div>
+                      <div className="text-base font-extrabold text-brand-ink mt-1 truncate">{selectedQuote.targetSupplierName}</div>
+                      <div className="text-sm text-gray-500 mt-1">
+                        {selectedQuote.targetSupplierCity || 'Proveedor directo desde Zentra'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="mt-4 bg-white rounded-xl border border-gray-100 p-4">
                 <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Notas</div>
@@ -2219,6 +2264,7 @@ export default function BuyerDashboard() {
                         categoryId: viewingSupplier.requestCategoryId ?? '',
                         sourceProductId: viewingSupplier.products?.find((product) => product.name === viewingSupplier.requestProductName)?.id ?? '',
                         sourceSupplierId: viewingSupplier.id,
+                        sourceSupplierName: viewingSupplier.name,
                         sourceContext: 'supplier_profile',
                       });
                     }}

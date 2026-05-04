@@ -229,11 +229,21 @@ export function buildQuoteRequest(overrides = {}) {
     rut: overrides.buyerRut ?? '72.345.678-9',
     verified: overrides.buyerVerified ?? true,
   };
+  const targetSupplier = takeSingle(overrides.target_supplier)
+    ?? (overrides.target_supplier_id
+      ? buildSupplierUser({
+        id: overrides.target_supplier_id,
+        company_name: overrides.targetSupplierName ?? 'Valle Frio SpA',
+        city: overrides.targetSupplierCity ?? 'Santiago',
+        verified: overrides.targetSupplierVerified ?? true,
+      })
+      : null);
 
   return {
     id: overrides.id ?? 'quote-1',
     buyer_id: overrides.buyer_id ?? buyer.id,
     requester_id: overrides.requester_id ?? buyer.id,
+    target_supplier_id: overrides.target_supplier_id ?? targetSupplier?.id ?? null,
     product_name: overrides.product_name ?? 'Harina premium',
     category_id: overrides.category_id ?? category.id,
     quantity: overrides.quantity ?? 500,
@@ -244,6 +254,7 @@ export function buildQuoteRequest(overrides = {}) {
     created_at: overrides.created_at ?? '2026-03-24T08:00:00Z',
     categories: category,
     users: buyer,
+    target_supplier: targetSupplier,
     quote_offers: overrides.quote_offers ?? [],
     ...overrides,
   };

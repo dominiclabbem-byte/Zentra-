@@ -251,6 +251,40 @@ describe('BuyerDashboard', () => {
     });
   });
 
+  it('muestra en cotizaciones la empresa a la que se pidio la solicitud directa', async () => {
+    const user = userEvent.setup();
+    mockDatabase.getQuoteRequestsForBuyer.mockResolvedValue([
+      buildQuoteRequest({
+        id: 'quote-direct-1',
+        buyer_id: 'buyer-1',
+        requester_id: 'buyer-1',
+        product_name: 'Palta Hass',
+        category_id: 'cat-1',
+        quantity: 80,
+        unit: 'kg',
+        delivery_date: '2026-04-05',
+        status: 'open',
+        quote_offers: [],
+        target_supplier_id: 'supplier-direct-1',
+        target_supplier: {
+          id: 'supplier-direct-1',
+          company_name: 'Agricola Norte SpA',
+          city: 'Quillota',
+          verified: true,
+        },
+      }),
+    ]);
+
+    renderWithRouter(<BuyerDashboard />);
+
+    await user.click(await screen.findByRole('button', { name: 'Cotizaciones' }));
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Solicitado a').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Agricola Norte SpA').length).toBeGreaterThan(0);
+    });
+  });
+
   it('permite repetir una cotizacion anterior desde el historial', async () => {
     const user = userEvent.setup();
 
