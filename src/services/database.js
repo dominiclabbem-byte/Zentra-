@@ -97,6 +97,9 @@ const PRODUCT_IMAGES_BUCKET = 'product-images';
 const AVATAR_IMAGES_BUCKET = 'avatars';
 const IMAGE_UPLOAD_LIMIT = 4;
 const DEFAULT_IMAGE_CONTENT_TYPE = 'image/jpeg';
+const PRODUCT_IMAGE_MAX_SIZE = 1000;
+const AVATAR_IMAGE_MAX_SIZE = 200;
+const PRODUCT_IMAGE_QUALITY = 0.78;
 
 function takeSingle(value) {
   if (Array.isArray(value)) return value[0] ?? null;
@@ -126,13 +129,16 @@ function getImageExtension(contentType) {
   }
 }
 
-async function uploadDataUrlToStorage({ bucket, ownerId, dataUrl, prefix }) {
+async function uploadDataUrlToStorage({ bucket, ownerId, dataUrl, prefix, maxSize = null }) {
   const response = await fetch(dataUrl);
   if (!response.ok) {
     throw new Error('No se pudo procesar la imagen antes de subirla.');
   }
 
-  const blob = await response.blob();
+  const sourceBlob = await response.blob();
+  const blob = maxSize && sourceBlob.type !== 'image/gif'
+    ? await compressImageBlob(sourceBlob, maxSize, PRODUCT_IMAGE_QUALITY)
+    : sourceBlob;
   const contentType = blob.type || DEFAULT_IMAGE_CONTENT_TYPE;
   const extension = getImageExtension(contentType);
   const path = `${ownerId}/${prefix}-${crypto.randomUUID()}.${extension}`;
@@ -151,19 +157,22 @@ async function uploadDataUrlToStorage({ bucket, ownerId, dataUrl, prefix }) {
   return data.publicUrl;
 }
 
-async function compressImageFile(file, maxSize) {
+async function compressImageBlob(blob, maxSize, quality = 0.82) {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    const url = URL.createObjectURL(file);
+    const url = URL.createObjectURL(blob);
 
     img.onload = () => {
-      const ratio = Math.min(maxSize / img.width, maxSize / img.height);
+      const ratio = Math.min(1, maxSize / img.width, maxSize / img.height);
       const width = Math.round(img.width * ratio);
       const height = Math.round(img.height * ratio);
       const canvas = document.createElement('canvas');
       canvas.width = width;
       canvas.height = height;
-      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      const context = canvas.getContext('2d');
+      context.fillStyle = '#ffffff';
+      context.fillRect(0, 0, width, height);
+      context.drawImage(img, 0, 0, width, height);
       URL.revokeObjectURL(url);
       canvas.toBlob((blob) => {
         if (!blob) {
@@ -172,7 +181,7 @@ async function compressImageFile(file, maxSize) {
         }
 
         resolve(blob);
-      }, 'image/jpeg', 0.82);
+      }, DEFAULT_IMAGE_CONTENT_TYPE, quality);
     };
 
     img.onerror = () => {
@@ -182,6 +191,10 @@ async function compressImageFile(file, maxSize) {
 
     img.src = url;
   });
+}
+
+async function compressImageFile(file, maxSize) {
+  return compressImageBlob(file, maxSize);
 }
 
 async function uploadBlobToStorage({ bucket, ownerId, blob, prefix }) {
@@ -222,6 +235,7 @@ async function persistProductImages(product) {
           ownerId: product.supplier_id,
           dataUrl: imageUrl,
           prefix: `product-${index + 1}`,
+          maxSize: PRODUCT_IMAGE_MAX_SIZE,
         })
         : imageUrl
     )),
@@ -251,7 +265,7 @@ function dedupeLatestPriceAlerts(alerts) {
     .slice(0, 20);
 }
 
-function useE2E() {
+function shouldUseE2E() {
   return isE2EMode();
 }
 
@@ -450,20 +464,20 @@ export async function signUp({ email, password, companyName, rut, city, isSuppli
 }
 
 export async function signIn({ email, password }) {
-  if (useE2E()) return e2eSignIn({ email, password });
+  if (shouldUseE2E()) return e2eSignIn({ email, password });
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw error;
   return data;
 }
 
 export async function signOut() {
-  if (useE2E()) return e2eSignOut();
+  if (shouldUseE2E()) return e2eSignOut();
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
 }
 
 export async function getCurrentUser() {
-  if (useE2E()) return e2eGetCurrentUser();
+  if (shouldUseE2E()) return e2eGetCurrentUser();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
@@ -493,7 +507,7 @@ export async function updateUser(userId, updates) {
 }
 
 export async function uploadAvatar(userId, file) {
-  const blob = await compressImageFile(file, 200);
+  const blob = await compressImageFile(file, AVATAR_IMAGE_MAX_SIZE);
   const publicUrl = await uploadBlobToStorage({
     bucket: AVATAR_IMAGES_BUCKET,
     ownerId: userId,
@@ -519,7 +533,7 @@ export async function enableBuyerRole(userId, buyerData) {
 }
 
 export async function getSupplierProfile(userId) {
-  if (useE2E()) return e2eGetSupplierProfile(userId);
+  if (shouldUseE2E()) return e2eGetSupplierProfile(userId);
   const { data, error } = await supabase
     .from('users')
     .select(`
@@ -549,7 +563,7 @@ export async function getSupplierProfile(userId) {
 }
 
 export async function getBuyerProfile(userId) {
-  if (useE2E()) return e2eGetBuyerProfile(userId);
+  if (shouldUseE2E()) return e2eGetBuyerProfile(userId);
   const { data, error } = await supabase
     .from('users')
     .select(`
@@ -584,7 +598,7 @@ function sanitizeProductPayload(product) {
   };
 }
 export async function getProducts(filters = {}) {
-  if (useE2E()) return e2eGetProducts(filters);
+  if (shouldUseE2E()) return e2eGetProducts(filters);
   const shouldUseLiteSelect = filters.lite || filters.dashboardLite || filters.supplierCatalogLite;
   let query = supabase
     .from('products')
@@ -642,7 +656,7 @@ export async function deleteProduct(productId) {
 // ========================
 
 export async function createQuoteRequest(quote) {
-  if (useE2E()) return e2eCreateQuoteRequest(quote);
+  if (shouldUseE2E()) return e2eCreateQuoteRequest(quote);
   const { data, error } = await supabase
     .from('quote_requests')
     .insert(quote)
@@ -697,7 +711,7 @@ export async function createQuoteRequest(quote) {
 }
 
 export async function getQuoteRequestsForBuyer(buyerId) {
-  if (useE2E()) return e2eGetQuoteRequestsForBuyer(buyerId);
+  if (shouldUseE2E()) return e2eGetQuoteRequestsForBuyer(buyerId);
   const { data, error } = await supabase
     .from('quote_requests')
     .select(`
@@ -732,7 +746,7 @@ export async function getOpenQuoteRequests() {
 }
 
 export async function getRelevantQuoteRequestsForSupplier(supplierId, filters = {}) {
-  if (useE2E()) return e2eGetRelevantQuoteRequestsForSupplier(supplierId, filters);
+  if (shouldUseE2E()) return e2eGetRelevantQuoteRequestsForSupplier(supplierId, filters);
   const categoryIds = await getUserCategoryIds(supplierId, SUPPLIER_CATEGORY_SCOPE);
   if (!categoryIds.length) return [];
 
@@ -752,7 +766,7 @@ export async function getRelevantQuoteRequestsForSupplier(supplierId, filters = 
 }
 
 export async function getOffersForSupplier(supplierId) {
-  if (useE2E()) return e2eGetOffersForSupplier(supplierId);
+  if (shouldUseE2E()) return e2eGetOffersForSupplier(supplierId);
   const { data, error } = await supabase
     .from('quote_offers')
     .select(`
@@ -770,7 +784,7 @@ export async function getOffersForSupplier(supplierId) {
 }
 
 export async function submitOffer({ quoteId, supplierId, responderId, price, notes, estimatedLeadTime }) {
-  if (useE2E()) {
+  if (shouldUseE2E()) {
     return e2eSubmitOffer({ quoteId, supplierId, responderId, price, notes, estimatedLeadTime });
   }
   const { data, error } = await supabase
@@ -833,7 +847,7 @@ export async function getOffersForQuote(quoteId) {
 }
 
 export async function updateOfferPipelineStatus({ offerId, supplierId, pipelineStatus }) {
-  if (useE2E()) {
+  if (shouldUseE2E()) {
     return e2eUpdateOfferPipelineStatus({ offerId, supplierId, pipelineStatus });
   }
   const { data, error } = await supabase
@@ -857,7 +871,7 @@ export async function updateOfferPipelineStatus({ offerId, supplierId, pipelineS
 }
 
 export async function acceptOffer(offerId) {
-  if (useE2E()) return e2eAcceptOffer(offerId);
+  if (shouldUseE2E()) return e2eAcceptOffer(offerId);
   const { data, error } = await supabase
     .from('quote_offers')
     .update({ status: 'accepted' })
@@ -894,7 +908,7 @@ export async function acceptOffer(offerId) {
 }
 
 export async function cancelQuoteRequest(quoteId) {
-  if (useE2E()) return e2eCancelQuoteRequest(quoteId);
+  if (shouldUseE2E()) return e2eCancelQuoteRequest(quoteId);
   const { data: impactedOffers, error: impactedOffersError } = await supabase
     .from('quote_offers')
     .select('id, supplier_id')
@@ -935,7 +949,7 @@ export async function cancelQuoteRequest(quoteId) {
 }
 
 export async function getQuoteConversationForQuote(quoteRequestId, supplierUserId) {
-  if (useE2E()) return e2eGetQuoteConversationForQuote(quoteRequestId, supplierUserId);
+  if (shouldUseE2E()) return e2eGetQuoteConversationForQuote(quoteRequestId, supplierUserId);
 
   const { data, error } = await supabase
     .from('quote_conversations')
@@ -949,7 +963,7 @@ export async function getQuoteConversationForQuote(quoteRequestId, supplierUserI
 }
 
 export async function getQuoteConversationById(conversationId) {
-  if (useE2E()) return e2eGetQuoteConversationById(conversationId);
+  if (shouldUseE2E()) return e2eGetQuoteConversationById(conversationId);
   return getQuoteConversationRecordById(conversationId);
 }
 
@@ -959,7 +973,7 @@ export async function ensureQuoteConversationForSupplier({
   supplierUserId,
   startedByUserId,
 }) {
-  if (useE2E()) {
+  if (shouldUseE2E()) {
     const existing = await e2eGetQuoteConversationForQuote(quoteId, supplierUserId);
     if (existing) return existing;
     throw new Error('No se pudo crear la conversacion en modo E2E.');
@@ -1003,7 +1017,7 @@ export async function getQuoteConversationsForUser(userId) {
 }
 
 export async function getQuoteConversationMessages(conversationId) {
-  if (useE2E()) return e2eGetQuoteConversationMessages(conversationId);
+  if (shouldUseE2E()) return e2eGetQuoteConversationMessages(conversationId);
 
   const { data, error } = await supabase
     .from('quote_conversation_messages')
@@ -1016,7 +1030,7 @@ export async function getQuoteConversationMessages(conversationId) {
 }
 
 export async function markQuoteConversationRead({ conversationId, userId }) {
-  if (useE2E()) return e2eMarkQuoteConversationRead({ conversationId, userId });
+  if (shouldUseE2E()) return e2eMarkQuoteConversationRead({ conversationId, userId });
 
   const conversation = await getQuoteConversationRecordById(conversationId);
   if (!conversation) return null;
@@ -1048,7 +1062,7 @@ export async function markQuoteConversationRead({ conversationId, userId }) {
 }
 
 export async function sendQuoteConversationMessage({ conversationId, senderUserId, body }) {
-  if (useE2E()) return e2eSendQuoteConversationMessage({ conversationId, senderUserId, body });
+  if (shouldUseE2E()) return e2eSendQuoteConversationMessage({ conversationId, senderUserId, body });
 
   const trimmedBody = String(body ?? '').trim();
   if (!trimmedBody) {
@@ -1101,7 +1115,7 @@ export async function sendQuoteConversationMessage({ conversationId, senderUserI
 // ========================
 
 export async function createReview({ reviewerId, reviewedId, quoteOfferId, rating, comment }) {
-  if (useE2E()) {
+  if (shouldUseE2E()) {
     return e2eCreateReview({ reviewerId, reviewedId, quoteOfferId, rating, comment });
   }
   const { data, error } = await supabase
@@ -1120,7 +1134,7 @@ export async function createReview({ reviewerId, reviewedId, quoteOfferId, ratin
 }
 
 export async function getReviewsForUser(userId) {
-  if (useE2E()) return e2eGetReviewsForUser(userId);
+  if (shouldUseE2E()) return e2eGetReviewsForUser(userId);
   const { data, error } = await supabase
     .from('reviews')
     .select('*, users!reviewer_id(company_name, city, verified)')
@@ -1131,7 +1145,7 @@ export async function getReviewsForUser(userId) {
 }
 
 export async function getBuyerReviewOpportunities(buyerId) {
-  if (useE2E()) return e2eGetBuyerReviewOpportunities(buyerId);
+  if (shouldUseE2E()) return e2eGetBuyerReviewOpportunities(buyerId);
 
   const { data: offers, error } = await supabase
     .from('quote_offers')
@@ -1259,7 +1273,7 @@ export async function getSupplierReviewOpportunities(supplierId) {
 // ========================
 
 export async function toggleFavorite(buyerId, supplierId) {
-  if (useE2E()) return e2eToggleFavorite(buyerId, supplierId);
+  if (shouldUseE2E()) return e2eToggleFavorite(buyerId, supplierId);
   const { data: existing, error: existingError } = await supabase
     .from('favorites')
     .select('buyer_id, supplier_id')
@@ -1288,7 +1302,7 @@ export async function toggleFavorite(buyerId, supplierId) {
 }
 
 export async function getFavorites(buyerId) {
-  if (useE2E()) return e2eGetFavorites(buyerId);
+  if (shouldUseE2E()) return e2eGetFavorites(buyerId);
   const { data, error } = await supabase
     .from('favorites')
     .select(`
@@ -1309,7 +1323,7 @@ export async function getFavorites(buyerId) {
 }
 
 export async function getBuyerActivityEvents(buyerId, { types = [], limit = 50 } = {}) {
-  if (useE2E()) return e2eGetBuyerActivityEvents(buyerId, { types, limit });
+  if (shouldUseE2E()) return e2eGetBuyerActivityEvents(buyerId, { types, limit });
   if (!buyerId) return [];
 
   let query = supabase
@@ -1329,7 +1343,7 @@ export async function getBuyerActivityEvents(buyerId, { types = [], limit = 50 }
 }
 
 export async function trackBuyerActivityEvent(payload) {
-  if (useE2E()) return e2eTrackBuyerActivityEvent(payload);
+  if (shouldUseE2E()) return e2eTrackBuyerActivityEvent(payload);
 
   const { data, error } = await supabase
     .from('buyer_activity_events')
@@ -1385,7 +1399,7 @@ export async function getSuppliers(filters = {}) {
 // ========================
 
 export async function getPriceAlerts(buyerId) {
-  if (useE2E()) return e2eGetPriceAlerts(buyerId);
+  if (shouldUseE2E()) return e2eGetPriceAlerts(buyerId);
   if (!buyerId) return [];
 
   const cutoff = new Date();
@@ -1414,7 +1428,7 @@ export async function getPriceAlerts(buyerId) {
 }
 
 export async function getPriceAlertSubscriptions(buyerId) {
-  if (useE2E()) return e2eGetPriceAlertSubscriptions(buyerId);
+  if (shouldUseE2E()) return e2eGetPriceAlertSubscriptions(buyerId);
   const { data, error } = await supabase
     .from('price_alert_subscriptions')
     .select(`
@@ -1430,7 +1444,7 @@ export async function getPriceAlertSubscriptions(buyerId) {
 }
 
 export async function subscribeToPriceAlert(buyerId, { categoryId, productId }) {
-  if (useE2E()) return e2eSubscribeToPriceAlert(buyerId, { categoryId, productId });
+  if (shouldUseE2E()) return e2eSubscribeToPriceAlert(buyerId, { categoryId, productId });
   if (!categoryId && !productId) {
     throw new Error('Debes seleccionar una categoria o un producto para la alerta.');
   }
@@ -1470,7 +1484,7 @@ export async function subscribeToPriceAlert(buyerId, { categoryId, productId }) 
 }
 
 export async function removePriceAlertSubscription(subscriptionId, buyerId) {
-  if (useE2E()) return e2eRemovePriceAlertSubscription(subscriptionId, buyerId);
+  if (shouldUseE2E()) return e2eRemovePriceAlertSubscription(subscriptionId, buyerId);
   const { error } = await supabase
     .from('price_alert_subscriptions')
     .delete()
@@ -1485,7 +1499,7 @@ export async function removePriceAlertSubscription(subscriptionId, buyerId) {
 // ========================
 
 export async function getNotifications(userId) {
-  if (useE2E()) return e2eGetNotifications(userId);
+  if (shouldUseE2E()) return e2eGetNotifications(userId);
   const { data, error } = await supabase
     .from('notifications')
     .select('id, recipient_id, actor_id, type, title, message, entity_type, entity_id, created_at, read_at')
@@ -1498,7 +1512,7 @@ export async function getNotifications(userId) {
 }
 
 export async function markNotificationRead(notificationId, userId) {
-  if (useE2E()) return e2eMarkNotificationRead(notificationId, userId);
+  if (shouldUseE2E()) return e2eMarkNotificationRead(notificationId, userId);
   const { data, error } = await supabase
     .from('notifications')
     .update({ read_at: new Date().toISOString() })
@@ -1513,7 +1527,7 @@ export async function markNotificationRead(notificationId, userId) {
 }
 
 export async function markAllNotificationsRead(userId) {
-  if (useE2E()) return e2eMarkAllNotificationsRead(userId);
+  if (shouldUseE2E()) return e2eMarkAllNotificationsRead(userId);
   const { error } = await supabase
     .from('notifications')
     .update({ read_at: new Date().toISOString() })
@@ -1528,7 +1542,7 @@ export async function markAllNotificationsRead(userId) {
 // ========================
 
 export async function getPlans() {
-  if (useE2E()) return e2eGetPlans();
+  if (shouldUseE2E()) return e2eGetPlans();
   const { data, error } = await supabase
     .from('plans')
     .select('*')
@@ -1549,7 +1563,7 @@ export async function getActiveSubscription(supplierId) {
 }
 
 export async function subscribeToPlan(supplierId, planId) {
-  if (useE2E()) return e2eSubscribeToPlan(supplierId, planId);
+  if (shouldUseE2E()) return e2eSubscribeToPlan(supplierId, planId);
   const currentSubscription = await getActiveSubscription(supplierId);
   if (currentSubscription?.plan_id === planId) {
     return currentSubscription;
@@ -1586,7 +1600,7 @@ export async function subscribeToPlan(supplierId, planId) {
 }
 
 export async function requestFlowPlanActivation(supplierId, planId, billingCustomerEmail) {
-  if (useE2E()) return e2eRequestFlowPlanActivation(supplierId, planId, billingCustomerEmail);
+  if (shouldUseE2E()) return e2eRequestFlowPlanActivation(supplierId, planId, billingCustomerEmail);
 
   const currentSubscription = await getActiveSubscription(supplierId);
   if (currentSubscription?.plan_id === planId) {
@@ -1635,7 +1649,7 @@ export async function requestFlowPlanActivation(supplierId, planId, billingCusto
 }
 
 export async function getSupplierUsageSummary(supplierId) {
-  if (useE2E()) return e2eGetSupplierUsageSummary(supplierId);
+  if (shouldUseE2E()) return e2eGetSupplierUsageSummary(supplierId);
   const startOfMonth = new Date();
   startOfMonth.setUTCDate(1);
   startOfMonth.setUTCHours(0, 0, 0, 0);
@@ -1745,7 +1759,7 @@ export async function getConversationMessages(conversationId) {
 // ========================
 
 export async function getCategories() {
-  if (useE2E()) return e2eGetCategories();
+  if (shouldUseE2E()) return e2eGetCategories();
   const { data, error } = await supabase
     .from('categories')
     .select('*')
@@ -1782,7 +1796,7 @@ export async function setUserCategories(userId, categoryIds, scope = 'supplier_c
 // ========================
 
 export async function getSupplierStats(supplierId) {
-  if (useE2E()) return e2eGetSupplierStats(supplierId);
+  if (shouldUseE2E()) return e2eGetSupplierStats(supplierId);
   const [quotesRes, reviewsRes, favoritesRes, reviewCountRes] = await Promise.allSettled([
     supabase
       .from('quote_offers')
@@ -1841,7 +1855,7 @@ export async function getSupplierStatsBulk(supplierIds) {
 }
 
 export async function getBuyerStats(buyerId) {
-  if (useE2E()) return e2eGetBuyerStats(buyerId);
+  if (shouldUseE2E()) return e2eGetBuyerStats(buyerId);
   const [quotesRes, reviewsRes, favoritesRes] = await Promise.all([
     supabase
       .from('quote_requests')
