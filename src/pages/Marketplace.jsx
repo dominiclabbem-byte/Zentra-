@@ -584,7 +584,7 @@ export default function Marketplace() {
         </div>
       </section>
 
-      <section className="px-4 py-2.5 md:py-3 border-y border-white/10 bg-brand-inkDark sticky top-16 z-20">
+      <section className="px-4 pb-1.5 pt-2 md:pb-2 md:pt-2.5 border-y border-white/10 bg-brand-inkDark sticky top-16 z-20">
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_220px] gap-2.5 md:gap-3">
             <label className="relative block">
@@ -611,13 +611,13 @@ export default function Marketplace() {
             </select>
           </div>
 
-          <div className="flex gap-2 overflow-x-auto pb-0.5 mt-2 md:mt-2.5">
+          <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden mt-1.5 md:mt-2">
             {categoryFilters.map((category) => (
               <button
                 key={category}
                 type="button"
                 onClick={() => setCategoryFilter(category)}
-                className={`px-3 py-1.5 md:px-3.5 md:py-1.5 rounded-xl text-xs md:text-sm font-semibold whitespace-nowrap transition-all ${
+                className={`px-3 py-1.5 md:px-3.5 md:py-1.5 rounded-lg text-xs md:text-sm font-semibold whitespace-nowrap transition-all ${
                   categoryFilter === category
                     ? 'bg-gradient-to-r from-emerald-400 to-blue-500 text-white shadow-md shadow-emerald-400/20'
                     : 'bg-white/[0.04] border border-white/10 text-slate-400 hover:border-brand-accent/30 hover:text-white'
