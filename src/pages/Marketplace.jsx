@@ -584,9 +584,9 @@ export default function Marketplace() {
         </div>
       </section>
 
-      <section className="px-4 py-4 md:py-6 border-y border-white/10 bg-brand-inkDark sticky top-16 z-20">
+      <section className="px-4 py-2.5 md:py-3 border-y border-white/10 bg-brand-inkDark sticky top-16 z-20">
         <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_220px] gap-3 md:gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_220px] gap-2.5 md:gap-3">
             <label className="relative block">
               <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
               <input
@@ -594,14 +594,14 @@ export default function Marketplace() {
                 placeholder="Buscar por producto, categoria o proveedor"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-white/[0.04] pl-12 pr-4 py-3 md:py-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all"
+                className="w-full rounded-xl border border-white/10 bg-white/[0.04] pl-12 pr-4 py-2.5 md:py-3 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all"
               />
             </label>
 
             <select
               value={supplierFilter}
               onChange={(event) => setSupplierFilter(event.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 md:py-4 text-sm text-white focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all"
+              className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 md:py-3 text-sm text-white focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all"
             >
               {supplierOptions.map((supplier) => (
                 <option key={supplier} value={supplier}>
@@ -611,13 +611,13 @@ export default function Marketplace() {
             </select>
           </div>
 
-          <div className="flex gap-2 overflow-x-auto pb-1 mt-3 md:mt-4">
+          <div className="flex gap-2 overflow-x-auto pb-0.5 mt-2 md:mt-2.5">
             {categoryFilters.map((category) => (
               <button
                 key={category}
                 type="button"
                 onClick={() => setCategoryFilter(category)}
-                className={`px-3 py-1.5 md:px-4 md:py-2 rounded-xl text-xs md:text-sm font-semibold whitespace-nowrap transition-all ${
+                className={`px-3 py-1.5 md:px-3.5 md:py-1.5 rounded-xl text-xs md:text-sm font-semibold whitespace-nowrap transition-all ${
                   categoryFilter === category
                     ? 'bg-gradient-to-r from-emerald-400 to-blue-500 text-white shadow-md shadow-emerald-400/20'
                     : 'bg-white/[0.04] border border-white/10 text-slate-400 hover:border-brand-accent/30 hover:text-white'
