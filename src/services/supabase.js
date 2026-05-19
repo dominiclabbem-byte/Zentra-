@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-const FALLBACK_SUPABASE_URL = 'https://kqzomnmwuebtpkjzyvzl.supabase.co';
-const FALLBACK_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_6Kyam0PkOIHsyC3uAVl0uA_0VeChdMJ';
+const FALLBACK_SUPABASE_URL = 'https://cghjpfszeffdeiqajown.supabase.co';
+const FALLBACK_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_aMLfMbNeHVZ9gvyILaQAfw_v3uVe6rN';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || FALLBACK_SUPABASE_URL;
 const supabaseAnonKey =
