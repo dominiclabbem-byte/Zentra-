@@ -14,6 +14,7 @@ const SupplierDashboard = lazy(() => import('./pages/SupplierDashboard'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const Login = lazy(() => import('./pages/Login'));
 const Marketplace = lazy(() => import('./pages/Marketplace'));
+const LegalPage = lazy(() => import('./pages/LegalPage'));
 
 function PageLoader() {
   return (
@@ -51,6 +52,8 @@ export default function App() {
               <Route path="/marketplace" element={<RenderProfiler id="Marketplace"><Marketplace /></RenderProfiler>} />
               <Route path="/ingresar" element={<RenderProfiler id="Login"><Login /></RenderProfiler>} />
               <Route path="/login" element={<RenderProfiler id="LoginAlias"><Login /></RenderProfiler>} />
+              <Route path="/privacidad" element={<RenderProfiler id="Privacy"><LegalPage type="privacidad" /></RenderProfiler>} />
+              <Route path="/terminos" element={<RenderProfiler id="Terms"><LegalPage type="terminos" /></RenderProfiler>} />
               <Route path="/registro-comprador" element={<RenderProfiler id="BuyerRegistration"><BuyerRegistration /></RenderProfiler>} />
               <Route path="/registro-proveedor" element={<RenderProfiler id="SupplierRegistration"><SupplierRegistration /></RenderProfiler>} />
               <Route

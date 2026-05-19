@@ -22,17 +22,18 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           {/* Brand */}
           <div>
-            <div className="flex items-center mb-4">
+            <div className="flex items-center gap-2 mb-4">
               <img
                 src={mainLogo}
-                alt="Z"
-                style={{ height: '58px', width: 'auto', objectFit: 'contain', filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.2))', marginTop: '4px' }}
+                alt=""
+                aria-hidden="true"
+                style={{ height: '34px', width: 'auto', objectFit: 'contain', filter: 'drop-shadow(0 4px 10px rgba(46,202,213,0.16))' }}
               />
-              <span className="text-3xl font-extrabold tracking-tight -ml-4 text-transparent bg-clip-text bg-gradient-to-r from-[#5b8af0] to-[#00e5b0]">entra</span>
+              <span className="text-2xl font-black tracking-tight text-white">Z<span className="text-brand-accent">entra</span></span>
             </div>
             <p className="text-sm leading-relaxed text-gray-500">
               Conectamos proveedores de insumos gastronomicos con compradores en Chile.
-              Rapido, verificado y confiable.
+              Con RUT visible, categorias declaradas y ofertas comparables.
             </p>
             <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-brand-accent/20 bg-brand-accent/10 px-3 py-1.5 text-xs font-semibold text-brand-accent">
               <ShieldCheck className="h-3.5 w-3.5" />
@@ -75,6 +76,10 @@ export default function Footer() {
                 Santiago, Chile
               </li>
             </ul>
+            <div className="mt-6 flex flex-wrap gap-x-4 gap-y-2 text-xs">
+              <Link to="/privacidad" className="hover:text-brand-accent transition-colors duration-200">Privacidad</Link>
+              <Link to="/terminos" className="hover:text-brand-accent transition-colors duration-200">Terminos</Link>
+            </div>
           </div>
         </div>
 

@@ -72,19 +72,21 @@ export default function Navbar() {
     <nav className="bg-brand-inkDark/95 backdrop-blur-xl text-white shadow-[0_1px_0_rgba(46,202,213,0.1)] sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <Link to="/" className="flex items-center flex-shrink-0 group transition-all hover:scale-105">
+          <Link to="/" className="flex items-center flex-shrink-0 gap-2 group transition-all hover:scale-[1.02]" aria-label="Zentra inicio">
             <img
               src={mainLogo}
-              alt="Z"
+              alt=""
+              aria-hidden="true"
               style={{
-                height: '58px',
+                height: '34px',
                 width: 'auto',
                 objectFit: 'contain',
-                filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.2))',
-                marginTop: '4px',
+                filter: 'drop-shadow(0 4px 10px rgba(46,202,213,0.16))',
               }}
             />
-            <span className="text-3xl font-extrabold tracking-tight -ml-4 text-transparent bg-clip-text bg-gradient-to-r from-[#5b8af0] to-[#00e5b0]">entra</span>
+            <span className="text-2xl font-black tracking-tight text-white">
+              Z<span className="text-brand-accent">entra</span>
+            </span>
           </Link>
 
           <div className="hidden md:flex items-center gap-1">
@@ -196,7 +198,7 @@ export default function Navbar() {
           <button
             className="md:hidden p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-all"
             onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Toggle menu"
+            aria-label="Abrir menu"
           >
             {menuOpen ? '\u2715' : '\u2630'}
           </button>
